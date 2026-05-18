@@ -194,6 +194,119 @@
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--primary-dim); }
+
+  /* ============ TABS ============ */
+  .tabs { display: flex; gap: 4px; margin-bottom: 28px; border-bottom: 1px solid var(--border); padding-bottom: 0; overflow-x: auto; }
+  .tab { background: transparent; border: none; color: var(--text-dim); font-family: 'Inter Tight', sans-serif; font-size: 14px; font-weight: 500; padding: 12px 18px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; transition: all 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--primary-bright); border-bottom-color: var(--primary); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ============ CALENDARIO ============ */
+  .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+  .calendar-nav { display: flex; align-items: center; gap: 12px; }
+  .calendar-nav button { background: var(--bg-card); border: 1px solid var(--border-strong); color: var(--text); padding: 8px 14px; cursor: pointer; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+  .calendar-nav button:hover { border-color: var(--primary); color: var(--primary-bright); }
+  .calendar-month { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500; min-width: 200px; text-align: center; }
+
+  .calendar-metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 24px; border-radius: 4px; overflow: hidden; }
+  .cal-metric { background: var(--bg-elev); padding: 14px 16px; }
+  .cal-metric-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 6px; }
+  .cal-metric-value { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 500; }
+  .cal-metric-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-faint); margin-top: 4px; }
+
+  .progress-bar { width: 100%; height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .progress-fill { height: 100%; background: linear-gradient(to right, var(--red), var(--amber), var(--primary)); transition: width 0.3s; }
+
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; background: var(--bg-elev); padding: 12px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; }
+  .day-header { text-align: center; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); padding: 6px 0; font-weight: 600; }
+  .day-cell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 10px 8px; min-height: 86px; cursor: pointer; display: flex; flex-direction: column; transition: all 0.15s; position: relative; }
+  .day-cell:hover { border-color: var(--primary-dim); transform: translateY(-1px); }
+  .day-cell.empty { background: transparent; border: 1px dashed var(--border); cursor: default; min-height: 86px; }
+  .day-cell.empty:hover { transform: none; }
+  .day-cell.today { box-shadow: 0 0 0 1px var(--primary); }
+  .day-cell.weekend { opacity: 0.55; }
+  .day-cell.future { opacity: 0.35; cursor: default; }
+  .day-cell.future:hover { transform: none; border-color: var(--border); }
+
+  .day-number { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); font-weight: 500; margin-bottom: 4px; }
+  .day-cell.has-data .day-number { color: var(--text); }
+  .day-amount { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; line-height: 1.1; }
+  .day-amount.empty { color: var(--text-faint); font-size: 11px; font-weight: 400; }
+  .day-bar { width: 100%; height: 3px; background: var(--bg); border-radius: 2px; overflow: hidden; margin-top: auto; }
+  .day-bar-fill { height: 100%; transition: width 0.3s; }
+  .day-b-badge { position: absolute; top: 6px; right: 6px; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--amber); background: rgba(212, 160, 74, 0.15); padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+
+  /* Colores umbrales */
+  .day-cell.tier-red { background: rgba(224, 117, 96, 0.08); border-color: rgba(224, 117, 96, 0.3); }
+  .day-cell.tier-red .day-amount { color: var(--red-bright); }
+  .day-cell.tier-red .day-bar-fill { background: var(--red); }
+  .day-cell.tier-amber { background: rgba(212, 160, 74, 0.08); border-color: rgba(212, 160, 74, 0.3); }
+  .day-cell.tier-amber .day-amount { color: var(--amber-bright); }
+  .day-cell.tier-amber .day-bar-fill { background: var(--amber); }
+  .day-cell.tier-green { background: rgba(110, 226, 197, 0.08); border-color: rgba(110, 226, 197, 0.3); }
+  .day-cell.tier-green .day-amount { color: var(--primary-bright); }
+  .day-cell.tier-green .day-bar-fill { background: var(--primary); }
+  .day-cell.tier-aqua { background: rgba(110, 226, 197, 0.18); border-color: var(--primary); }
+  .day-cell.tier-aqua .day-amount { color: var(--primary-bright); }
+  .day-cell.tier-aqua .day-bar-fill { background: var(--primary-bright); }
+
+  /* ============ MODAL DÍA (más ancho que el de movimiento) ============ */
+  .modal.modal-wide { max-width: 720px; }
+  .modal-section { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; margin-bottom: 14px; }
+  .modal-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .modal-fields-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+  .modal-fields-2 .modal-field { gap: 4px; }
+  .modal-fields-2 input { padding: 8px 10px; font-size: 13px; }
+  .pending-line { display: grid; grid-template-columns: 130px 100px 1fr 120px 28px; gap: 8px; align-items: end; margin-bottom: 8px; padding: 8px; background: var(--bg-elev); border-radius: 4px; }
+  .pending-line label { font-size: 10px; }
+  .pending-line input, .pending-line select { padding: 6px 8px; font-size: 12px; border-radius: 4px; }
+  .pending-line .line-delete { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 16px; padding: 4px; }
+  .pending-line .line-delete:hover { color: var(--red); }
+  .add-line-btn { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-dim); padding: 8px; width: 100%; cursor: pointer; border-radius: 4px; font-size: 12px; margin-top: 4px; }
+  .add-line-btn:hover { border-color: var(--primary); color: var(--primary-bright); }
+
+  .day-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; padding: 14px; background: rgba(110, 226, 197, 0.05); border: 1px solid rgba(110, 226, 197, 0.2); border-radius: 6px; }
+  .day-summary-item { text-align: center; }
+  .day-summary-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 4px; }
+  .day-summary-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; color: var(--primary-bright); }
+
+  /* ============ COBROS PENDIENTES ============ */
+  .pending-metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 24px; border-radius: 4px; overflow: hidden; }
+  .pending-table { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .pending-row { display: grid; grid-template-columns: 90px 1fr 100px 110px 100px 60px; padding: 12px 16px; border-bottom: 1px solid var(--border); align-items: center; gap: 10px; font-size: 13px; }
+  .pending-row.header { background: var(--bg-elev); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 600; }
+  .pending-row:last-child { border-bottom: none; }
+  .pending-row:hover:not(.header) { background: var(--bg-elev); }
+  .pending-row.cobrado { opacity: 0.5; }
+  .pending-row.incidencia { background: rgba(224, 117, 96, 0.06); }
+  .pending-row.overdue { border-left: 3px solid var(--red); }
+  .pending-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); }
+  .pending-amount { font-family: 'JetBrains Mono', monospace; font-weight: 600; text-align: right; color: var(--amber-bright); }
+  .pending-type { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 3px; background: var(--bg); color: var(--text-dim); text-align: center; }
+  .pending-actions { display: flex; gap: 4px; justify-content: flex-end; }
+  .pending-actions button { background: none; border: 1px solid var(--border-strong); cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: var(--text-dim); }
+  .pending-actions .btn-cobrar:hover { border-color: var(--primary); color: var(--primary-bright); background: rgba(110, 226, 197, 0.08); }
+  .pending-actions .btn-incidencia:hover { border-color: var(--red); color: var(--red-bright); background: rgba(224, 117, 96, 0.08); }
+  .filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-chip { padding: 5px 12px; background: var(--bg-card); border: 1px solid var(--border-strong); color: var(--text-dim); font-size: 12px; cursor: pointer; border-radius: 20px; font-family: 'Inter Tight', sans-serif; }
+  .filter-chip.active { background: var(--primary-dim); border-color: var(--primary-dim); color: var(--bg); }
+  .filter-chip:hover:not(.active) { border-color: var(--primary); color: var(--text); }
+
+  @media (max-width: 900px) {
+    .calendar-metrics { grid-template-columns: repeat(2, 1fr); }
+    .pending-metrics { grid-template-columns: repeat(2, 1fr); }
+    .modal-fields-2 { grid-template-columns: 1fr; }
+    .pending-line { grid-template-columns: 1fr 1fr; }
+    .pending-row { grid-template-columns: 80px 1fr 90px; font-size: 12px; }
+    .pending-row.header { display: none; }
+    .pending-row > :nth-child(n+4) { grid-column: span 2; }
+    .calendar-grid { padding: 6px; gap: 2px; }
+    .day-cell { min-height: 70px; padding: 6px 4px; }
+    .day-amount { font-size: 11px; }
+    .day-b-badge { font-size: 8px; padding: 1px 3px; }
+  }
 </style>
 </head>
 <body>
@@ -243,6 +356,14 @@
       </div>
     </header>
 
+    <div class="tabs">
+      <button class="tab active" data-tab="liquidez" onclick="switchTab('liquidez')">💧 Liquidez</button>
+      <button class="tab" data-tab="calendario" onclick="switchTab('calendario')">📅 Calendario A/B</button>
+      <button class="tab" data-tab="pendientes" onclick="switchTab('pendientes')">⏳ Cobros pendientes</button>
+    </div>
+
+    <!-- ===== TAB: LIQUIDEZ ===== -->
+    <div class="tab-content active" id="tab-liquidez">
     <h2 class="main-title">Liquidez actual</h2>
     <div class="kpi-grid" id="kpiGrid"></div>
     <div id="alertsContainer"></div>
@@ -264,6 +385,44 @@
       <h2 class="section-title">Historial de movimientos</h2>
       <p class="section-subtitle">Movimientos ordenados por fecha (más reciente primero).</p>
       <div class="movement-log" id="movementLog"></div>
+    </div>
+    </div><!-- /tab-liquidez -->
+
+    <!-- ===== TAB: CALENDARIO A/B ===== -->
+    <div class="tab-content" id="tab-calendario">
+      <div class="calendar-header">
+        <div class="calendar-nav">
+          <button onclick="calMonthChange(-1)">◀</button>
+          <div class="calendar-month" id="calMonthLabel">—</div>
+          <button onclick="calMonthChange(1)">▶</button>
+        </div>
+        <button class="btn btn-primary" onclick="openDayModal(null)">+ Registrar HOY</button>
+      </div>
+
+      <div class="calendar-metrics" id="calMetrics"></div>
+
+      <div class="calendar-grid" id="calendarGrid"></div>
+
+      <h3 class="section-title" style="font-size:18px;margin-top:24px;">Últimos 7 días registrados</h3>
+      <div class="movement-log" id="recentDaysList" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- ===== TAB: COBROS PENDIENTES ===== -->
+    <div class="tab-content" id="tab-pendientes">
+      <h2 class="main-title">Cobros pendientes</h2>
+
+      <div class="pending-metrics" id="pendingMetrics"></div>
+
+      <div class="filter-bar" id="pendingFilters">
+        <button class="filter-chip active" data-filter="all" onclick="filterPending('all')">Todos</button>
+        <button class="filter-chip" data-filter="pendiente" onclick="filterPending('pendiente')">Pendientes</button>
+        <button class="filter-chip" data-filter="overdue" onclick="filterPending('overdue')">Vencidos</button>
+        <button class="filter-chip" data-filter="thisweek" onclick="filterPending('thisweek')">Esta semana</button>
+        <button class="filter-chip" data-filter="cobrado" onclick="filterPending('cobrado')">Cobrados</button>
+        <button class="filter-chip" data-filter="incidencia" onclick="filterPending('incidencia')">Incidencias</button>
+      </div>
+
+      <div class="pending-table" id="pendingTable"></div>
     </div>
   </div>
 </div>
@@ -295,7 +454,100 @@
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- MODAL: registrar día (calendario A/B) -->
+<div class="modal-overlay" id="dayModal" onclick="if(event.target===this)closeModal('dayModal')">
+  <div class="modal modal-wide">
+    <h3 id="dayModalTitle">Registrar día</h3>
+    <p>Captura facturación (lo emitido) y desglose de cobros del día.</p>
+
+    <input type="hidden" id="dayRecordId" value="">
+    <input type="hidden" id="dayDate" value="">
+
+    <div class="modal-section">
+      <h4>📋 Facturación del día (lo emitido)</h4>
+      <div class="modal-fields-2">
+        <div class="modal-field">
+          <label for="dayInvA">Facturación A (con IVA y RE)</label>
+          <input type="number" id="dayInvA" step="0.01" min="0" max="9999999" placeholder="0,00" oninput="updateDaySummary()">
+        </div>
+        <div class="modal-field">
+          <label for="dayInvB">Facturación B (sin IVA ni RE)</label>
+          <input type="number" id="dayInvB" step="0.01" min="0" max="9999999" placeholder="0,00" oninput="updateDaySummary()">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h4>💵 Cobrado HOY en efectivo</h4>
+      <div class="modal-fields-2">
+        <div class="modal-field">
+          <label for="dayCashA">Efectivo recibido de ventas A</label>
+          <input type="number" id="dayCashA" step="0.01" min="0" max="9999999" placeholder="0,00" oninput="updateDaySummary()">
+        </div>
+        <div class="modal-field">
+          <label for="dayCashB">Efectivo recibido de ventas B</label>
+          <input type="number" id="dayCashB" step="0.01" min="0" max="9999999" placeholder="0,00" oninput="updateDaySummary()">
+        </div>
+        <div class="modal-field span-2">
+          <label for="dayCashAccount">Cuenta donde entra el efectivo (opcional, se registra movimiento)</label>
+          <select id="dayCashAccount">
+            <option value="">— No registrar movimiento (ya lo haré manual) —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h4>📅 Cobros pendientes (transferencias, bizum, pagarés, remesas)</h4>
+      <div id="pendingLines"></div>
+      <button type="button" class="add-line-btn" onclick="addPendingLine()">+ Añadir línea de cobro pendiente</button>
+    </div>
+
+    <div class="day-summary">
+      <div class="day-summary-item">
+        <div class="day-summary-label">Total facturado</div>
+        <div class="day-summary-value" id="daySumTotal">0,00 €</div>
+      </div>
+      <div class="day-summary-item">
+        <div class="day-summary-label">Cobrado hoy</div>
+        <div class="day-summary-value" id="daySumCobrado">0,00 €</div>
+      </div>
+      <div class="day-summary-item">
+        <div class="day-summary-label">IVA estimado</div>
+        <div class="day-summary-value" id="daySumIVA">0,00 €</div>
+      </div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn" onclick="closeModal('dayModal')">Cancelar</button>
+      <button class="btn" id="dayDeleteBtn" onclick="deleteDayRecord()" style="display:none;color:var(--red-bright);border-color:var(--red);">Eliminar día</button>
+      <button class="btn btn-primary" onclick="saveDayRecord()">Guardar día</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: marcar cobro pendiente como cobrado -->
+<div class="modal-overlay" id="collectModal" onclick="if(event.target===this)closeModal('collectModal')">
+  <div class="modal">
+    <h3>Marcar como cobrado</h3>
+    <p id="collectInfo">—</p>
+    <input type="hidden" id="collectId" value="">
+    <div class="modal-field-grid">
+      <div class="modal-field">
+        <label for="collectDate">Fecha de cobro</label>
+        <input type="date" id="collectDate">
+      </div>
+      <div class="modal-field">
+        <label for="collectAccount">Cuenta destino</label>
+        <select id="collectAccount"></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('collectModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmCollect()">Confirmar cobro</button>
+    </div>
+  </div>
+</div>
 
 <!-- Supabase JS SDK con Subresource Integrity -->
 <script
@@ -884,6 +1136,716 @@ function showToast(msg, isError) {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
 });
+
+// ============================================
+// TABS
+// ============================================
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tabName));
+  if (tabName === 'calendario') renderCalendar();
+  if (tabName === 'pendientes') renderPending();
+}
+
+// ============================================
+// CALENDARIO A/B
+// ============================================
+let dailyRecords = [];
+let pendingCollections = [];
+let calCurrentDate = new Date();
+let pendingFilter = 'all';
+
+// IVA factor ponderado (sobre facturación A): 
+// 100€ brutos A → 13,54€ IVA - 3,99€ soportado + 2,01€ RE ≈ 11,56€ neto a Hacienda
+const IVA_FACTOR_A = 0.1156;
+const DAILY_TARGET = 1000;
+
+async function loadDailyRecords() {
+  const { data, error } = await supabaseClient.from('daily_records').select('*').order('record_date', { ascending: false }).limit(400);
+  if (error) { showToast(friendlyErrorMessage(error), true); return; }
+  dailyRecords = data || [];
+}
+
+async function loadPendingCollections() {
+  const { data, error } = await supabaseClient.from('pending_collections').select('*').order('invoice_date', { ascending: false });
+  if (error) { showToast(friendlyErrorMessage(error), true); return; }
+  pendingCollections = data || [];
+}
+
+function calMonthChange(delta) {
+  calCurrentDate = new Date(calCurrentDate.getFullYear(), calCurrentDate.getMonth() + delta, 1);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const year = calCurrentDate.getFullYear();
+  const month = calCurrentDate.getMonth();
+  const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('calMonthLabel').textContent = monthNames[month] + ' ' + year;
+
+  // Días registrados en el mes
+  const monthRecords = dailyRecords.filter(r => {
+    const d = new Date(r.record_date + 'T00:00:00');
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+
+  // Métricas del mes
+  const totalFacturado = monthRecords.reduce((s, r) => s + (parseFloat(r.invoiced_a)||0) + (parseFloat(r.invoiced_b)||0), 0);
+  const totalA = monthRecords.reduce((s, r) => s + (parseFloat(r.invoiced_a)||0), 0);
+  const ivaEstimado = totalA * IVA_FACTOR_A;
+  const diasRegistrados = monthRecords.filter(r => (parseFloat(r.invoiced_a)||0) + (parseFloat(r.invoiced_b)||0) > 0).length;
+  const media = diasRegistrados > 0 ? totalFacturado / diasRegistrados : 0;
+  
+  // Días laborables del mes (lun-vie) hasta hoy si es mes actual
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+  const lastDayCheck = isCurrentMonth ? today.getDate() : new Date(year, month + 1, 0).getDate();
+  let diasLab = 0;
+  for (let d = 1; d <= lastDayCheck; d++) {
+    const dow = new Date(year, month, d).getDay();
+    if (dow !== 0 && dow !== 6) diasLab++;
+  }
+  const objetivoMes = diasLab * DAILY_TARGET;
+  const pctObjetivo = objetivoMes > 0 ? (totalFacturado / objetivoMes * 100) : 0;
+  
+  // Mejor día
+  let mejorDia = null;
+  monthRecords.forEach(r => {
+    const total = (parseFloat(r.invoiced_a)||0) + (parseFloat(r.invoiced_b)||0);
+    if (!mejorDia || total > mejorDia.total) mejorDia = { fecha: r.record_date, total };
+  });
+  const mejorDiaText = mejorDia ? formatMoney(mejorDia.total) + ' (' + new Date(mejorDia.fecha + 'T00:00:00').getDate() + ')' : '—';
+
+  // Render métricas
+  const metrics = document.getElementById('calMetrics');
+  metrics.textContent = '';
+  const items = [
+    { label: 'Total facturado', value: formatMoney(totalFacturado), sub: diasRegistrados + ' días' },
+    { label: 'Media día', value: formatMoney(media), sub: 'objetivo ' + formatMoney(DAILY_TARGET) },
+    { label: 'Objetivo mes', value: pctObjetivo.toFixed(0) + '%', sub: formatMoney(objetivoMes), bar: Math.min(100, pctObjetivo) },
+    { label: 'IVA estimado', value: formatMoney(ivaEstimado), sub: 'sobre A: ' + formatMoney(totalA) },
+    { label: 'Mejor día', value: mejorDiaText.split(' ')[0], sub: mejorDia ? 'día ' + mejorDia.fecha.split('-')[2] : '—' },
+  ];
+  items.forEach(it => {
+    const d = document.createElement('div');
+    d.className = 'cal-metric';
+    const l = document.createElement('div'); l.className = 'cal-metric-label'; l.textContent = it.label; d.appendChild(l);
+    const v = document.createElement('div'); v.className = 'cal-metric-value'; v.textContent = it.value; d.appendChild(v);
+    if (it.bar !== undefined) {
+      const bar = document.createElement('div'); bar.className = 'progress-bar';
+      const fill = document.createElement('div'); fill.className = 'progress-fill'; fill.style.width = it.bar + '%';
+      bar.appendChild(fill); d.appendChild(bar);
+    }
+    const s = document.createElement('div'); s.className = 'cal-metric-sub'; s.textContent = it.sub; d.appendChild(s);
+    metrics.appendChild(d);
+  });
+
+  // Render grid
+  const grid = document.getElementById('calendarGrid');
+  grid.textContent = '';
+  ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach(d => {
+    const h = document.createElement('div'); h.className = 'day-header'; h.textContent = d; grid.appendChild(h);
+  });
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  // getDay(): 0=Dom, 1=Lun, ... 6=Sab. Queremos Lunes primero, así que offset:
+  let startOffset = firstDay.getDay() - 1;
+  if (startOffset < 0) startOffset = 6;
+  for (let i = 0; i < startOffset; i++) {
+    const empty = document.createElement('div'); empty.className = 'day-cell empty'; grid.appendChild(empty);
+  }
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    const dateObj = new Date(year, month, d);
+    const dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const dow = dateObj.getDay();
+    const isWeekend = dow === 0 || dow === 6;
+    const isToday = dateObj.toDateString() === today.toDateString();
+    const isFuture = dateObj > today && !isToday;
+    
+    const record = monthRecords.find(r => r.record_date === dateStr);
+    const total = record ? (parseFloat(record.invoiced_a)||0) + (parseFloat(record.invoiced_b)||0) : 0;
+    const hasB = record && (parseFloat(record.invoiced_b)||0) > 0;
+    
+    const cell = document.createElement('div');
+    cell.className = 'day-cell';
+    if (record && total > 0) cell.classList.add('has-data');
+    if (isWeekend) cell.classList.add('weekend');
+    if (isToday) cell.classList.add('today');
+    if (isFuture) cell.classList.add('future');
+    
+    // Tier color
+    if (total > 0) {
+      if (total < 800) cell.classList.add('tier-red');
+      else if (total < 1000) cell.classList.add('tier-amber');
+      else if (total < 1500) cell.classList.add('tier-green');
+      else cell.classList.add('tier-aqua');
+    }
+    
+    if (!isFuture) cell.onclick = () => openDayModal(dateStr);
+    
+    const num = document.createElement('div'); num.className = 'day-number'; num.textContent = d; cell.appendChild(num);
+    
+    if (total > 0) {
+      const amt = document.createElement('div'); amt.className = 'day-amount';
+      amt.textContent = total >= 1000 ? (total/1000).toFixed(2) + 'k' : Math.round(total) + '€';
+      cell.appendChild(amt);
+      if (hasB) {
+        const badge = document.createElement('div'); badge.className = 'day-b-badge'; badge.textContent = 'B'; cell.appendChild(badge);
+      }
+      const bar = document.createElement('div'); bar.className = 'day-bar';
+      const fill = document.createElement('div'); fill.className = 'day-bar-fill';
+      fill.style.width = Math.min(100, total / DAILY_TARGET * 100) + '%';
+      bar.appendChild(fill); cell.appendChild(bar);
+    } else if (!isFuture && !isWeekend) {
+      const amt = document.createElement('div'); amt.className = 'day-amount empty'; amt.textContent = '+ añadir'; cell.appendChild(amt);
+    }
+    
+    grid.appendChild(cell);
+  }
+
+  // Últimos 7 días con datos
+  renderRecentDays();
+}
+
+function renderRecentDays() {
+  const list = document.getElementById('recentDaysList');
+  list.textContent = '';
+  const recent = dailyRecords.filter(r => (parseFloat(r.invoiced_a)||0) + (parseFloat(r.invoiced_b)||0) > 0).slice(0, 7);
+  if (recent.length === 0) {
+    const empty = document.createElement('div'); empty.style.cssText = 'padding:24px;text-align:center;color:var(--text-faint);font-size:13px;';
+    empty.textContent = 'Sin días registrados todavía. Click en una celda del calendario para empezar.';
+    list.appendChild(empty); return;
+  }
+  recent.forEach(r => {
+    const total = (parseFloat(r.invoiced_a)||0) + (parseFloat(r.invoiced_b)||0);
+    const iva = (parseFloat(r.invoiced_a)||0) * IVA_FACTOR_A;
+    const dateObj = new Date(r.record_date + 'T00:00:00');
+    const dateStr = dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' });
+    
+    const row = document.createElement('div'); row.className = 'movement-row';
+    row.style.gridTemplateColumns = '120px 1fr 90px 90px 90px 90px';
+    row.style.cursor = 'pointer';
+    row.onclick = () => openDayModal(r.record_date);
+    
+    const d = document.createElement('span'); d.className = 'movement-date'; d.textContent = dateStr; row.appendChild(d);
+    const c = document.createElement('div'); c.style.fontSize = '12px'; c.style.color = 'var(--text-dim)';
+    c.textContent = (r.notes || '').slice(0, 60) || '—'; row.appendChild(c);
+    const a = document.createElement('span'); a.style.cssText = 'font-family:JetBrains Mono;text-align:right;font-size:12px;'; a.textContent = 'A: ' + formatMoney(r.invoiced_a||0); row.appendChild(a);
+    const b = document.createElement('span'); b.style.cssText = 'font-family:JetBrains Mono;text-align:right;font-size:12px;color:var(--amber-bright);'; b.textContent = 'B: ' + formatMoney(r.invoiced_b||0); row.appendChild(b);
+    const t = document.createElement('span'); t.style.cssText = 'font-family:JetBrains Mono;text-align:right;font-weight:600;color:var(--primary-bright);'; t.textContent = formatMoney(total); row.appendChild(t);
+    const i = document.createElement('span'); i.style.cssText = 'font-family:JetBrains Mono;text-align:right;font-size:11px;color:var(--amber-bright);'; i.textContent = 'IVA: ' + formatMoney(iva); row.appendChild(i);
+    list.appendChild(row);
+  });
+}
+
+// ============================================
+// MODAL DÍA
+// ============================================
+let dayPendingLines = [];
+
+function openDayModal(dateStr) {
+  if (!dateStr) {
+    dateStr = new Date().toISOString().split('T')[0];
+  }
+  document.getElementById('dayDate').value = dateStr;
+  
+  const dateObj = new Date(dateStr + 'T00:00:00');
+  const titleStr = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+  document.getElementById('dayModalTitle').textContent = 'Día: ' + titleStr.charAt(0).toUpperCase() + titleStr.slice(1);
+  
+  // Buscar registro existente
+  const existing = dailyRecords.find(r => r.record_date === dateStr);
+  if (existing) {
+    document.getElementById('dayRecordId').value = existing.id;
+    document.getElementById('dayInvA').value = existing.invoiced_a || '';
+    document.getElementById('dayInvB').value = existing.invoiced_b || '';
+    document.getElementById('dayCashA').value = existing.collected_a || '';
+    document.getElementById('dayCashB').value = existing.collected_b || '';
+    document.getElementById('dayDeleteBtn').style.display = '';
+  } else {
+    document.getElementById('dayRecordId').value = '';
+    ['dayInvA','dayInvB','dayCashA','dayCashB'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('dayDeleteBtn').style.display = 'none';
+  }
+  
+  // Cargar cuentas en select
+  const accSel = document.getElementById('dayCashAccount');
+  accSel.textContent = '';
+  const noOpt = document.createElement('option'); noOpt.value = ''; noOpt.textContent = '— No registrar movimiento —';
+  accSel.appendChild(noOpt);
+  accounts.filter(a => a.kind === 'operativa' || a.kind === 'efectivo').forEach(a => {
+    const o = document.createElement('option'); o.value = a.id; o.textContent = a.label + ' (···' + (a.last4 || '----') + ')';
+    accSel.appendChild(o);
+  });
+  
+  // Cargar líneas pendientes existentes de este día (si recordId existe)
+  dayPendingLines = [];
+  if (existing) {
+    const linesForDay = pendingCollections.filter(p => p.daily_record_id === existing.id);
+    linesForDay.forEach(p => dayPendingLines.push({
+      id: p.id,
+      payment_method: p.payment_method,
+      amount: p.amount,
+      regime: p.regime,
+      client_name: p.client_name || '',
+      expected_date: p.expected_date || '',
+      status: p.status,
+      _persisted: true
+    }));
+  }
+  renderPendingLines();
+  updateDaySummary();
+  
+  document.getElementById('dayModal').classList.add('open');
+}
+
+function renderPendingLines() {
+  const container = document.getElementById('pendingLines');
+  container.textContent = '';
+  dayPendingLines.forEach((line, idx) => {
+    if (line._deleted) return;
+    const row = document.createElement('div'); row.className = 'pending-line';
+    
+    const typeDiv = document.createElement('div'); typeDiv.className = 'modal-field';
+    const typeL = document.createElement('label'); typeL.textContent = 'Tipo'; typeDiv.appendChild(typeL);
+    const typeSel = document.createElement('select');
+    ['transferencia','bizum','pagare','remesa','pendiente','otro'].forEach(t => {
+      const o = document.createElement('option'); o.value = t; o.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+      if (line.payment_method === t) o.selected = true;
+      typeSel.appendChild(o);
+    });
+    typeSel.onchange = () => { line.payment_method = typeSel.value; };
+    typeDiv.appendChild(typeSel); row.appendChild(typeDiv);
+    
+    const amtDiv = document.createElement('div'); amtDiv.className = 'modal-field';
+    const amtL = document.createElement('label'); amtL.textContent = 'Importe €'; amtDiv.appendChild(amtL);
+    const amtIn = document.createElement('input'); amtIn.type = 'number'; amtIn.step = '0.01'; amtIn.min = '0.01'; amtIn.max = '9999999';
+    amtIn.value = line.amount || '';
+    amtIn.oninput = () => { line.amount = parseFloat(amtIn.value) || 0; updateDaySummary(); };
+    amtDiv.appendChild(amtIn); row.appendChild(amtDiv);
+    
+    const clientDiv = document.createElement('div'); clientDiv.className = 'modal-field';
+    const clientL = document.createElement('label'); clientL.textContent = 'Cliente (opcional) · Régimen'; clientDiv.appendChild(clientL);
+    const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;gap:6px;';
+    const clientIn = document.createElement('input'); clientIn.type = 'text'; clientIn.maxLength = 80;
+    clientIn.placeholder = 'Cliente'; clientIn.value = line.client_name || ''; clientIn.style.flex = '1';
+    clientIn.oninput = () => { line.client_name = clientIn.value; };
+    wrap.appendChild(clientIn);
+    const regSel = document.createElement('select'); regSel.style.width = '60px';
+    ['A','B'].forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; if ((line.regime||'A') === r) o.selected = true; regSel.appendChild(o); });
+    regSel.onchange = () => { line.regime = regSel.value; updateDaySummary(); };
+    wrap.appendChild(regSel);
+    clientDiv.appendChild(wrap); row.appendChild(clientDiv);
+    
+    const dateDiv = document.createElement('div'); dateDiv.className = 'modal-field';
+    const dateL = document.createElement('label'); dateL.textContent = 'Fecha esperada'; dateDiv.appendChild(dateL);
+    const dateIn = document.createElement('input'); dateIn.type = 'date'; dateIn.value = line.expected_date || '';
+    dateIn.onchange = () => { line.expected_date = dateIn.value; };
+    dateDiv.appendChild(dateIn); row.appendChild(dateDiv);
+    
+    const delBtn = document.createElement('button'); delBtn.className = 'line-delete'; delBtn.textContent = '×'; delBtn.type = 'button';
+    delBtn.onclick = () => {
+      if (line._persisted) line._deleted = true;
+      else dayPendingLines.splice(idx, 1);
+      renderPendingLines(); updateDaySummary();
+    };
+    row.appendChild(delBtn);
+    
+    container.appendChild(row);
+  });
+}
+
+function addPendingLine() {
+  const today = new Date().toISOString().split('T')[0];
+  dayPendingLines.push({
+    payment_method: 'transferencia',
+    amount: 0,
+    regime: 'A',
+    client_name: '',
+    expected_date: today,
+    status: 'pendiente'
+  });
+  renderPendingLines();
+}
+
+function updateDaySummary() {
+  const invA = parseFloat(document.getElementById('dayInvA').value) || 0;
+  const invB = parseFloat(document.getElementById('dayInvB').value) || 0;
+  const cashA = parseFloat(document.getElementById('dayCashA').value) || 0;
+  const cashB = parseFloat(document.getElementById('dayCashB').value) || 0;
+  const pendingTotal = dayPendingLines.filter(l => !l._deleted).reduce((s, l) => s + (parseFloat(l.amount)||0), 0);
+  
+  const totalFact = invA + invB;
+  const totalCobrado = cashA + cashB;
+  const iva = invA * IVA_FACTOR_A;
+  
+  document.getElementById('daySumTotal').textContent = formatMoney(totalFact);
+  document.getElementById('daySumCobrado').textContent = formatMoney(totalCobrado);
+  document.getElementById('daySumIVA').textContent = formatMoney(iva);
+}
+
+async function saveDayRecord() {
+  const recordId = document.getElementById('dayRecordId').value;
+  const date = document.getElementById('dayDate').value;
+  const invA = parseFloat(document.getElementById('dayInvA').value) || 0;
+  const invB = parseFloat(document.getElementById('dayInvB').value) || 0;
+  const cashA = parseFloat(document.getElementById('dayCashA').value) || 0;
+  const cashB = parseFloat(document.getElementById('dayCashB').value) || 0;
+  const cashAccount = document.getElementById('dayCashAccount').value || null;
+  
+  if (!date) { showToast('Falta fecha', true); return; }
+  if (invA < 0 || invB < 0 || cashA < 0 || cashB < 0) { showToast('Importes inválidos', true); return; }
+  if (invA > 9999999 || invB > 9999999) { showToast('Importes fuera de rango', true); return; }
+  if (cashA + cashB > invA + invB && (invA + invB) > 0) { 
+    if (!confirm('Has cobrado más en efectivo de lo facturado hoy. ¿Es correcto? (puede ser cobro de días anteriores)')) return; 
+  }
+  
+  let dayRow;
+  
+  if (recordId) {
+    const { data, error } = await supabaseClient.from('daily_records').update({
+      invoiced_a: invA, invoiced_b: invB, collected_a: cashA, collected_b: cashB,
+    }).eq('id', recordId).select().single();
+    if (error) { showToast(friendlyErrorMessage(error), true); return; }
+    dayRow = data;
+  } else {
+    const { data, error } = await supabaseClient.from('daily_records').insert({
+      user_id: currentUser.id, record_date: date,
+      invoiced_a: invA, invoiced_b: invB, collected_a: cashA, collected_b: cashB,
+    }).select().single();
+    if (error) { showToast(friendlyErrorMessage(error), true); return; }
+    dayRow = data;
+  }
+  
+  // Cash movement (si hay efectivo y cuenta destino)
+  const totalCash = cashA + cashB;
+  if (totalCash > 0 && cashAccount && !dayRow.cash_movement_id) {
+    const { data: mov, error: movErr } = await supabaseClient.from('movements').insert({
+      user_id: currentUser.id,
+      mov_date: date,
+      mov_type: 'ingreso',
+      dest_account_id: cashAccount,
+      amount: totalCash,
+      concept: 'Cobro efectivo día ' + date + (cashA > 0 && cashB > 0 ? ' (A:' + cashA + ' + B:' + cashB + ')' : ''),
+    }).select().single();
+    
+    if (!movErr && mov) {
+      await supabaseClient.from('daily_records').update({ 
+        cash_account_id: cashAccount, 
+        cash_movement_id: mov.id 
+      }).eq('id', dayRow.id);
+      
+      // Actualizar saldo cuenta
+      const acc = accounts.find(a => a.id === cashAccount);
+      if (acc) {
+        const newBal = parseFloat(acc.balance) + totalCash;
+        await supabaseClient.from('accounts').update({ balance: newBal }).eq('id', cashAccount);
+        acc.balance = newBal;
+      }
+      movements.unshift(mov);
+    }
+  }
+  
+  // Líneas pendientes
+  for (const line of dayPendingLines) {
+    if (line._deleted && line.id) {
+      // Borrar
+      await supabaseClient.from('pending_collections').delete().eq('id', line.id);
+    } else if (line._persisted && line.id) {
+      // Actualizar
+      await supabaseClient.from('pending_collections').update({
+        amount: line.amount,
+        payment_method: line.payment_method,
+        regime: line.regime || 'A',
+        client_name: line.client_name || null,
+        expected_date: line.expected_date || null,
+      }).eq('id', line.id);
+    } else if (!line._deleted && line.amount > 0) {
+      // Nueva
+      await supabaseClient.from('pending_collections').insert({
+        user_id: currentUser.id,
+        invoice_date: date,
+        daily_record_id: dayRow.id,
+        amount: line.amount,
+        regime: line.regime || 'A',
+        payment_method: line.payment_method,
+        client_name: line.client_name || null,
+        expected_date: line.expected_date || null,
+        status: 'pendiente',
+      });
+    }
+  }
+  
+  await loadDailyRecords();
+  await loadPendingCollections();
+  await loadAccounts();
+  
+  closeModal('dayModal');
+  renderCalendar();
+  renderAccounts(); renderKPIs(); renderAlerts();
+  updateSyncTime();
+  showToast('Día guardado');
+}
+
+async function deleteDayRecord() {
+  const recordId = document.getElementById('dayRecordId').value;
+  if (!recordId) return;
+  if (!confirm('¿Eliminar este día? Se borrarán los pendientes asociados (los cobros efectivos ya registrados como movimientos NO se revierten).')) return;
+  
+  // Borrar pendientes asociados
+  await supabaseClient.from('pending_collections').delete().eq('daily_record_id', recordId);
+  // Borrar día
+  const { error } = await supabaseClient.from('daily_records').delete().eq('id', recordId);
+  if (error) { showToast(friendlyErrorMessage(error), true); return; }
+  
+  await loadDailyRecords();
+  await loadPendingCollections();
+  closeModal('dayModal');
+  renderCalendar();
+  showToast('Día eliminado');
+}
+
+// ============================================
+// COBROS PENDIENTES (tab)
+// ============================================
+function filterPending(filter) {
+  pendingFilter = filter;
+  document.querySelectorAll('#pendingFilters .filter-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === filter));
+  renderPending();
+}
+
+function renderPending() {
+  // Métricas
+  const today = new Date(); today.setHours(0,0,0,0);
+  const endOfWeek = new Date(today); endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
+  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+  const pendientes = pendingCollections.filter(p => p.status === 'pendiente');
+  const totalPendiente = pendientes.reduce((s, p) => s + parseFloat(p.amount||0), 0);
+  
+  const vencenSemana = pendientes.filter(p => {
+    if (!p.expected_date) return false;
+    const d = new Date(p.expected_date + 'T00:00:00');
+    return d >= today && d <= endOfWeek;
+  }).reduce((s,p) => s + parseFloat(p.amount||0), 0);
+  
+  const vencenMes = pendientes.filter(p => {
+    if (!p.expected_date) return false;
+    const d = new Date(p.expected_date + 'T00:00:00');
+    return d >= today && d <= endOfMonth;
+  }).reduce((s,p) => s + parseFloat(p.amount||0), 0);
+  
+  const overdue = pendientes.filter(p => {
+    if (!p.expected_date) return false;
+    return new Date(p.expected_date + 'T00:00:00') < today;
+  }).reduce((s,p) => s + parseFloat(p.amount||0), 0);
+  
+  // Antigüedad media
+  let antigSum = 0, antigCount = 0;
+  pendientes.forEach(p => {
+    const dias = Math.floor((today - new Date(p.invoice_date + 'T00:00:00')) / 86400000);
+    if (dias >= 0) { antigSum += dias; antigCount++; }
+  });
+  const antigMedia = antigCount > 0 ? Math.round(antigSum / antigCount) : 0;
+  
+  const metricsEl = document.getElementById('pendingMetrics');
+  metricsEl.textContent = '';
+  const items = [
+    { label: 'Total pendiente', value: formatMoney(totalPendiente), sub: pendientes.length + ' cobros', cls: 'amber' },
+    { label: 'Vencen esta semana', value: formatMoney(vencenSemana), sub: '', cls: '' },
+    { label: 'Vencen este mes', value: formatMoney(vencenMes), sub: '', cls: '' },
+    { label: 'Vencidos (overdue)', value: formatMoney(overdue), sub: '', cls: overdue > 0 ? 'red' : '' },
+    { label: 'Antigüedad media', value: antigMedia + ' días', sub: '', cls: antigMedia > 30 ? 'amber' : '' },
+  ];
+  items.forEach(it => {
+    const d = document.createElement('div'); d.className = 'kpi';
+    const l = document.createElement('div'); l.className = 'kpi-label'; l.textContent = it.label; d.appendChild(l);
+    const v = document.createElement('div'); v.className = 'kpi-value ' + it.cls; v.textContent = it.value; d.appendChild(v);
+    const s = document.createElement('div'); s.className = 'kpi-sub'; s.textContent = it.sub; d.appendChild(s);
+    metricsEl.appendChild(d);
+  });
+  
+  // Tabla
+  const table = document.getElementById('pendingTable');
+  table.textContent = '';
+  
+  // Header
+  const header = document.createElement('div'); header.className = 'pending-row header';
+  ['Fact.', 'Cliente / Tipo', 'Importe', 'Esperado', 'Estado', ''].forEach(t => {
+    const s = document.createElement('div'); s.textContent = t; header.appendChild(s);
+  });
+  table.appendChild(header);
+  
+  // Filtrar
+  let list = pendingCollections.slice();
+  if (pendingFilter === 'pendiente') list = list.filter(p => p.status === 'pendiente');
+  else if (pendingFilter === 'cobrado') list = list.filter(p => p.status === 'cobrado');
+  else if (pendingFilter === 'incidencia') list = list.filter(p => p.status === 'incidencia');
+  else if (pendingFilter === 'overdue') {
+    list = list.filter(p => p.status === 'pendiente' && p.expected_date && new Date(p.expected_date + 'T00:00:00') < today);
+  } else if (pendingFilter === 'thisweek') {
+    list = list.filter(p => p.status === 'pendiente' && p.expected_date && new Date(p.expected_date + 'T00:00:00') <= endOfWeek);
+  }
+  
+  if (list.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding:24px;text-align:center;color:var(--text-faint);font-size:13px;';
+    empty.textContent = 'Sin cobros pendientes en esta vista.';
+    table.appendChild(empty);
+    return;
+  }
+  
+  list.forEach(p => {
+    const row = document.createElement('div'); row.className = 'pending-row ' + p.status;
+    const isOverdue = p.status === 'pendiente' && p.expected_date && new Date(p.expected_date + 'T00:00:00') < today;
+    if (isOverdue) row.classList.add('overdue');
+    
+    const dateSpan = document.createElement('span'); dateSpan.className = 'pending-date';
+    dateSpan.textContent = new Date(p.invoice_date + 'T00:00:00').toLocaleDateString('es-ES', {day:'2-digit',month:'short'});
+    row.appendChild(dateSpan);
+    
+    const clientDiv = document.createElement('div');
+    const clientText = document.createElement('div'); clientText.textContent = (p.client_name || '—') + ' · ' + (p.regime||'A');
+    clientText.style.fontSize = '13px';
+    clientDiv.appendChild(clientText);
+    const typeSpan = document.createElement('span'); typeSpan.className = 'pending-type'; typeSpan.textContent = p.payment_method;
+    typeSpan.style.display = 'inline-block'; typeSpan.style.marginTop = '4px';
+    clientDiv.appendChild(typeSpan);
+    row.appendChild(clientDiv);
+    
+    const amt = document.createElement('span'); amt.className = 'pending-amount'; amt.textContent = formatMoney(p.amount); row.appendChild(amt);
+    
+    const exp = document.createElement('span'); exp.className = 'pending-date';
+    if (p.expected_date) {
+      exp.textContent = new Date(p.expected_date + 'T00:00:00').toLocaleDateString('es-ES', {day:'2-digit',month:'short'});
+      if (isOverdue) { exp.style.color = 'var(--red-bright)'; exp.style.fontWeight = '600'; }
+    } else { exp.textContent = '—'; }
+    row.appendChild(exp);
+    
+    const status = document.createElement('span'); status.className = 'pending-type';
+    if (p.status === 'cobrado') { status.textContent = '✓ COBRADO'; status.style.color = 'var(--primary-bright)'; status.style.background = 'rgba(110,226,197,0.15)'; }
+    else if (p.status === 'incidencia') { status.textContent = '⚠ INCIDENCIA'; status.style.color = 'var(--red-bright)'; status.style.background = 'rgba(224,117,96,0.15)'; }
+    else { status.textContent = 'PENDIENTE'; }
+    row.appendChild(status);
+    
+    const actions = document.createElement('div'); actions.className = 'pending-actions';
+    if (p.status === 'pendiente') {
+      const cobBtn = document.createElement('button'); cobBtn.className = 'btn-cobrar'; cobBtn.title = 'Marcar cobrado'; cobBtn.textContent = '✓';
+      cobBtn.onclick = (e) => { e.stopPropagation(); openCollectModal(p); };
+      actions.appendChild(cobBtn);
+      const incBtn = document.createElement('button'); incBtn.className = 'btn-incidencia'; incBtn.title = 'Marcar incidencia'; incBtn.textContent = '⚠';
+      incBtn.onclick = async (e) => { e.stopPropagation(); await markIncidencia(p.id); };
+      actions.appendChild(incBtn);
+    } else {
+      const undoBtn = document.createElement('button'); undoBtn.title = 'Volver a pendiente'; undoBtn.textContent = '↺';
+      undoBtn.onclick = async (e) => { e.stopPropagation(); await undoStatus(p); };
+      actions.appendChild(undoBtn);
+    }
+    row.appendChild(actions);
+    
+    table.appendChild(row);
+  });
+}
+
+function openCollectModal(p) {
+  document.getElementById('collectId').value = p.id;
+  document.getElementById('collectInfo').textContent = 
+    formatMoney(p.amount) + ' · ' + (p.client_name || 'sin cliente') + ' · ' + p.payment_method;
+  document.getElementById('collectDate').value = new Date().toISOString().split('T')[0];
+  
+  const accSel = document.getElementById('collectAccount');
+  accSel.textContent = '';
+  accounts.filter(a => a.kind === 'operativa' || a.kind === 'efectivo' || a.kind === 'colchon').forEach(a => {
+    const o = document.createElement('option'); o.value = a.id; o.textContent = a.label + ' (···' + (a.last4 || '----') + ')';
+    accSel.appendChild(o);
+  });
+  
+  document.getElementById('collectModal').classList.add('open');
+}
+
+async function confirmCollect() {
+  const id = document.getElementById('collectId').value;
+  const date = document.getElementById('collectDate').value;
+  const accountId = document.getElementById('collectAccount').value;
+  
+  if (!date || !accountId) { showToast('Faltan datos', true); return; }
+  
+  const p = pendingCollections.find(x => x.id === id);
+  if (!p) return;
+  
+  // Crear movimiento
+  const { data: mov, error: movErr } = await supabaseClient.from('movements').insert({
+    user_id: currentUser.id,
+    mov_date: date,
+    mov_type: 'ingreso',
+    dest_account_id: accountId,
+    amount: p.amount,
+    concept: 'Cobro ' + p.payment_method + (p.client_name ? ' · ' + p.client_name : '') + ' (fact ' + p.invoice_date + ')',
+  }).select().single();
+  
+  if (movErr) { showToast(friendlyErrorMessage(movErr), true); return; }
+  
+  // Actualizar saldo cuenta
+  const acc = accounts.find(a => a.id === accountId);
+  if (acc) {
+    const newBal = parseFloat(acc.balance) + parseFloat(p.amount);
+    await supabaseClient.from('accounts').update({ balance: newBal }).eq('id', accountId);
+    acc.balance = newBal;
+  }
+  
+  // Marcar como cobrado
+  await supabaseClient.from('pending_collections').update({
+    status: 'cobrado',
+    collected_date: date,
+    collected_account_id: accountId,
+    collected_movement_id: mov.id,
+  }).eq('id', id);
+  
+  movements.unshift(mov);
+  await loadPendingCollections();
+  closeModal('collectModal');
+  renderPending();
+  renderAccounts(); renderKPIs(); renderAlerts();
+  updateSyncTime();
+  showToast('Cobro registrado');
+}
+
+async function markIncidencia(id) {
+  const notas = prompt('Describe la incidencia (impago, devolución, etc):');
+  if (notas === null) return;
+  await supabaseClient.from('pending_collections').update({ status: 'incidencia', notes: notas }).eq('id', id);
+  await loadPendingCollections();
+  renderPending();
+  showToast('Marcado como incidencia');
+}
+
+async function undoStatus(p) {
+  if (!confirm('¿Volver a marcar como pendiente?\n\nNota: si era cobrado, el movimiento y saldo NO se revierten automáticamente.')) return;
+  await supabaseClient.from('pending_collections').update({
+    status: 'pendiente',
+    collected_date: null,
+    collected_account_id: null,
+    collected_movement_id: null,
+  }).eq('id', p.id);
+  await loadPendingCollections();
+  renderPending();
+  showToast('Vuelto a pendiente');
+}
+
+// ============================================
+// Extender loadAllData
+// ============================================
+const _origLoadAllData = loadAllData;
+loadAllData = async function() {
+  try {
+    await Promise.all([loadAccounts(), loadMovements(), loadDailyRecords(), loadPendingCollections()]);
+    renderAll();
+    updateSyncTime();
+  } catch (err) {
+    showToast('Error al cargar datos', true);
+    console.error(err);
+  }
+};
 
 checkSession();
 
