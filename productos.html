@@ -116,12 +116,18 @@ tbody tr.inactive td { opacity:0.45; }
 
 /* Variantes dentro del modal */
 .variants-section { margin-bottom:20px; }
-.variants-section-title { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); font-weight:600; margin-bottom:10px; }
-.variant-row { display:grid; grid-template-columns:auto 1fr auto auto; gap:12px; align-items:center; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:6px; margin-bottom:6px; }
+.variants-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.variants-section-title { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); font-weight:600; }
+.btn-add-variant { background:transparent; border:1px solid var(--primary-dim); color:var(--primary); font-family:'Inter Tight',sans-serif; font-size:11px; font-weight:600; padding:5px 10px; cursor:pointer; border-radius:5px; }
+.btn-add-variant:hover { background:rgba(110,226,197,0.1); }
+.variant-row { display:grid; grid-template-columns:auto 1fr auto auto auto; gap:12px; align-items:center; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:6px; margin-bottom:6px; cursor:pointer; transition:all 0.1s; }
+.variant-row:hover { border-color:var(--primary-dim); background:var(--bg-elev); }
 .variant-code { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--primary); }
-.variant-name { font-size:12px; color:var(--text-dim); }
+.variant-name { font-size:12px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .variant-cost { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text); }
 .variant-margin { font-family:'JetBrains Mono',monospace; font-size:11px; padding:2px 8px; border-radius:4px; }
+.variant-edit-ind { font-size:11px; color:var(--text-faint); }
+.variant-row:hover .variant-edit-ind { color:var(--primary); }
 .variants-empty { font-size:12px; color:var(--text-faint); font-style:italic; padding:8px 0; }
 
 .modal-actions { display:flex; justify-content:space-between; align-items:center; padding-top:16px; border-top:1px solid var(--border); gap:12px; }
@@ -199,7 +205,7 @@ tbody tr.inactive td { opacity:0.45; }
     </table>
     <div class="pager">
       <span class="pager-count" id="pagerCount">—</span>
-      <span class="pager-count" id="versionTag">v11</span>
+      <span class="pager-count" id="versionTag">v12</span>
     </div>
   </div>
 </main>
@@ -267,9 +273,12 @@ tbody tr.inactive td { opacity:0.45; }
         </div>
       </div>
 
-      <!-- Variantes (solo en edición de un padre con variantes) -->
+      <!-- Variantes (solo en edición de un padre) -->
       <div class="variants-section" id="variantsSection" style="display:none;">
-        <div class="variants-section-title">Variantes de este producto</div>
+        <div class="variants-section-header">
+          <div class="variants-section-title">Variantes de este producto</div>
+          <button type="button" class="btn-add-variant" id="btnAddVariant">+ Añadir variante</button>
+        </div>
         <div id="variantsList"></div>
       </div>
 
@@ -375,7 +384,7 @@ function updateHeaderStats(){
   // margen medio ponderado simple de los activos con margen válido
   const withMargin = parentProducts.filter(p => p.is_active && p._margin !== null);
   const avg = withMargin.length ? (withMargin.reduce((s,p)=>s+p._margin,0) / withMargin.length) : 0;
-  $('headerStats').textContent = `${total} productos · ${totalAll} con variantes · margen medio ${avg.toFixed(1)}% · v11`;
+  $('headerStats').textContent = `${total} productos · ${totalAll} con variantes · margen medio ${avg.toFixed(1)}% · v12`;
 }
 
 function applyFilters(){
@@ -457,8 +466,11 @@ function openModal(id){
   const p = allProducts.find(x => x.id === id);
   if (!p) return;
   currentEditId = id;
-  $('modalTitle').innerHTML = 'Editar <em>producto</em>';
-  $('modalSubtitle').textContent = p.code + ' · ' + (p.name||'');
+  const esVariante = !!p.parent_code;
+  $('modalTitle').innerHTML = esVariante ? 'Editar <em>variante</em>' : 'Editar <em>producto</em>';
+  $('modalSubtitle').textContent = esVariante
+    ? (p.code + ' · variante de ' + p.parent_code)
+    : (p.code + ' · ' + (p.name||''));
   const f = $('productForm');
   f.code.value = p.code || '';
   f.name.value = p.name || '';
@@ -477,19 +489,31 @@ function openModal(id){
 
 function renderVariants(p){
   const section = $('variantsSection');
+  // Solo mostrar la sección de variantes si el producto NO es a su vez una variante
+  if (p.parent_code){ section.style.display = 'none'; return; }
   const variants = allProducts.filter(v => v.parent_code === p.code);
-  if (variants.length === 0){ section.style.display = 'none'; return; }
   section.style.display = 'block';
+  // guardar el code del padre actual para el botón "+ Añadir variante"
+  $('btnAddVariant').dataset.parentCode = p.code;
+  if (variants.length === 0){
+    $('variantsList').innerHTML = '<div class="variants-empty">Este producto aún no tiene variantes. Pulsa "+ Añadir variante" para crear una.</div>';
+    return;
+  }
   $('variantsList').innerHTML = variants.map(v => {
     const m = calcMargin(v.current_price, v.current_cost);
     const mTxt = m===null ? '—' : m.toFixed(1).replace('.',',')+'%';
-    return `<div class="variant-row">
+    return `<div class="variant-row" data-variant-id="${v.id}">
       <span class="variant-code">${escapeHtml(v.code)}</span>
       <span class="variant-name">${escapeHtml(v.name)}</span>
       <span class="variant-cost">${fmtCost(v.current_cost)}</span>
       <span class="variant-margin ${marginClass(m)}">${mTxt}</span>
+      <span class="variant-edit-ind">editar →</span>
     </div>`;
   }).join('');
+  // clic en variante → editarla
+  $('variantsList').querySelectorAll('.variant-row[data-variant-id]').forEach(row => {
+    row.addEventListener('click', () => openModal(row.dataset.variantId));
+  });
 }
 
 function openNewModal(){
@@ -509,6 +533,31 @@ function openNewModal(){
 }
 
 function closeModal(){ $('modal').classList.remove('active'); currentEditId = null; }
+
+function openNewVariantModal(parentCode){
+  const parent = parentProducts.find(p => p.code === parentCode);
+  if (!parent) return;
+  currentEditId = null;
+  $('modalTitle').innerHTML = 'Nueva <em>variante</em>';
+  $('modalSubtitle').textContent = 'variante de ' + parentCode + ' · ' + (parent.name||'');
+  const f = $('productForm');
+  f.reset();
+  // hereda del padre: precio, IVA, nombre base; coste a 0 para que lo metas
+  f.code.value = parentCode + '-';
+  f.name.value = parent.name || '';
+  f.current_price.value = parent.current_price ?? '';
+  f.current_cost.value = '';
+  f.reference_cost.value = '';
+  f.parent_code.value = parentCode;
+  f.vat_rate.value = String(parent.vat_rate || 21);
+  $('cbIsActive').checked = true;
+  $('btnDelete').style.display = 'none';
+  $('variantsSection').style.display = 'none';  // una variante no tiene sub-variantes
+  updateMarginPreview();
+  $('modal').classList.add('active');
+  // foco en el código para que completes el sufijo
+  setTimeout(() => { f.code.focus(); f.code.setSelectionRange(f.code.value.length, f.code.value.length); }, 50);
+}
 
 async function saveProduct(e){
   e.preventDefault();
@@ -591,6 +640,10 @@ function bindEvents(){
     });
   });
   $('btnNewProduct').addEventListener('click', openNewModal);
+  $('btnAddVariant').addEventListener('click', () => {
+    const pc = $('btnAddVariant').dataset.parentCode;
+    if (pc) openNewVariantModal(pc);
+  });
   $('modalClose').addEventListener('click', closeModal);
   $('btnCancel').addEventListener('click', closeModal);
   $('btnDelete').addEventListener('click', deleteProduct);
