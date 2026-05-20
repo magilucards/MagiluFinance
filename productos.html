@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Productos · Magilu Finance</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#050912; --bg-elev:#0b1326; --bg-card:#11192e; --border:#1f2a44; --border-strong:#2c3a5c;
+  --text:#e2ebf2; --text-dim:#8a9bb2; --text-faint:#4f5d76;
+  --primary:#6ee2c5; --primary-dim:#4ab9a0; --primary-bright:#8fefd5;
+  --accent:#2a4670; --accent-bright:#3f6299;
+  --amber:#d4a04a; --amber-bright:#e8b85a; --red:#e07560; --red-bright:#ee8a76;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:var(--bg); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+
+.loading-screen { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:1000; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+
+.app-header { background:var(--bg-elev); border-bottom:1px solid var(--border); padding:20px 32px; position:sticky; top:0; z-index:10; }
+.header-inner { display:flex; align-items:center; gap:24px; max-width:1600px; margin:0 auto; }
+.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-dim); text-decoration:none; font-size:12px; padding:7px 14px; border:1px solid var(--border-strong); border-radius:6px; font-family:'JetBrains Mono',monospace; letter-spacing:0.04em; }
+.back-link:hover { border-color:var(--primary); color:var(--primary); }
+h1 { font-family:'Fraunces',serif; font-size:28px; font-weight:500; letter-spacing:-0.01em; }
+h1 em { font-style:italic; color:var(--primary); font-weight:400; }
+.subtitle { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.1em; }
+.btn-primary { background:var(--primary-dim); border:1px solid var(--primary-dim); color:var(--bg); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:600; padding:9px 16px; cursor:pointer; border-radius:6px; margin-left:auto; }
+.btn-primary:hover { background:var(--primary); }
+.btn-secondary { background:var(--bg-card); border:1px solid var(--border-strong); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:500; padding:9px 16px; cursor:pointer; border-radius:6px; }
+.btn-secondary:hover { border-color:var(--primary-dim); color:var(--primary); }
+.btn-danger { background:transparent; border:1px solid var(--red); color:var(--red-bright); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:500; padding:9px 16px; cursor:pointer; border-radius:6px; }
+.btn-danger:hover { background:rgba(224,117,96,0.1); }
+
+.filters { background:var(--bg-elev); border-bottom:1px solid var(--border); padding:14px 32px; }
+.filters-inner { max-width:1600px; margin:0 auto; display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+.search-box { flex:1; min-width:280px; display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--border-strong); border-radius:6px; padding:8px 12px; }
+.search-box:focus-within { border-color:var(--primary); }
+.search-box input { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; }
+.search-box input::placeholder { color:var(--text-faint); }
+.filter-group { display:flex; gap:4px; align-items:center; }
+.filter-label { font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.12em; font-weight:600; margin-right:6px; }
+.filter-btn { background:var(--bg); border:1px solid var(--border); padding:6px 11px; border-radius:5px; font-family:'Inter Tight',sans-serif; font-size:12px; cursor:pointer; color:var(--text-dim); }
+.filter-btn:hover { border-color:var(--primary-dim); color:var(--text); }
+.filter-btn.active { background:var(--primary-dim); color:var(--bg); border-color:var(--primary-dim); font-weight:600; }
+
+.main-content { max-width:1600px; margin:0 auto; padding:24px 32px; }
+.table-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead { background:var(--bg-elev); border-bottom:1px solid var(--border-strong); }
+th { text-align:left; padding:12px 14px; font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-faint); white-space:nowrap; user-select:none; }
+th.num, td.num { text-align:right; }
+th.sortable { cursor:pointer; }
+th.sortable:hover { color:var(--primary); }
+th.sortable .sort-ind { font-size:9px; margin-left:4px; opacity:0.5; }
+th.sortable.sorted .sort-ind { opacity:1; color:var(--primary); }
+td { padding:12px 14px; border-bottom:1px solid var(--border); white-space:nowrap; }
+tbody tr { cursor:pointer; transition:background 0.1s; }
+tbody tr:hover { background:var(--bg-elev); }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr.inactive td { opacity:0.45; }
+.empty-state { padding:60px 24px; text-align:center; color:var(--text-faint); }
+.empty-state-title { font-size:16px; margin-bottom:8px; color:var(--text-dim); }
+.empty-state-sub { font-size:12px; font-family:'JetBrains Mono',monospace; }
+
+.code { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--primary); font-weight:500; }
+.pname { font-weight:500; color:var(--text); }
+.variants-tag { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text-faint); background:var(--bg-elev); border:1px solid var(--border); padding:2px 7px; border-radius:10px; margin-left:8px; }
+.price { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text); }
+.cost { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text-dim); }
+.margin { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; padding:3px 10px; border-radius:4px; display:inline-block; }
+.margin-high { background:rgba(110,226,197,0.12); color:var(--primary); }
+.margin-mid { background:rgba(63,98,153,0.18); color:var(--accent-bright); }
+.margin-low { background:rgba(224,117,96,0.12); color:var(--red-bright); }
+.dot { display:inline-block; width:7px; height:7px; border-radius:50%; }
+.dot-active { background:var(--primary); box-shadow:0 0 8px rgba(110,226,197,0.4); }
+.dot-inactive { background:var(--text-faint); }
+.vat { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); }
+
+.pager { background:var(--bg-elev); border-top:1px solid var(--border); padding:12px 18px; display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--text-dim); }
+.pager-count { font-family:'JetBrains Mono',monospace; color:var(--text-faint); font-size:11px; }
+
+/* MODAL */
+.modal-overlay { position:fixed; inset:0; background:rgba(5,9,18,0.85); display:none; align-items:flex-start; justify-content:center; z-index:100; padding:40px 20px; overflow-y:auto; }
+.modal-overlay.active { display:flex; }
+.modal { background:var(--bg-elev); border:1px solid var(--border-strong); border-radius:10px; width:100%; max-width:680px; padding:28px; box-shadow:0 30px 80px rgba(0,0,0,0.5); }
+.modal-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border); }
+.modal-title { font-family:'Fraunces',serif; font-size:22px; font-weight:500; }
+.modal-title em { font-style:italic; color:var(--primary); font-weight:400; }
+.modal-subtitle { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:4px; letter-spacing:0.04em; }
+.modal-close { background:none; border:none; color:var(--text-dim); font-size:24px; cursor:pointer; padding:0 4px; line-height:1; }
+.modal-close:hover { color:var(--red-bright); }
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; margin-bottom:20px; }
+.form-field { display:flex; flex-direction:column; gap:4px; }
+.form-field.full { grid-column:1 / -1; }
+.form-field label { font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-faint); font-weight:600; }
+.form-field input, .form-field select, .form-field textarea { background:var(--bg); border:1px solid var(--border-strong); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:13px; padding:9px 12px; border-radius:5px; outline:none; }
+.form-field input.mono { font-family:'JetBrains Mono',monospace; }
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color:var(--primary); }
+.form-field textarea { resize:vertical; min-height:50px; }
+.form-field select option { background:var(--bg-card); color:var(--text); }
+
+/* Margen calculado en vivo dentro del modal */
+.margin-preview { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:12px 16px; }
+.margin-preview-label { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); font-weight:600; }
+.margin-preview-value { font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:600; }
+.margin-preview-detail { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); margin-top:2px; }
+
+.checkbox-row { display:flex; gap:24px; margin-bottom:20px; padding:14px 16px; background:var(--bg); border-radius:6px; border:1px solid var(--border); }
+.checkbox-row label { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; }
+.checkbox-row input[type=checkbox] { accent-color:var(--primary); width:16px; height:16px; }
+
+/* Variantes dentro del modal */
+.variants-section { margin-bottom:20px; }
+.variants-section-title { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); font-weight:600; margin-bottom:10px; }
+.variant-row { display:grid; grid-template-columns:auto 1fr auto auto; gap:12px; align-items:center; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:6px; margin-bottom:6px; }
+.variant-code { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--primary); }
+.variant-name { font-size:12px; color:var(--text-dim); }
+.variant-cost { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text); }
+.variant-margin { font-family:'JetBrains Mono',monospace; font-size:11px; padding:2px 8px; border-radius:4px; }
+.variants-empty { font-size:12px; color:var(--text-faint); font-style:italic; padding:8px 0; }
+
+.modal-actions { display:flex; justify-content:space-between; align-items:center; padding-top:16px; border-top:1px solid var(--border); gap:12px; }
+.modal-actions .right { display:flex; gap:10px; margin-left:auto; }
+
+.toast { position:fixed; bottom:24px; right:24px; background:var(--bg-card); border:1px solid var(--border-strong); border-left:3px solid var(--primary); border-radius:6px; padding:12px 18px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,0.4); z-index:200; opacity:0; transform:translateY(10px); transition:all 0.2s; }
+.toast.show { opacity:1; transform:translateY(0); }
+.toast.error { border-left-color:var(--red); }
+.toast.error .toast-icon { color:var(--red-bright); }
+.toast-icon { color:var(--primary); margin-right:6px; }
+
+@media (max-width:768px) {
+  .app-header { padding:14px 16px; }
+  .header-inner { gap:12px; flex-wrap:wrap; }
+  h1 { font-size:22px; }
+  .main-content { padding:16px; }
+  .form-grid { grid-template-columns:1fr; }
+  th:nth-child(7), td:nth-child(7) { display:none; }
+}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">cargando productos…</div>
+
+<div id="app" style="display:none;">
+
+<header class="app-header">
+  <div class="header-inner">
+    <a href="./index.html" class="back-link">← Inicio</a>
+    <div>
+      <h1>Prod<em>uctos</em></h1>
+      <div class="subtitle" id="headerStats">— · —</div>
+    </div>
+    <button class="btn-primary" id="btnNewProduct">+ Nuevo producto</button>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="filters-inner">
+    <div class="search-box">
+      <span style="color:var(--text-faint)">⌕</span>
+      <input type="text" id="searchInput" placeholder="buscar por código o nombre...">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Estado</span>
+      <button class="filter-btn active" data-filter="status" data-value="active">Activos</button>
+      <button class="filter-btn" data-filter="status" data-value="inactive">Inactivos</button>
+      <button class="filter-btn" data-filter="status" data-value="all">Todos</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Margen</span>
+      <button class="filter-btn active" data-filter="margin" data-value="all">Todos</button>
+      <button class="filter-btn" data-filter="margin" data-value="high">Alto &gt;70%</button>
+      <button class="filter-btn" data-filter="margin" data-value="low">Bajo &lt;50%</button>
+    </div>
+  </div>
+</div>
+
+<main class="main-content">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30px;"></th>
+          <th class="sortable" data-sort="code">Código <span class="sort-ind">↕</span></th>
+          <th class="sortable" data-sort="name">Producto <span class="sort-ind">↕</span></th>
+          <th class="num sortable" data-sort="current_price">Precio venta <span class="sort-ind">↕</span></th>
+          <th class="num sortable" data-sort="current_cost">Coste <span class="sort-ind">↕</span></th>
+          <th class="num sortable sorted" data-sort="margin">Margen <span class="sort-ind">↓</span></th>
+          <th class="num">IVA</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="pager">
+      <span class="pager-count" id="pagerCount">—</span>
+      <span class="pager-count" id="versionTag">v11</span>
+    </div>
+  </div>
+</main>
+
+</div><!-- /#app -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">Editar <em>producto</em></div>
+        <div class="modal-subtitle" id="modalSubtitle">—</div>
+      </div>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+
+    <form id="productForm" autocomplete="off">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Código *</label>
+          <input type="text" name="code" class="mono" required maxlength="30">
+        </div>
+        <div class="form-field">
+          <label>IVA</label>
+          <select name="vat_rate">
+            <option value="21">21%</option>
+            <option value="10">10%</option>
+            <option value="4">4%</option>
+            <option value="0">0%</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <label>Nombre *</label>
+          <input type="text" name="name" required>
+        </div>
+        <div class="form-field">
+          <label>Precio venta (€)</label>
+          <input type="number" name="current_price" class="mono" step="0.0001" min="0" id="inputPrice">
+        </div>
+        <div class="form-field">
+          <label>Coste (€)</label>
+          <input type="number" name="current_cost" class="mono" step="0.0001" min="0" id="inputCost">
+        </div>
+        <div class="form-field">
+          <label>Coste de referencia (€)</label>
+          <input type="number" name="reference_cost" class="mono" step="0.0001" min="0">
+        </div>
+        <div class="form-field">
+          <label>Producto padre (code)</label>
+          <input type="text" name="parent_code" class="mono" placeholder="vacío = es padre">
+        </div>
+
+        <div class="margin-preview">
+          <div>
+            <div class="margin-preview-label">Margen calculado</div>
+            <div class="margin-preview-detail" id="marginDetail">—</div>
+          </div>
+          <div class="margin-preview-value" id="marginValue">—</div>
+        </div>
+
+        <div class="form-field full">
+          <label>Notas</label>
+          <textarea name="notes" rows="2"></textarea>
+        </div>
+      </div>
+
+      <!-- Variantes (solo en edición de un padre con variantes) -->
+      <div class="variants-section" id="variantsSection" style="display:none;">
+        <div class="variants-section-title">Variantes de este producto</div>
+        <div id="variantsList"></div>
+      </div>
+
+      <div class="checkbox-row">
+        <label><input type="checkbox" name="is_active" id="cbIsActive"> Producto activo</label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-danger" id="btnDelete" style="display:none;">Eliminar</button>
+        <div class="right">
+          <button type="button" class="btn-secondary" id="btnCancel">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
+  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer">
+</script>
+
+<script>
+'use strict';
+
+const SUPABASE_URL = 'https://bgrsjftxwuduvlglfpky.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3Uhr0TMJEtq4_9CJc1D19Q_nfrkRq_2';
+
+if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+  document.getElementById('loadingScreen').innerHTML = '<div style="color:#ee8a76;text-align:center;padding:24px;max-width:500px;">No se pudo cargar Supabase SDK. Recarga la página.</div>';
+  throw new Error('Supabase SDK no disponible');
+}
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+});
+
+let currentUser = null;
+let allProducts = [];      // todos (padres + variantes)
+let parentProducts = [];   // solo padres
+let filteredProducts = [];
+const state = {
+  search: '', status: 'active', margin: 'all',
+  sortBy: 'margin', sortDir: 'desc'
+};
+let currentEditId = null;
+
+function $(id){ return document.getElementById(id); }
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+function fmtPrice(n){ return new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n) + ' €'; }
+function fmtCost(n){ return new Intl.NumberFormat('es-ES',{minimumFractionDigits:4,maximumFractionDigits:4}).format(n) + ' €'; }
+
+function calcMargin(price, cost){
+  price = parseFloat(price)||0; cost = parseFloat(cost)||0;
+  if (price <= 0) return null;
+  return Math.round(((price - cost) / price) * 1000) / 10;
+}
+function marginClass(m){
+  if (m === null) return '';
+  if (m >= 70) return 'margin-high';
+  if (m >= 50) return 'margin-mid';
+  return 'margin-low';
+}
+
+function showToast(msg, isError=false){
+  const t = $('toast');
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.innerHTML = (isError ? '<span class="toast-icon">⚠</span>' : '<span class="toast-icon">✓</span>') + escapeHtml(msg);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+async function checkAuth(){
+  const { data:{session}, error } = await sb.auth.getSession();
+  if (error || !session){ window.location.href = './tesoreria.html'; return false; }
+  currentUser = session.user;
+  return true;
+}
+
+async function loadProducts(){
+  const { data, error } = await sb.from('products').select('*').order('current_price',{ascending:false});
+  if (error){ showToast('Error cargando productos: '+error.message, true); console.error(error); return; }
+  allProducts = data || [];
+  parentProducts = allProducts.filter(p => !p.parent_code);
+  // adjuntar margen y nº de variantes a cada padre
+  parentProducts.forEach(p => {
+    p._margin = calcMargin(p.current_price, p.current_cost);
+    p._variants = allProducts.filter(v => v.parent_code === p.code);
+  });
+  updateHeaderStats();
+  applyFilters();
+}
+
+function updateHeaderStats(){
+  const total = parentProducts.length;
+  const totalAll = allProducts.length;
+  const activos = parentProducts.filter(p => p.is_active).length;
+  // margen medio ponderado simple de los activos con margen válido
+  const withMargin = parentProducts.filter(p => p.is_active && p._margin !== null);
+  const avg = withMargin.length ? (withMargin.reduce((s,p)=>s+p._margin,0) / withMargin.length) : 0;
+  $('headerStats').textContent = `${total} productos · ${totalAll} con variantes · margen medio ${avg.toFixed(1)}% · v11`;
+}
+
+function applyFilters(){
+  let result = parentProducts.slice();
+  if (state.search){
+    const q = state.search.toLowerCase();
+    result = result.filter(p => (p.code||'').toLowerCase().includes(q) || (p.name||'').toLowerCase().includes(q));
+  }
+  if (state.status === 'active') result = result.filter(p => p.is_active);
+  else if (state.status === 'inactive') result = result.filter(p => !p.is_active);
+
+  if (state.margin === 'high') result = result.filter(p => p._margin !== null && p._margin >= 70);
+  else if (state.margin === 'low') result = result.filter(p => p._margin !== null && p._margin < 50);
+
+  const dir = state.sortDir === 'asc' ? 1 : -1;
+  result.sort((a,b) => {
+    let av, bv;
+    if (state.sortBy === 'margin'){ av = a._margin===null?-1:a._margin; bv = b._margin===null?-1:b._margin; }
+    else if (state.sortBy === 'current_price' || state.sortBy === 'current_cost'){ av = parseFloat(a[state.sortBy])||0; bv = parseFloat(b[state.sortBy])||0; }
+    else { av = (a[state.sortBy]||'').toString().toLowerCase(); bv = (b[state.sortBy]||'').toString().toLowerCase(); }
+    if (av < bv) return -1*dir;
+    if (av > bv) return 1*dir;
+    return 0;
+  });
+  filteredProducts = result;
+  renderTable();
+}
+
+function renderTable(){
+  const tbody = $('tbody');
+  if (filteredProducts.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-state-title">No hay productos que coincidan</div><div class="empty-state-sub">prueba a quitar filtros o limpiar la búsqueda</div></div></td></tr>`;
+    $('pagerCount').textContent = 'sin resultados';
+    return;
+  }
+  tbody.innerHTML = filteredProducts.map(p => {
+    const m = p._margin;
+    const nVar = p._variants.length;
+    const variantsTag = nVar > 1 ? `<span class="variants-tag">${nVar} variantes</span>` : '';
+    const marginCell = m === null
+      ? '<span class="cost">—</span>'
+      : `<span class="margin ${marginClass(m)}">${m.toFixed(1).replace('.',',')}%</span>`;
+    return `
+      <tr class="${p.is_active?'':'inactive'}" data-id="${p.id}">
+        <td><span class="dot ${p.is_active?'dot-active':'dot-inactive'}"></span></td>
+        <td class="code">${escapeHtml(p.code)}</td>
+        <td><span class="pname">${escapeHtml(p.name)}</span>${variantsTag}</td>
+        <td class="num price">${fmtPrice(p.current_price)}</td>
+        <td class="num cost">${fmtCost(p.current_cost)}</td>
+        <td class="num">${marginCell}</td>
+        <td class="num vat">${p.vat_rate}%</td>
+      </tr>`;
+  }).join('');
+  tbody.querySelectorAll('tr[data-id]').forEach(tr => tr.addEventListener('click', () => openModal(tr.dataset.id)));
+  $('pagerCount').textContent = `${filteredProducts.length} producto${filteredProducts.length!==1?'s':''}`;
+}
+
+function updateMarginPreview(){
+  const price = parseFloat($('inputPrice').value)||0;
+  const cost = parseFloat($('inputCost').value)||0;
+  const m = calcMargin(price, cost);
+  const vEl = $('marginValue');
+  const dEl = $('marginDetail');
+  if (m === null){
+    vEl.textContent = '—';
+    vEl.style.color = 'var(--text-faint)';
+    dEl.textContent = 'introduce un precio de venta';
+    return;
+  }
+  vEl.textContent = m.toFixed(1).replace('.',',') + '%';
+  if (m >= 70) vEl.style.color = 'var(--primary)';
+  else if (m >= 50) vEl.style.color = 'var(--accent-bright)';
+  else vEl.style.color = 'var(--red-bright)';
+  const beneficio = price - cost;
+  dEl.textContent = `beneficio ${beneficio.toFixed(4).replace('.',',')} € por unidad`;
+}
+
+function openModal(id){
+  const p = allProducts.find(x => x.id === id);
+  if (!p) return;
+  currentEditId = id;
+  $('modalTitle').innerHTML = 'Editar <em>producto</em>';
+  $('modalSubtitle').textContent = p.code + ' · ' + (p.name||'');
+  const f = $('productForm');
+  f.code.value = p.code || '';
+  f.name.value = p.name || '';
+  f.current_price.value = p.current_price ?? '';
+  f.current_cost.value = p.current_cost ?? '';
+  f.reference_cost.value = p.reference_cost ?? '';
+  f.parent_code.value = p.parent_code || '';
+  f.vat_rate.value = String(p.vat_rate || 21);
+  f.notes.value = p.notes || '';
+  $('cbIsActive').checked = !!p.is_active;
+  $('btnDelete').style.display = 'inline-flex';
+  updateMarginPreview();
+  renderVariants(p);
+  $('modal').classList.add('active');
+}
+
+function renderVariants(p){
+  const section = $('variantsSection');
+  const variants = allProducts.filter(v => v.parent_code === p.code);
+  if (variants.length === 0){ section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  $('variantsList').innerHTML = variants.map(v => {
+    const m = calcMargin(v.current_price, v.current_cost);
+    const mTxt = m===null ? '—' : m.toFixed(1).replace('.',',')+'%';
+    return `<div class="variant-row">
+      <span class="variant-code">${escapeHtml(v.code)}</span>
+      <span class="variant-name">${escapeHtml(v.name)}</span>
+      <span class="variant-cost">${fmtCost(v.current_cost)}</span>
+      <span class="variant-margin ${marginClass(m)}">${mTxt}</span>
+    </div>`;
+  }).join('');
+}
+
+function openNewModal(){
+  currentEditId = null;
+  $('modalTitle').innerHTML = 'Nuevo <em>producto</em>';
+  $('modalSubtitle').textContent = 'crear nuevo producto';
+  const f = $('productForm');
+  f.reset();
+  f.vat_rate.value = '21';
+  f.current_cost.value = '0';
+  f.reference_cost.value = '0';
+  $('cbIsActive').checked = true;
+  $('btnDelete').style.display = 'none';
+  $('variantsSection').style.display = 'none';
+  updateMarginPreview();
+  $('modal').classList.add('active');
+}
+
+function closeModal(){ $('modal').classList.remove('active'); currentEditId = null; }
+
+async function saveProduct(e){
+  e.preventDefault();
+  const f = e.target;
+  const payload = {
+    user_id: currentUser.id,
+    code: f.code.value.trim(),
+    name: f.name.value.trim(),
+    current_price: parseFloat(f.current_price.value)||0,
+    current_cost: parseFloat(f.current_cost.value)||0,
+    reference_cost: parseFloat(f.reference_cost.value)||0,
+    parent_code: f.parent_code.value.trim() || null,
+    vat_rate: parseInt(f.vat_rate.value)||21,
+    notes: f.notes.value.trim() || null,
+    is_active: $('cbIsActive').checked
+  };
+  if (!payload.code){ showToast('El código es obligatorio', true); return; }
+  if (!payload.name){ showToast('El nombre es obligatorio', true); return; }
+
+  if (currentEditId){
+    const { error } = await sb.from('products').update(payload).eq('id', currentEditId);
+    if (error){
+      if (error.code === '23505') showToast('Ya existe un producto con ese código', true);
+      else showToast('Error guardando: '+error.message, true);
+      console.error(error); return;
+    }
+    showToast('Producto actualizado');
+  } else {
+    const { error } = await sb.from('products').insert(payload);
+    if (error){
+      if (error.code === '23505') showToast('Ya existe un producto con ese código', true);
+      else showToast('Error creando: '+error.message, true);
+      console.error(error); return;
+    }
+    showToast('Producto creado');
+  }
+  closeModal();
+  await loadProducts();
+}
+
+async function deleteProduct(){
+  if (!currentEditId) return;
+  const p = allProducts.find(x => x.id === currentEditId);
+  const name = p ? (p.name || p.code) : 'este producto';
+  const variants = p ? allProducts.filter(v => v.parent_code === p.code) : [];
+  let msg = `¿Eliminar "${name}"?\n\nEsta acción no se puede deshacer.`;
+  if (variants.length > 0) msg += `\n\n⚠ Este producto tiene ${variants.length} variantes que quedarán huérfanas.`;
+  if (!confirm(msg)) return;
+  const { error } = await sb.from('products').delete().eq('id', currentEditId);
+  if (error){ showToast('Error eliminando: '+error.message, true); console.error(error); return; }
+  showToast('Producto eliminado');
+  closeModal();
+  await loadProducts();
+}
+
+function bindEvents(){
+  let searchTimer;
+  $('searchInput').addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { state.search = e.target.value.trim(); applyFilters(); }, 180);
+  });
+  document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = btn.dataset.filter, v = btn.dataset.value;
+      state[f] = v;
+      document.querySelectorAll(`.filter-btn[data-filter="${f}"]`).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilters();
+    });
+  });
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (state.sortBy === col) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      else { state.sortBy = col; state.sortDir = col === 'margin' || col === 'current_price' ? 'desc' : 'asc'; }
+      document.querySelectorAll('th.sortable').forEach(t => { t.classList.remove('sorted'); t.querySelector('.sort-ind').textContent = '↕'; });
+      th.classList.add('sorted');
+      th.querySelector('.sort-ind').textContent = state.sortDir === 'asc' ? '↑' : '↓';
+      applyFilters();
+    });
+  });
+  $('btnNewProduct').addEventListener('click', openNewModal);
+  $('modalClose').addEventListener('click', closeModal);
+  $('btnCancel').addEventListener('click', closeModal);
+  $('btnDelete').addEventListener('click', deleteProduct);
+  $('productForm').addEventListener('submit', saveProduct);
+  $('inputPrice').addEventListener('input', updateMarginPreview);
+  $('inputCost').addEventListener('input', updateMarginPreview);
+  $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('modal').classList.contains('active')) closeModal(); });
+}
+
+(async function init(){
+  const ok = await checkAuth();
+  if (!ok) return;
+  bindEvents();
+  await loadProducts();
+  $('loadingScreen').style.display = 'none';
+  $('app').style.display = 'block';
+})();
+</script>
+
+</body>
+</html>
