@@ -832,7 +832,7 @@ function updateHeaderStats() {
   const total = allContacts.length;
   const active = allContacts.filter(c => c.is_active).length;
   const iban = allContacts.filter(c => c.iban && c.iban.trim()).length;
-  $('headerStats').textContent = `${total} contactos · ${active} activos · ${iban} con iban · v10`;
+  $('headerStats').textContent = `${total} contactos · ${active} activos · ${iban} con iban · v11`;
 }
 
 // ====== FILTROS ======
