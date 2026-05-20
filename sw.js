@@ -1,14 +1,13 @@
 // Magilu Finance - Service Worker
-// Estrategia: cache-first para shell, network para datos Supabase
+// Estrategia: NETWORK-FIRST para HTML (siempre busca versión nueva),
+//             cache-first solo para assets estáticos (iconos, fuentes).
 
-const CACHE_NAME = 'magilu-finance-v1';
+const CACHE_NAME = 'magilu-finance-v2';  // ← subir este número en cada despliegue importante
 const SHELL_FILES = [
-  './',
-  './index.html',
   './manifest.json',
 ];
 
-// Install: cachear shell
+// Install: cachear shell mínimo y activar inmediatamente
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -17,7 +16,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: limpiar caches viejos
+// Activate: limpiar TODOS los caches viejos
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((names) => {
@@ -28,38 +27,57 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: 
-// - Llamadas a Supabase: SIEMPRE network (no cachear datos sensibles)
-// - Resto: cache-first con fallback a network
+// Fetch:
+// - Supabase: siempre network (datos en vivo)
+// - HTML (navegación): NETWORK-FIRST (siempre versión más nueva; caché solo si offline)
+// - Resto (iconos, fuentes, JS CDN): cache-first
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  
-  // No cachear llamadas a Supabase ni APIs
+
+  // No tocar Supabase
   if (url.hostname.includes('supabase.co') || url.hostname.includes('supabase.in')) {
-    return; // dejar que el navegador maneje la petición normalmente
+    return;
   }
-  
-  // No cachear peticiones POST/PUT/DELETE
+
+  // Solo GET
   if (event.request.method !== 'GET') {
     return;
   }
-  
-  // Shell: cache-first
+
+  const isHTML = event.request.mode === 'navigate'
+    || (event.request.headers.get('accept') || '').includes('text/html');
+
+  if (isHTML) {
+    // NETWORK-FIRST: busca la versión nueva, cae a caché solo si no hay red
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        if (response.ok && url.origin === self.location.origin) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => {
+        return caches.match(event.request).then((cached) => {
+          return cached || caches.match('./index.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // Assets estáticos: cache-first
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
       return fetch(event.request).then((response) => {
-        // Cachear nuevos recursos del shell
-        if (response.ok && (url.origin === self.location.origin || url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com') || url.hostname.includes('cdn.jsdelivr.net'))) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        if (response.ok && (url.origin === self.location.origin
+            || url.hostname.includes('fonts.googleapis.com')
+            || url.hostname.includes('fonts.gstatic.com')
+            || url.hostname.includes('cdn.jsdelivr.net'))) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => {
-        // Offline fallback: si pide HTML, devolver index
-        if (event.request.headers.get('accept')?.includes('text/html')) {
-          return caches.match('./index.html');
-        }
       });
     })
   );
