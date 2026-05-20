@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inicio · Magilu Finance</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050912;
+  --bg-elev: #0b1326;
+  --bg-card: #11192e;
+  --border: #1f2a44;
+  --border-strong: #2c3a5c;
+  --text: #e2ebf2;
+  --text-dim: #8a9bb2;
+  --text-faint: #4f5d76;
+  --primary: #6ee2c5;
+  --primary-dim: #4ab9a0;
+  --primary-bright: #8fefd5;
+  --accent: #2a4670;
+  --accent-bright: #3f6299;
+  --amber: #d4a04a;
+  --amber-bright: #e8b85a;
+  --red: #e07560;
+  --red-bright: #ee8a76;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+.loading-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px;
+  z-index: 1000;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+.loading-logo { width: 56px; height: 56px; opacity: 0.9; border-radius: 12px; }
+
+/* HEADER */
+.app-header {
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 32px;
+}
+.header-inner {
+  display: flex; align-items: center; gap: 18px;
+  max-width: 1200px; margin: 0 auto;
+}
+.header-logo { width: 44px; height: 44px; border-radius: 10px; }
+.header-title h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 26px; font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.header-title h1 em { font-style: italic; color: var(--primary); font-weight: 400; }
+.header-title .subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+.header-meta {
+  margin-left: auto;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.header-meta .user-email {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.logout-btn {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-dim);
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.logout-btn:hover { border-color: var(--red); color: var(--red-bright); }
+
+/* WELCOME */
+.welcome {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 32px 8px 32px;
+}
+.welcome h2 {
+  font-family: 'Fraunces', serif;
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.welcome h2 em { font-style: italic; color: var(--primary); }
+.welcome p {
+  color: var(--text-dim);
+  margin-top: 6px;
+  font-size: 15px;
+}
+
+/* GRID DE MÓDULOS */
+.modules {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 32px 60px 32px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.module-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 170px;
+}
+.module-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--primary);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.module-card:hover {
+  border-color: var(--primary-dim);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+.module-card:hover::before { opacity: 1; }
+.module-card.disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.module-card.disabled:hover {
+  border-color: var(--border);
+  transform: none;
+  box-shadow: none;
+}
+.module-card.disabled:hover::before { opacity: 0; }
+
+.module-icon {
+  font-size: 30px;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.module-name {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 500;
+}
+.module-desc {
+  color: var(--text-dim);
+  font-size: 13px;
+  flex: 1;
+}
+.module-metric {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--primary);
+  letter-spacing: 0.02em;
+}
+.module-metric .metric-loading { color: var(--text-faint); }
+.module-soon {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--amber-bright);
+  background: rgba(212, 160, 74, 0.1);
+  border: 1px solid rgba(212, 160, 74, 0.3);
+  padding: 3px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.footer-note {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px 40px 32px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .modules { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .modules { grid-template-columns: 1fr; }
+  .app-header { padding: 16px; }
+  .welcome { padding: 28px 16px 4px 16px; }
+  .welcome h2 { font-size: 26px; }
+  .modules { padding: 18px 16px 40px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">
+  <img src="icon-192.png" alt="" class="loading-logo" onerror="this.style.display='none'">
+  <span>cargando…</span>
+</div>
+
+<div id="app" style="display:none;">
+
+<header class="app-header">
+  <div class="header-inner">
+    <img src="icon-192.png" alt="" class="header-logo" onerror="this.style.display='none'">
+    <div class="header-title">
+      <h1>Magilu <em>Finance</em></h1>
+      <div class="subtitle">Centro de control</div>
+    </div>
+    <div class="header-meta">
+      <div class="user-email" id="userEmail">—</div>
+      <button class="logout-btn" id="logoutBtn">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<section class="welcome">
+  <h2>Hola, <em id="welcomeName">Tomás</em></h2>
+  <p>¿Qué quieres hacer hoy? Elige un módulo para empezar.</p>
+</section>
+
+<main class="modules">
+
+  <a href="./index.html" class="module-card">
+    <div class="module-icon">💧</div>
+    <div class="module-name">Tesorería</div>
+    <div class="module-desc">Cuentas, liquidez, movimientos y cobros pendientes.</div>
+    <div class="module-metric" id="metric-tesoreria"><span class="metric-loading">cargando…</span></div>
+  </a>
+
+  <a href="./contactos.html" class="module-card">
+    <div class="module-icon">👥</div>
+    <div class="module-name">Contactos</div>
+    <div class="module-desc">Clientes y proveedores. NIF, IBAN, régimen IVA.</div>
+    <div class="module-metric" id="metric-contactos"><span class="metric-loading">cargando…</span></div>
+  </a>
+
+  <a href="./productos.html" class="module-card" id="card-productos">
+    <div class="module-icon">📦</div>
+    <div class="module-name">Productos</div>
+    <div class="module-desc">Catálogo, precios, costes y márgenes.</div>
+    <div class="module-metric" id="metric-productos"><span class="metric-loading">cargando…</span></div>
+  </a>
+
+  <a href="#" class="module-card disabled" onclick="return false;">
+    <div class="module-icon">📋</div>
+    <div class="module-name">Depósitos</div>
+    <div class="module-desc">Entregas en depósito, recuentos y facturación.</div>
+    <span class="module-soon">Próximamente</span>
+  </a>
+
+  <a href="#" class="module-card disabled" onclick="return false;">
+    <div class="module-icon">🚚</div>
+    <div class="module-name">Rutas</div>
+    <div class="module-desc">Planificación de rutas comerciales y visitas.</div>
+    <span class="module-soon">Próximamente</span>
+  </a>
+
+  <a href="./plan_financiero_magilu.html" class="module-card" id="card-plan">
+    <div class="module-icon">📊</div>
+    <div class="module-name">Plan financiero</div>
+    <div class="module-desc">Punto de equilibrio, sueldo objetivo, amortización deuda.</div>
+    <div class="module-metric" id="metric-plan"><span class="metric-loading">—</span></div>
+  </a>
+
+</main>
+
+<div class="footer-note">
+  magilu finance · datos en tiempo real desde supabase
+</div>
+
+</div><!-- /#app -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
+  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer">
+</script>
+
+<script>
+'use strict';
+
+const SUPABASE_URL = 'https://bgrsjftxwuduvlglfpky.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3Uhr0TMJEtq4_9CJc1D19Q_nfrkRq_2';
+
+if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+  document.getElementById('loadingScreen').innerHTML = '<div style="color:#ee8a76;text-align:center;padding:24px;max-width:500px;">No se pudo cargar Supabase SDK. Recarga la página.</div>';
+  throw new Error('Supabase SDK no disponible');
+}
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+});
+
+let currentUser = null;
+
+function $(id) { return document.getElementById(id); }
+
+function fmtMoney(n) {
+  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+}
+
+async function checkAuth() {
+  const { data: { session }, error } = await sb.auth.getSession();
+  if (error || !session) {
+    window.location.href = './index.html';
+    return false;
+  }
+  currentUser = session.user;
+  return true;
+}
+
+async function loadMetrics() {
+  // Tesorería: cuentas + saldo total + cobros pendientes
+  try {
+    const { data: accounts } = await sb.from('accounts').select('balance');
+    const { count: pendCount } = await sb.from('pending_collections').select('*', { count: 'exact', head: true });
+    if (accounts) {
+      const total = accounts.reduce((s, a) => s + (parseFloat(a.balance) || 0), 0);
+      const nCuentas = accounts.length;
+      let txt = `${nCuentas} cuenta${nCuentas !== 1 ? 's' : ''} · ${fmtMoney(total)}`;
+      if (pendCount && pendCount > 0) txt += ` · ${pendCount} cobro${pendCount !== 1 ? 's' : ''} pend.`;
+      $('metric-tesoreria').textContent = txt;
+    }
+  } catch (e) {
+    $('metric-tesoreria').innerHTML = '<span class="metric-loading">—</span>';
+  }
+
+  // Contactos
+  try {
+    const { count: total } = await sb.from('clients').select('*', { count: 'exact', head: true });
+    const { count: activos } = await sb.from('clients').select('*', { count: 'exact', head: true }).eq('is_active', true);
+    $('metric-contactos').textContent = `${total} contactos · ${activos} activos`;
+  } catch (e) {
+    $('metric-contactos').innerHTML = '<span class="metric-loading">—</span>';
+  }
+
+  // Productos
+  try {
+    const { count: total } = await sb.from('products').select('*', { count: 'exact', head: true });
+    const { count: activos } = await sb.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true);
+    $('metric-productos').textContent = `${total} productos · ${activos} activos`;
+  } catch (e) {
+    $('metric-productos').innerHTML = '<span class="metric-loading">—</span>';
+  }
+
+  // Plan financiero: leer margen de settings
+  try {
+    const { data: settings } = await sb.from('settings').select('margin_brut_pct, target_monthly_salary').maybeSingle();
+    if (settings) {
+      $('metric-plan').textContent = `margen ${settings.margin_brut_pct}% · objetivo ${fmtMoney(settings.target_monthly_salary)}/mes`;
+    } else {
+      $('metric-plan').innerHTML = '<span class="metric-loading">—</span>';
+    }
+  } catch (e) {
+    $('metric-plan').innerHTML = '<span class="metric-loading">—</span>';
+  }
+}
+
+async function init() {
+  const ok = await checkAuth();
+  if (!ok) return;
+
+  // Mostrar email y nombre
+  $('userEmail').textContent = currentUser.email || '—';
+  const namePart = (currentUser.email || '').split('@')[0];
+  if (namePart && namePart.toLowerCase().includes('santofimia')) {
+    $('welcomeName').textContent = 'Tomás';
+  } else if (namePart) {
+    $('welcomeName').textContent = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+  }
+
+  $('logoutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    window.location.href = './index.html';
+  });
+
+  $('loadingScreen').style.display = 'none';
+  $('app').style.display = 'block';
+
+  loadMetrics();
+}
+
+init();
+</script>
+
+</body>
+</html>
