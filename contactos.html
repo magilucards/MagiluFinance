@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contactos · Magilu Finance</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050912;
+  --bg-elev: #0b1326;
+  --bg-card: #11192e;
+  --border: #1f2a44;
+  --border-strong: #2c3a5c;
+  --text: #e2ebf2;
+  --text-dim: #8a9bb2;
+  --text-faint: #4f5d76;
+  --primary: #6ee2c5;
+  --primary-dim: #4ab9a0;
+  --primary-bright: #8fefd5;
+  --accent: #2a4670;
+  --accent-bright: #3f6299;
+  --amber: #d4a04a;
+  --amber-bright: #e8b85a;
+  --red: #e07560;
+  --red-bright: #ee8a76;
+  --green: #6ee2c5;
+  --green-bright: #8fefd5;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* LOADING */
+.loading-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+/* HEADER */
+.app-header {
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 32px;
+  position: sticky; top: 0; z-index: 10;
+}
+.header-inner {
+  display: flex; align-items: center; gap: 24px;
+  max-width: 1600px; margin: 0 auto;
+}
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}
+.back-link:hover { border-color: var(--primary-dim); color: var(--primary); }
+h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 28px; font-weight: 500;
+  letter-spacing: -0.01em; color: var(--text);
+}
+h1 em { font-style: italic; color: var(--primary); font-weight: 400; }
+.subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.btn-primary {
+  background: var(--primary-dim);
+  border: 1px solid var(--primary-dim);
+  color: var(--bg);
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 13px; font-weight: 600;
+  padding: 9px 16px;
+  cursor: pointer;
+  border-radius: 6px;
+  letter-spacing: 0.01em;
+  margin-left: auto;
+}
+.btn-primary:hover { background: var(--primary); }
+.btn-secondary {
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 13px; font-weight: 500;
+  padding: 9px 16px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.btn-secondary:hover { border-color: var(--primary-dim); color: var(--primary); }
+.btn-danger {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red-bright);
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 13px; font-weight: 500;
+  padding: 9px 16px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.btn-danger:hover { background: rgba(224, 117, 96, 0.1); }
+
+/* FILTROS */
+.filters {
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 32px;
+}
+.filters-inner {
+  max-width: 1600px; margin: 0 auto;
+  display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+}
+.search-box {
+  flex: 1; min-width: 280px;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+.search-box:focus-within { border-color: var(--primary); }
+.search-box input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.search-box input::placeholder { color: var(--text-faint); }
+.search-icon { color: var(--text-faint); font-size: 14px; }
+
+.filter-group { display: flex; gap: 4px; align-items: center; }
+.filter-label {
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  margin-right: 6px;
+}
+.filter-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 6px 11px;
+  border-radius: 5px;
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-dim);
+}
+.filter-btn:hover { border-color: var(--primary-dim); color: var(--text); }
+.filter-btn.active {
+  background: var(--primary-dim);
+  color: var(--bg);
+  border-color: var(--primary-dim);
+  font-weight: 600;
+}
+select.filter-btn {
+  padding: 6px 8px; font-family: inherit;
+  color: var(--text);
+}
+select.filter-btn option { background: var(--bg-card); color: var(--text); }
+
+.toggle-bar {
+  display: flex; gap: 24px;
+  padding: 10px 32px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.toggle-bar > .inner {
+  display: flex; gap: 24px;
+  max-width: 1600px; margin: 0 auto;
+  width: 100%;
+}
+.toggle-bar label {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer;
+}
+.toggle-bar input[type=checkbox] { accent-color: var(--primary); }
+
+/* TABLA */
+.main-content {
+  max-width: 1600px; margin: 0 auto;
+  padding: 24px 32px;
+}
+.table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { background: var(--bg-elev); border-bottom: 1px solid var(--border-strong); }
+th {
+  text-align: left;
+  padding: 12px 14px;
+  font-weight: 600;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  white-space: nowrap;
+  user-select: none;
+}
+th.sortable { cursor: pointer; }
+th.sortable:hover { color: var(--primary); }
+th.sortable .sort-ind { font-size: 9px; margin-left: 4px; opacity: 0.5; }
+th.sortable.sorted .sort-ind { opacity: 1; color: var(--primary); }
+td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+tbody tr {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+tbody tr:hover { background: var(--bg-elev); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr.inactive td { opacity: 0.45; }
+tbody tr.flagged { background: rgba(212, 160, 74, 0.04); }
+tbody tr.flagged:hover { background: rgba(212, 160, 74, 0.10); }
+tbody tr.both-type { background: rgba(110, 226, 197, 0.04); }
+tbody tr.both-type:hover { background: rgba(110, 226, 197, 0.10); }
+tbody tr.supplier td:nth-child(3) { color: var(--text-dim); }
+tbody tr.generic td { font-style: italic; color: var(--text-dim); }
+
+.empty-state {
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-faint);
+}
+.empty-state-title { font-size: 16px; margin-bottom: 8px; color: var(--text-dim); }
+.empty-state-sub { font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+
+.nif {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.legal {
+  font-weight: 500; color: var(--text);
+  max-width: 260px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.commercial {
+  color: var(--text-faint); font-size: 12px;
+  max-width: 220px;
+  overflow: hidden; text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.dot {
+  display: inline-block; width: 7px; height: 7px;
+  border-radius: 50%;
+}
+.dot-active { background: var(--primary); box-shadow: 0 0 8px rgba(110, 226, 197, 0.4); }
+.dot-inactive { background: var(--text-faint); }
+
+.badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.badge-re { background: rgba(63, 98, 153, 0.18); color: var(--accent-bright); border: 1px solid rgba(63, 98, 153, 0.4); }
+.badge-gen { background: rgba(110, 226, 197, 0.10); color: var(--primary); border: 1px solid rgba(110, 226, 197, 0.3); }
+.badge-pend { background: rgba(212, 160, 74, 0.10); color: var(--amber-bright); border: 1px solid rgba(212, 160, 74, 0.3); }
+.badge-client { background: rgba(110, 226, 197, 0.08); color: var(--primary); }
+.badge-supplier { background: rgba(63, 98, 153, 0.15); color: var(--accent-bright); }
+.badge-both { background: rgba(212, 160, 74, 0.12); color: var(--amber-bright); font-weight: 600; }
+
+.iban-yes {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(110, 226, 197, 0.08);
+  color: var(--primary);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.iban-no { color: var(--text-faint); font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+
+.row-flag {
+  display: inline-block;
+  background: rgba(212, 160, 74, 0.15);
+  color: var(--amber-bright);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-left: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.cell-muted { color: var(--text-faint); font-size: 12px; }
+
+/* PAGER */
+.pager {
+  background: var(--bg-elev);
+  border-top: 1px solid var(--border);
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.pager-count {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+.pager-controls { display: flex; gap: 4px; flex-wrap: wrap; }
+.pager-btn {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 5px 11px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  min-width: 28px;
+}
+.pager-btn:hover:not(:disabled):not(.active) { border-color: var(--primary-dim); color: var(--text); }
+.pager-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.pager-btn.active {
+  background: var(--primary-dim);
+  color: var(--bg);
+  border-color: var(--primary-dim);
+  font-weight: 600;
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(5, 9, 18, 0.85);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 100;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 720px;
+  padding: 28px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 500;
+}
+.modal-title em { font-style: italic; color: var(--primary); font-weight: 400; }
+.modal-subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 4px;
+  letter-spacing: 0.04em;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.modal-close:hover { color: var(--red-bright); }
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+  margin-bottom: 24px;
+}
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-field.full { grid-column: 1 / -1; }
+.form-field label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+.form-field input, .form-field select, .form-field textarea {
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 5px;
+  outline: none;
+}
+.form-field input.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+  border-color: var(--primary);
+}
+.form-field textarea { resize: vertical; min-height: 60px; font-family: 'Inter Tight', sans-serif; }
+.form-field select option { background: var(--bg-card); color: var(--text); }
+
+.checkbox-row {
+  display: flex; gap: 24px; margin-bottom: 20px;
+  padding: 14px 16px;
+  background: var(--bg);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.checkbox-row label {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.checkbox-row input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; }
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  gap: 12px;
+}
+.modal-actions .right { display: flex; gap: 10px; margin-left: auto; }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--primary);
+  border-radius: 6px;
+  padding: 12px 18px;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.2s;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.error { border-left-color: var(--red); }
+.toast.error .toast-icon { color: var(--red-bright); }
+.toast-icon { color: var(--primary); margin-right: 6px; }
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .app-header { padding: 14px 16px; }
+  .header-inner { gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 22px; }
+  .filters-inner { gap: 12px; }
+  .main-content { padding: 16px; }
+  .form-grid { grid-template-columns: 1fr; }
+  th:nth-child(5), td:nth-child(5),
+  th:nth-child(8), td:nth-child(8) { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">
+  cargando contactos…
+</div>
+
+<div id="app" style="display:none;">
+
+<header class="app-header">
+  <div class="header-inner">
+    <a href="./index.html" class="back-link">← Inicio</a>
+    <div>
+      <h1>Cont<em>actos</em></h1>
+      <div class="subtitle" id="headerStats">— · —</div>
+    </div>
+    <button class="btn-primary" id="btnNewContact">+ Nuevo contacto</button>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="filters-inner">
+    <div class="search-box">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="buscar por nif, razón social, comercial, ciudad...">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Tipo</span>
+      <button class="filter-btn active" data-filter="type" data-value="all">Todos</button>
+      <button class="filter-btn" data-filter="type" data-value="client">Clientes</button>
+      <button class="filter-btn" data-filter="type" data-value="supplier">Proveedores</button>
+      <button class="filter-btn" data-filter="type" data-value="both">Ambos</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Estado</span>
+      <button class="filter-btn active" data-filter="status" data-value="active">Activos</button>
+      <button class="filter-btn" data-filter="status" data-value="inactive">Inactivos</button>
+      <button class="filter-btn" data-filter="status" data-value="all">Todos</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">IVA</span>
+      <button class="filter-btn" data-filter="vat" data-value="all">Todos</button>
+      <button class="filter-btn" data-filter="vat" data-value="recargo_equivalencia">RE</button>
+      <button class="filter-btn" data-filter="vat" data-value="general">General</button>
+      <button class="filter-btn" data-filter="vat" data-value="pendiente_revisar">Pendiente</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Provincia</span>
+      <select class="filter-btn" id="provinceFilter">
+        <option value="">Todas</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="toggle-bar">
+  <div class="inner">
+    <label><input type="checkbox" id="toggleGenerics"> Mostrar contactos genéricos (sin determinar)</label>
+    <label><input type="checkbox" id="toggleActiveFirst" checked> Activos primero</label>
+  </div>
+</div>
+
+<main class="main-content">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30px;"></th>
+          <th class="sortable" data-sort="nif">NIF <span class="sort-ind">↕</span></th>
+          <th class="sortable sorted" data-sort="legal_name">Razón social · Comercial <span class="sort-ind">↑</span></th>
+          <th class="sortable" data-sort="city">Ciudad <span class="sort-ind">↕</span></th>
+          <th class="sortable" data-sort="province">Provincia <span class="sort-ind">↕</span></th>
+          <th>Tipo</th>
+          <th>IVA</th>
+          <th>Pago</th>
+          <th>IBAN</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="pager">
+      <span class="pager-count" id="pagerCount">—</span>
+      <div class="pager-controls" id="pagerControls"></div>
+    </div>
+  </div>
+</main>
+
+</div><!-- /#app -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">Editar <em>contacto</em></div>
+        <div class="modal-subtitle" id="modalSubtitle">—</div>
+      </div>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+
+    <form id="contactForm" autocomplete="off">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>NIF / CIF</label>
+          <input type="text" name="nif" class="mono" maxlength="20">
+        </div>
+        <div class="form-field">
+          <label>Razón social *</label>
+          <input type="text" name="legal_name" required>
+        </div>
+        <div class="form-field full">
+          <label>Nombre comercial</label>
+          <input type="text" name="commercial_name">
+        </div>
+        <div class="form-field">
+          <label>Email</label>
+          <input type="email" name="email">
+        </div>
+        <div class="form-field">
+          <label>Teléfono</label>
+          <input type="text" name="phone" class="mono">
+        </div>
+        <div class="form-field full">
+          <label>Dirección</label>
+          <input type="text" name="address">
+        </div>
+        <div class="form-field">
+          <label>Ciudad</label>
+          <input type="text" name="city">
+        </div>
+        <div class="form-field">
+          <label>Código postal</label>
+          <input type="text" name="postal_code" class="mono" maxlength="10">
+        </div>
+        <div class="form-field">
+          <label>Provincia</label>
+          <input type="text" name="province">
+        </div>
+        <div class="form-field">
+          <label>País</label>
+          <input type="text" name="country" maxlength="3" placeholder="ES">
+        </div>
+        <div class="form-field full">
+          <label>IBAN</label>
+          <input type="text" name="iban" class="mono" placeholder="ES00 0000 0000 0000 0000 0000">
+        </div>
+        <div class="form-field">
+          <label>Régimen IVA</label>
+          <select name="vat_regime">
+            <option value="">—</option>
+            <option value="recargo_equivalencia">Recargo de equivalencia</option>
+            <option value="general">General</option>
+            <option value="pendiente_revisar">Pendiente revisar</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Forma de cobro</label>
+          <select name="payment_method">
+            <option value="">—</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="bizum">Bizum</option>
+            <option value="pagare">Pagaré</option>
+            <option value="remesa_sepa">Remesa SEPA</option>
+            <option value="otro">Otro</option>
+            <option value="pendiente_revisar">Pendiente revisar</option>
+          </select>
+        </div>
+        <div class="form-field full">
+          <label>Notas internas</label>
+          <textarea name="internal_notes" rows="2"></textarea>
+        </div>
+      </div>
+
+      <div class="checkbox-row">
+        <label><input type="checkbox" name="is_client" id="cbIsClient"> Es cliente (le vendes)</label>
+        <label><input type="checkbox" name="is_supplier" id="cbIsSupplier"> Es proveedor (te factura)</label>
+        <label><input type="checkbox" name="is_active" id="cbIsActive"> Activo</label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-danger" id="btnDelete" style="display:none;">Eliminar</button>
+        <div class="right">
+          <button type="button" class="btn-secondary" id="btnCancel">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- Supabase JS SDK con Subresource Integrity -->
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
+  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer">
+</script>
+
+<script>
+'use strict';
+
+// ====== CONFIG SUPABASE ======
+const SUPABASE_URL = 'https://bgrsjftxwuduvlglfpky.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3Uhr0TMJEtq4_9CJc1D19Q_nfrkRq_2';
+
+if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+  document.getElementById('loadingScreen').innerHTML = '<div style="color:#ee8a76;text-align:center;padding:24px;max-width:500px;">No se pudo cargar Supabase SDK. Recarga la página.</div>';
+  throw new Error('Supabase SDK no disponible');
+}
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+});
+
+// ====== ESTADO ======
+let currentUser = null;
+let allContacts = [];
+let filteredContacts = [];
+const state = {
+  search: '',
+  type: 'all',
+  status: 'active',
+  vat: 'all',
+  province: '',
+  showGenerics: false,
+  activeFirst: true,
+  sortBy: 'legal_name',
+  sortDir: 'asc',
+  page: 1,
+  pageSize: 50
+};
+let currentEditId = null;
+
+// ====== HELPERS ======
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function showToast(msg, isError = false) {
+  const t = $('toast');
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.innerHTML = (isError ? '<span class="toast-icon">⚠</span>' : '<span class="toast-icon">✓</span>') + escapeHtml(msg);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function isGenericNif(nif) {
+  return nif && nif.startsWith('__') && nif.endsWith('__');
+}
+
+function getContactType(c) {
+  if (c.is_client && c.is_supplier) return 'both';
+  if (c.is_client) return 'client';
+  if (c.is_supplier) return 'supplier';
+  return 'none';
+}
+
+function ibanLast4(iban) {
+  if (!iban) return null;
+  const clean = String(iban).replace(/[\s-]/g, '').toUpperCase();
+  return clean.length >= 4 ? clean.slice(-4) : clean;
+}
+
+// ====== AUTH ======
+async function checkAuth() {
+  const { data: { session }, error } = await sb.auth.getSession();
+  if (error) {
+    console.error('Auth error:', error);
+    redirectToLogin();
+    return false;
+  }
+  if (!session) {
+    redirectToLogin();
+    return false;
+  }
+  currentUser = session.user;
+  return true;
+}
+
+function redirectToLogin() {
+  window.location.href = './index.html';
+}
+
+// ====== DATOS ======
+async function loadContacts() {
+  const { data, error } = await sb
+    .from('clients')
+    .select('*')
+    .order('legal_name', { ascending: true });
+
+  if (error) {
+    showToast('Error cargando contactos: ' + error.message, true);
+    console.error(error);
+    return;
+  }
+
+  allContacts = data || [];
+  populateProvinceFilter();
+  applyFilters();
+  updateHeaderStats();
+}
+
+function populateProvinceFilter() {
+  const select = $('provinceFilter');
+  const provinces = [...new Set(allContacts
+    .map(c => c.province)
+    .filter(p => p && p.trim()))]
+    .sort((a, b) => a.localeCompare(b, 'es'));
+
+  select.innerHTML = '<option value="">Todas</option>' +
+    provinces.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+}
+
+function updateHeaderStats() {
+  const total = allContacts.length;
+  const active = allContacts.filter(c => c.is_active).length;
+  const iban = allContacts.filter(c => c.iban && c.iban.trim()).length;
+  $('headerStats').textContent = `${total} contactos · ${active} activos · ${iban} con iban`;
+}
+
+// ====== FILTROS ======
+function applyFilters() {
+  let result = allContacts.slice();
+
+  // Genéricos
+  if (!state.showGenerics) {
+    result = result.filter(c => !isGenericNif(c.nif));
+  }
+
+  // Búsqueda
+  if (state.search) {
+    const q = state.search.toLowerCase();
+    result = result.filter(c => {
+      return (c.nif || '').toLowerCase().includes(q)
+        || (c.legal_name || '').toLowerCase().includes(q)
+        || (c.commercial_name || '').toLowerCase().includes(q)
+        || (c.city || '').toLowerCase().includes(q);
+    });
+  }
+
+  // Tipo
+  if (state.type !== 'all') {
+    result = result.filter(c => getContactType(c) === state.type);
+  }
+
+  // Estado
+  if (state.status === 'active') result = result.filter(c => c.is_active);
+  else if (state.status === 'inactive') result = result.filter(c => !c.is_active);
+
+  // IVA
+  if (state.vat !== 'all') {
+    result = result.filter(c => c.vat_regime === state.vat);
+  }
+
+  // Provincia
+  if (state.province) {
+    result = result.filter(c => c.province === state.province);
+  }
+
+  // Ordenación
+  const dir = state.sortDir === 'asc' ? 1 : -1;
+  result.sort((a, b) => {
+    if (state.activeFirst) {
+      if (a.is_active && !b.is_active) return -1;
+      if (!a.is_active && b.is_active) return 1;
+    }
+    const av = (a[state.sortBy] || '').toString().toLowerCase();
+    const bv = (b[state.sortBy] || '').toString().toLowerCase();
+    if (av < bv) return -1 * dir;
+    if (av > bv) return 1 * dir;
+    return 0;
+  });
+
+  filteredContacts = result;
+  state.page = 1;
+  renderTable();
+}
+
+// ====== RENDER ======
+function renderTable() {
+  const tbody = $('tbody');
+  const start = (state.page - 1) * state.pageSize;
+  const end = start + state.pageSize;
+  const pageData = filteredContacts.slice(start, end);
+
+  if (pageData.length === 0) {
+    tbody.innerHTML = `
+      <tr><td colspan="9">
+        <div class="empty-state">
+          <div class="empty-state-title">No hay contactos que coincidan</div>
+          <div class="empty-state-sub">prueba a quitar filtros o limpiar la búsqueda</div>
+        </div>
+      </td></tr>`;
+    renderPager();
+    return;
+  }
+
+  tbody.innerHTML = pageData.map(c => {
+    const type = getContactType(c);
+    const isGeneric = isGenericNif(c.nif);
+    let rowClass = '';
+    if (!c.is_active) rowClass += ' inactive';
+    if (isGeneric) rowClass += ' generic';
+    if (c.internal_notes && /MIXTO|REVISAR/i.test(c.internal_notes)) rowClass += ' flagged';
+    if (type === 'both') rowClass += ' both-type';
+    if (type === 'supplier') rowClass += ' supplier';
+
+    const nifDisplay = isGeneric ? '<span style="color:var(--text-faint)">(genérico)</span>' : escapeHtml(c.nif || '—');
+    const legalName = escapeHtml(c.legal_name || '—');
+
+    let flagBadge = '';
+    if (c.internal_notes && /MIXTO/i.test(c.internal_notes)) flagBadge = ' <span class="row-flag">MIXTO</span>';
+    else if (c.internal_notes && /REVISAR/i.test(c.internal_notes)) flagBadge = ' <span class="row-flag">REVISAR</span>';
+
+    const commercial = c.commercial_name && c.commercial_name !== c.legal_name
+      ? `<div class="commercial">${escapeHtml(c.commercial_name)}</div>` : '';
+
+    let typeBadge = '';
+    if (type === 'client') typeBadge = '<span class="badge badge-client">Cliente</span>';
+    else if (type === 'supplier') typeBadge = '<span class="badge badge-supplier">Proveedor</span>';
+    else if (type === 'both') typeBadge = '<span class="badge badge-both">Cliente + Proveedor</span>';
+    else typeBadge = '<span class="cell-muted">—</span>';
+
+    let vatBadge = '';
+    if (c.vat_regime === 'recargo_equivalencia') vatBadge = '<span class="badge badge-re">RE</span>';
+    else if (c.vat_regime === 'general') vatBadge = '<span class="badge badge-gen">General</span>';
+    else if (c.vat_regime === 'pendiente_revisar') vatBadge = '<span class="badge badge-pend">Pendiente</span>';
+    else vatBadge = '<span class="cell-muted">—</span>';
+
+    let paymentDisplay = '<span class="cell-muted">—</span>';
+    if (c.payment_method === 'remesa_sepa') paymentDisplay = 'Remesa SEPA';
+    else if (c.payment_method === 'pendiente_revisar') paymentDisplay = '<span class="cell-muted">— revisar</span>';
+    else if (c.payment_method) paymentDisplay = escapeHtml(c.payment_method.charAt(0).toUpperCase() + c.payment_method.slice(1));
+
+    const ibanDisplay = c.iban_last4
+      ? `<span class="iban-yes">···${escapeHtml(c.iban_last4)}</span>`
+      : '<span class="iban-no">—</span>';
+
+    return `
+      <tr class="${rowClass}" data-id="${c.id}">
+        <td><span class="dot ${c.is_active ? 'dot-active' : 'dot-inactive'}"></span></td>
+        <td class="nif">${nifDisplay}</td>
+        <td>
+          <div class="legal">${legalName}${flagBadge}</div>
+          ${commercial}
+        </td>
+        <td>${escapeHtml(c.city || '—')}</td>
+        <td>${escapeHtml(c.province || '—')}</td>
+        <td>${typeBadge}</td>
+        <td>${vatBadge}</td>
+        <td>${paymentDisplay}</td>
+        <td>${ibanDisplay}</td>
+      </tr>`;
+  }).join('');
+
+  // bind clicks
+  tbody.querySelectorAll('tr[data-id]').forEach(tr => {
+    tr.addEventListener('click', () => openModal(tr.dataset.id));
+  });
+
+  renderPager();
+}
+
+function renderPager() {
+  const total = filteredContacts.length;
+  const pages = Math.max(1, Math.ceil(total / state.pageSize));
+  const start = total === 0 ? 0 : (state.page - 1) * state.pageSize + 1;
+  const end = Math.min(state.page * state.pageSize, total);
+  $('pagerCount').textContent = total === 0 ? 'sin resultados' : `mostrando ${start}-${end} de ${total}`;
+
+  const ctrls = $('pagerControls');
+  if (pages <= 1) { ctrls.innerHTML = ''; return; }
+
+  let html = `<button class="pager-btn" id="prev" ${state.page === 1 ? 'disabled' : ''}>‹</button>`;
+
+  // pages a mostrar
+  const showPages = new Set();
+  showPages.add(1);
+  showPages.add(pages);
+  for (let i = state.page - 1; i <= state.page + 1; i++) {
+    if (i >= 1 && i <= pages) showPages.add(i);
+  }
+  const sorted = [...showPages].sort((a, b) => a - b);
+  let prev = 0;
+  for (const p of sorted) {
+    if (p - prev > 1) html += `<span class="pager-btn" style="border:none;background:none;cursor:default;">…</span>`;
+    html += `<button class="pager-btn ${p === state.page ? 'active' : ''}" data-page="${p}">${p}</button>`;
+    prev = p;
+  }
+  html += `<button class="pager-btn" id="next" ${state.page === pages ? 'disabled' : ''}>›</button>`;
+  ctrls.innerHTML = html;
+
+  ctrls.querySelectorAll('button[data-page]').forEach(b => {
+    b.addEventListener('click', () => { state.page = parseInt(b.dataset.page); renderTable(); window.scrollTo({top: 0, behavior: 'smooth'}); });
+  });
+  const prevBtn = $('prev');
+  const nextBtn = $('next');
+  if (prevBtn) prevBtn.addEventListener('click', () => { if (state.page > 1) { state.page--; renderTable(); window.scrollTo({top: 0, behavior: 'smooth'}); }});
+  if (nextBtn) nextBtn.addEventListener('click', () => { if (state.page < pages) { state.page++; renderTable(); window.scrollTo({top: 0, behavior: 'smooth'}); }});
+}
+
+// ====== MODAL ======
+function openModal(id) {
+  const c = allContacts.find(x => x.id === id);
+  if (!c) return;
+  currentEditId = id;
+
+  $('modalTitle').innerHTML = 'Editar <em>contacto</em>';
+  $('modalSubtitle').textContent = (c.nif || 'sin nif') + ' · ' + (c.legal_name || '');
+
+  const form = $('contactForm');
+  form.nif.value = isGenericNif(c.nif) ? '' : (c.nif || '');
+  form.legal_name.value = c.legal_name || '';
+  form.commercial_name.value = c.commercial_name || '';
+  form.email.value = c.email || '';
+  form.phone.value = c.phone || '';
+  form.address.value = c.address || '';
+  form.city.value = c.city || '';
+  form.postal_code.value = c.postal_code || '';
+  form.province.value = c.province || '';
+  form.country.value = c.country || 'ES';
+  form.iban.value = c.iban || '';
+  form.vat_regime.value = c.vat_regime || '';
+  form.payment_method.value = c.payment_method || '';
+  form.internal_notes.value = c.internal_notes || '';
+  $('cbIsClient').checked = !!c.is_client;
+  $('cbIsSupplier').checked = !!c.is_supplier;
+  $('cbIsActive').checked = !!c.is_active;
+  $('btnDelete').style.display = 'inline-flex';
+
+  $('modal').classList.add('active');
+}
+
+function openNewModal() {
+  currentEditId = null;
+  $('modalTitle').innerHTML = 'Nuevo <em>contacto</em>';
+  $('modalSubtitle').textContent = 'crear nuevo contacto';
+
+  const form = $('contactForm');
+  form.reset();
+  form.country.value = 'ES';
+  form.vat_regime.value = 'pendiente_revisar';
+  form.payment_method.value = 'pendiente_revisar';
+  $('cbIsClient').checked = true;
+  $('cbIsSupplier').checked = false;
+  $('cbIsActive').checked = true;
+  $('btnDelete').style.display = 'none';
+
+  $('modal').classList.add('active');
+}
+
+function closeModal() {
+  $('modal').classList.remove('active');
+  currentEditId = null;
+}
+
+async function saveContact(e) {
+  e.preventDefault();
+  const form = e.target;
+  const ibanRaw = form.iban.value.trim();
+  const ibanClean = ibanRaw ? ibanRaw.replace(/[\s-]/g, '').toUpperCase() : null;
+
+  const payload = {
+    user_id: currentUser.id,
+    nif: form.nif.value.trim() || null,
+    legal_name: form.legal_name.value.trim(),
+    commercial_name: form.commercial_name.value.trim() || null,
+    email: form.email.value.trim() || null,
+    phone: form.phone.value.trim() || null,
+    address: form.address.value.trim() || null,
+    city: form.city.value.trim() || null,
+    postal_code: form.postal_code.value.trim() || null,
+    province: form.province.value.trim() || null,
+    country: form.country.value.trim() || 'ES',
+    iban: ibanClean,
+    iban_last4: ibanLast4(ibanClean),
+    vat_regime: form.vat_regime.value || null,
+    payment_method: form.payment_method.value || null,
+    internal_notes: form.internal_notes.value.trim() || null,
+    is_client: $('cbIsClient').checked,
+    is_supplier: $('cbIsSupplier').checked,
+    is_active: $('cbIsActive').checked
+  };
+
+  if (!payload.legal_name) {
+    showToast('La razón social es obligatoria', true);
+    return;
+  }
+
+  if (currentEditId) {
+    // UPDATE
+    const { error } = await sb.from('clients').update(payload).eq('id', currentEditId);
+    if (error) {
+      showToast('Error guardando: ' + error.message, true);
+      console.error(error);
+      return;
+    }
+    showToast('Contacto actualizado');
+  } else {
+    // INSERT
+    const { error } = await sb.from('clients').insert(payload);
+    if (error) {
+      if (error.code === '23505') {
+        showToast('Ya existe un contacto con ese NIF', true);
+      } else {
+        showToast('Error creando: ' + error.message, true);
+      }
+      console.error(error);
+      return;
+    }
+    showToast('Contacto creado');
+  }
+
+  closeModal();
+  await loadContacts();
+}
+
+async function deleteContact() {
+  if (!currentEditId) return;
+  const c = allContacts.find(x => x.id === currentEditId);
+  const name = c ? (c.legal_name || c.nif || 'este contacto') : 'este contacto';
+  if (!confirm(`¿Eliminar "${name}"?\n\nEsta acción no se puede deshacer.`)) return;
+
+  const { error } = await sb.from('clients').delete().eq('id', currentEditId);
+  if (error) {
+    showToast('Error eliminando: ' + error.message, true);
+    console.error(error);
+    return;
+  }
+  showToast('Contacto eliminado');
+  closeModal();
+  await loadContacts();
+}
+
+// ====== EVENTOS ======
+function bindEvents() {
+  // search
+  let searchTimer;
+  $('searchInput').addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      state.search = e.target.value.trim();
+      applyFilters();
+    }, 180);
+  });
+
+  // filtros botones
+  document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = btn.dataset.filter;
+      const v = btn.dataset.value;
+      state[f] = v;
+      document.querySelectorAll(`.filter-btn[data-filter="${f}"]`).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilters();
+    });
+  });
+
+  // provincia
+  $('provinceFilter').addEventListener('change', (e) => {
+    state.province = e.target.value;
+    applyFilters();
+  });
+
+  // toggles
+  $('toggleGenerics').addEventListener('change', (e) => {
+    state.showGenerics = e.target.checked;
+    applyFilters();
+  });
+  $('toggleActiveFirst').addEventListener('change', (e) => {
+    state.activeFirst = e.target.checked;
+    applyFilters();
+  });
+
+  // sort
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (state.sortBy === col) {
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.sortBy = col;
+        state.sortDir = 'asc';
+      }
+      document.querySelectorAll('th.sortable').forEach(t => {
+        t.classList.remove('sorted');
+        t.querySelector('.sort-ind').textContent = '↕';
+      });
+      th.classList.add('sorted');
+      th.querySelector('.sort-ind').textContent = state.sortDir === 'asc' ? '↑' : '↓';
+      applyFilters();
+    });
+  });
+
+  // modal
+  $('btnNewContact').addEventListener('click', openNewModal);
+  $('modalClose').addEventListener('click', closeModal);
+  $('btnCancel').addEventListener('click', closeModal);
+  $('btnDelete').addEventListener('click', deleteContact);
+  $('contactForm').addEventListener('submit', saveContact);
+  $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('modal').classList.contains('active')) closeModal(); });
+}
+
+// ====== INIT ======
+(async function init() {
+  const ok = await checkAuth();
+  if (!ok) return;
+  bindEvents();
+  await loadContacts();
+  $('loadingScreen').style.display = 'none';
+  $('app').style.display = 'block';
+})();
+</script>
+
+</body>
+</html>
