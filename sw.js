@@ -2,7 +2,7 @@
 // Estrategia: NETWORK-FIRST para HTML (siempre busca versión nueva),
 //             cache-first solo para assets estáticos (iconos, fuentes).
 
-const CACHE_NAME = 'magilu-finance-v5';  // ← subir este número en cada despliegue importante
+const CACHE_NAME = 'magilu-finance-v7';  // ← subir este número en cada despliegue importante
 const SHELL_FILES = [
   './manifest.json',
 ];

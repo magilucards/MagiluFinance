@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Depósitos · Magilu Finance</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#050912; --bg-elev:#0b1326; --bg-card:#11192e; --border:#1f2a44; --border-strong:#2c3a5c;
+  --text:#e2ebf2; --text-dim:#8a9bb2; --text-faint:#4f5d76;
+  --primary:#6ee2c5; --primary-dim:#4ab9a0; --primary-bright:#8fefd5;
+  --accent:#2a4670; --accent-bright:#3f6299;
+  --amber:#d4a04a; --amber-bright:#e8b85a; --red:#e07560; --red-bright:#ee8a76;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:var(--bg); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+
+.loading-screen { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:1000; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+
+.app-header { background:var(--bg-elev); border-bottom:1px solid var(--border); padding:20px 32px; position:sticky; top:0; z-index:10; }
+.header-inner { display:flex; align-items:center; gap:24px; max-width:1400px; margin:0 auto; }
+.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-dim); text-decoration:none; font-size:12px; padding:7px 14px; border:1px solid var(--border-strong); border-radius:6px; font-family:'JetBrains Mono',monospace; letter-spacing:0.04em; }
+.back-link:hover { border-color:var(--primary); color:var(--primary); }
+h1 { font-family:'Fraunces',serif; font-size:28px; font-weight:500; letter-spacing:-0.01em; }
+h1 em { font-style:italic; color:var(--primary); font-weight:400; }
+.subtitle { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.1em; }
+.btn-primary { background:var(--primary-dim); border:1px solid var(--primary-dim); color:var(--bg); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:600; padding:9px 16px; cursor:pointer; border-radius:6px; }
+.btn-primary:hover { background:var(--primary); }
+.btn-primary.ml-auto { margin-left:auto; }
+.btn-secondary { background:var(--bg-card); border:1px solid var(--border-strong); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:500; padding:9px 16px; cursor:pointer; border-radius:6px; }
+.btn-secondary:hover { border-color:var(--primary-dim); color:var(--primary); }
+.btn-danger { background:transparent; border:1px solid var(--red); color:var(--red-bright); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:500; padding:9px 16px; cursor:pointer; border-radius:6px; }
+.btn-danger:hover { background:rgba(224,117,96,0.1); }
+.btn-pdf { background:transparent; border:1px solid var(--accent-bright); color:var(--accent-bright); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:600; padding:9px 16px; cursor:pointer; border-radius:6px; }
+.btn-pdf:hover { background:rgba(63,98,153,0.15); }
+
+.main-content { max-width:1400px; margin:0 auto; padding:24px 32px; }
+
+/* FILTROS */
+.filters { display:flex; gap:8px; margin-bottom:20px; align-items:center; flex-wrap:wrap; }
+.filter-btn { background:var(--bg-card); border:1px solid var(--border); padding:7px 14px; border-radius:6px; font-size:12px; cursor:pointer; color:var(--text-dim); }
+.filter-btn:hover { border-color:var(--primary-dim); color:var(--text); }
+.filter-btn.active { background:var(--primary-dim); color:var(--bg); border-color:var(--primary-dim); font-weight:600; }
+.search-box { margin-left:auto; display:flex; align-items:center; gap:8px; background:var(--bg-card); border:1px solid var(--border-strong); border-radius:6px; padding:7px 12px; min-width:240px; }
+.search-box input { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; }
+.search-box input::placeholder { color:var(--text-faint); }
+
+/* LISTA DEPÓSITOS */
+.dep-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin-bottom:12px; display:grid; grid-template-columns:auto 1fr auto auto auto; gap:20px; align-items:center; cursor:pointer; transition:all 0.15s; }
+.dep-card:hover { border-color:var(--primary-dim); transform:translateY(-1px); }
+.status-pill { font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; padding:4px 10px; border-radius:20px; font-weight:600; white-space:nowrap; }
+.status-abierto { background:rgba(110,226,197,0.12); color:var(--primary); }
+.status-recontado { background:rgba(212,160,74,0.12); color:var(--amber-bright); }
+.status-facturado { background:rgba(63,98,153,0.18); color:var(--accent-bright); }
+.dep-client { font-weight:600; font-size:15px; }
+.dep-meta { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:2px; }
+.dep-stat { text-align:right; }
+.dep-stat-num { font-family:'JetBrains Mono',monospace; font-size:15px; font-weight:600; color:var(--text); }
+.dep-stat-label { font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em; }
+.empty-state { padding:60px 24px; text-align:center; color:var(--text-faint); }
+.empty-state-title { font-size:16px; margin-bottom:8px; color:var(--text-dim); }
+.empty-state-sub { font-size:12px; font-family:'JetBrains Mono',monospace; }
+
+/* VISTA DETALLE / CREAR */
+.detail-view { display:none; }
+.detail-view.active { display:block; }
+.list-view.hidden { display:none; }
+.detail-box { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:16px; }
+.detail-box-title { font-family:'Fraunces',serif; font-size:18px; font-style:italic; color:var(--primary); margin-bottom:18px; }
+.field-row { display:flex; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
+.field { display:flex; flex-direction:column; gap:5px; flex:1; min-width:180px; }
+.field label { font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-faint); font-weight:600; }
+.field input, .field select { background:var(--bg); border:1px solid var(--border-strong); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:13px; padding:9px 12px; border-radius:5px; outline:none; }
+.field input:focus, .field select:focus { border-color:var(--primary); }
+.field input.mono { font-family:'JetBrains Mono',monospace; }
+.field select option { background:var(--bg-card); color:var(--text); }
+
+/* Buscador de productos */
+.product-search { position:relative; }
+.search-results { position:absolute; top:100%; left:0; right:0; background:var(--bg-elev); border:1px solid var(--primary-dim); border-radius:6px; margin-top:4px; z-index:20; max-height:280px; overflow-y:auto; box-shadow:0 12px 32px rgba(0,0,0,0.5); display:none; }
+.search-results.active { display:block; }
+.search-item { padding:10px 14px; display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center; cursor:pointer; border-bottom:1px solid var(--border); }
+.search-item:last-child { border-bottom:none; }
+.search-item:hover, .search-item.highlighted { background:var(--bg-card); }
+.search-item-code { font-family:'JetBrains Mono',monospace; color:var(--primary); font-size:12px; }
+.search-item-name { color:var(--text-dim); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.search-item-price { font-family:'JetBrains Mono',monospace; color:var(--text); font-size:12px; }
+.search-no-results { padding:14px; text-align:center; color:var(--text-faint); font-size:12px; font-style:italic; }
+
+/* Tabla de líneas */
+.lines-table { width:100%; border-collapse:collapse; margin-top:8px; }
+.lines-table th { text-align:left; padding:9px 10px; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); border-bottom:1px solid var(--border-strong); }
+.lines-table th.num, .lines-table td.num { text-align:right; }
+.lines-table td { padding:9px 10px; border-bottom:1px solid var(--border); }
+.lines-table .code { font-family:'JetBrains Mono',monospace; color:var(--primary); font-size:12px; }
+.lines-table input { width:80px; background:var(--bg); border:1px solid var(--border-strong); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; padding:6px 8px; border-radius:4px; text-align:right; }
+.lines-table input.recount { border-color:var(--amber); color:var(--amber-bright); }
+.lines-table .price { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); }
+.lines-table .sold { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--primary); font-weight:600; }
+.del-line { color:var(--red-bright); cursor:pointer; font-size:18px; background:none; border:none; padding:0 6px; }
+.del-line:hover { color:var(--red); }
+
+.summary-bar { display:flex; justify-content:flex-end; gap:32px; padding:16px 10px 0; margin-top:8px; border-top:1px solid var(--border-strong); }
+.summary-item { text-align:right; }
+.summary-label { font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); }
+.summary-val { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:600; color:var(--primary); }
+
+.detail-actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.detail-actions .right { margin-left:auto; display:flex; gap:12px; }
+
+.toast { position:fixed; bottom:24px; right:24px; background:var(--bg-card); border:1px solid var(--border-strong); border-left:3px solid var(--primary); border-radius:6px; padding:12px 18px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,0.4); z-index:200; opacity:0; transform:translateY(10px); transition:all 0.2s; }
+.toast.show { opacity:1; transform:translateY(0); }
+.toast.error { border-left-color:var(--red); }
+.toast.error .toast-icon { color:var(--red-bright); }
+.toast-icon { color:var(--primary); margin-right:6px; }
+
+.pager-tag { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); text-align:center; padding:16px; }
+
+@media (max-width:768px) {
+  .app-header { padding:14px 16px; }
+  .header-inner { gap:12px; flex-wrap:wrap; }
+  h1 { font-size:22px; }
+  .main-content { padding:16px; }
+  .dep-card { grid-template-columns:auto 1fr; gap:10px; }
+  .dep-stat { text-align:left; grid-column:2; }
+  .field-row { flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">cargando depósitos…</div>
+
+<div id="app" style="display:none;">
+
+<header class="app-header">
+  <div class="header-inner">
+    <a href="./index.html" class="back-link">← Inicio</a>
+    <div>
+      <h1>Depós<em>itos</em></h1>
+      <div class="subtitle" id="headerStats">— · v14</div>
+    </div>
+    <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
+  </div>
+</header>
+
+<main class="main-content">
+
+  <!-- ===== VISTA LISTA ===== -->
+  <div class="list-view" id="listView">
+    <div class="filters">
+      <button class="filter-btn active" data-status="all">Todos</button>
+      <button class="filter-btn" data-status="abierto">Abiertos</button>
+      <button class="filter-btn" data-status="recontado">Recontados</button>
+      <button class="filter-btn" data-status="facturado">Facturados</button>
+      <div class="search-box">
+        <span style="color:var(--text-faint)">⌕</span>
+        <input type="text" id="searchInput" placeholder="buscar cliente...">
+      </div>
+    </div>
+    <div id="depList"></div>
+  </div>
+
+  <!-- ===== VISTA DETALLE / CREAR / RECONTAR ===== -->
+  <div class="detail-view" id="detailView">
+    <div class="detail-box">
+      <div class="detail-box-title" id="detailTitle">Nuevo depósito</div>
+
+      <div class="field-row">
+        <div class="field" style="flex:2;">
+          <label>Cliente *</label>
+          <select id="clientSelect"><option value="">— elige cliente —</option></select>
+        </div>
+        <div class="field" style="max-width:120px;">
+          <label>Nº depósito</label>
+          <input type="number" id="depositNumber" class="mono" min="1" step="1" placeholder="auto">
+        </div>
+        <div class="field">
+          <label>Fecha entrega</label>
+          <input type="date" id="deliveryDate" class="mono">
+        </div>
+        <div class="field">
+          <label>Estado</label>
+          <input type="text" id="statusDisplay" class="mono" readonly value="abierto" style="text-transform:uppercase;">
+        </div>
+      </div>
+
+      <!-- Buscador de productos (solo visible en abierto) -->
+      <div class="field product-search" id="productSearchWrap">
+        <label>Añadir producto (escribe código o nombre)</label>
+        <input type="text" id="productSearch" placeholder="ej: MGE, navidad, llavero...">
+        <div class="search-results" id="searchResults"></div>
+      </div>
+
+      <table class="lines-table">
+        <thead>
+          <tr id="linesHead">
+            <th>Cód.</th>
+            <th>Producto</th>
+            <th class="num">Entregado</th>
+            <th class="num recount-col" style="display:none;">Resto</th>
+            <th class="num recount-col" style="display:none;">Vendido</th>
+            <th class="num">Precio ud.</th>
+            <th class="num import-col" style="display:none;">Importe</th>
+            <th style="width:30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="linesBody"></tbody>
+      </table>
+
+      <div class="summary-bar" id="summaryBar"></div>
+    </div>
+
+    <div class="detail-box">
+      <div class="field">
+        <label>Notas internas (no salen en el PDF del cliente)</label>
+        <input type="text" id="depNotes" placeholder="anotaciones internas...">
+      </div>
+    </div>
+
+    <div class="detail-actions">
+      <button class="btn-secondary" id="btnBack">← Volver a la lista</button>
+      <button class="btn-danger" id="btnDelete" style="display:none;">Eliminar depósito</button>
+      <div class="right">
+        <button class="btn-pdf" id="btnPdfEntrega" style="display:none;">PDF entrega</button>
+        <button class="btn-pdf" id="btnPdfFactura" style="display:none;">PDF liquidación</button>
+        <button class="btn-secondary" id="btnRecount" style="display:none;">Pasar a recuento</button>
+        <button class="btn-secondary" id="btnInvoice" style="display:none;">Marcar facturado</button>
+        <button class="btn-primary" id="btnSave">Guardar depósito</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div><!-- /#app -->
+
+<div id="toast" class="toast"></div>
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
+  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer">
+</script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" referrerpolicy="no-referrer"></script>
+
+<script>
+'use strict';
+
+const SUPABASE_URL = 'https://bgrsjftxwuduvlglfpky.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3Uhr0TMJEtq4_9CJc1D19Q_nfrkRq_2';
+
+// === Datos del emisor para el PDF ===
+const EMISOR = {
+  nombre: 'MAGILU',
+  tagline: 'Tarjetas de felicitación',
+  persona: 'Tomás Santofímia',
+  tel: '640 809 421',
+  email: 'info@magilucards.com',
+  web: 'magilucards.com'
+};
+
+if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+  document.getElementById('loadingScreen').innerHTML = '<div style="color:#ee8a76;text-align:center;padding:24px;max-width:500px;">No se pudo cargar Supabase SDK. Recarga la página.</div>';
+  throw new Error('Supabase SDK no disponible');
+}
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false }
+});
+
+let currentUser = null;
+let allDeposits = [];
+let clients = [];
+let products = [];
+let nextDepositNumber = 1;  // siguiente número correlativo
+let filterStatus = 'all';
+let searchTerm = '';
+
+// Estado de edición
+let editing = null;   // objeto deposit o null
+let lines = [];        // líneas en edición
+let searchHighlight = -1;
+
+function $(id){ return document.getElementById(id); }
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+function fmtMoney(n){ return new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0) + ' €'; }
+function fmtDate(d){ if(!d) return '—'; const p=String(d).split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : d; }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+function showToast(msg, isError=false){
+  const t=$('toast');
+  t.className='toast'+(isError?' error':'');
+  t.innerHTML=(isError?'<span class="toast-icon">⚠</span>':'<span class="toast-icon">✓</span>')+escapeHtml(msg);
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+async function checkAuth(){
+  const { data:{session}, error } = await sb.auth.getSession();
+  if (error || !session){ window.location.href='./tesoreria.html'; return false; }
+  currentUser = session.user;
+  return true;
+}
+
+async function loadAll(){
+  // Cargar clientes (solo los que son clientes), productos y depósitos
+  const [cRes, pRes, dRes] = await Promise.all([
+    sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,is_client').eq('is_client',true).order('legal_name'),
+    sb.from('products').select('id,code,name,current_price,current_cost,vat_rate,is_active').order('code'),
+    sb.from('deposits').select('*').order('delivery_date',{ascending:false})
+  ]);
+  if (cRes.error){ showToast('Error cargando clientes: '+cRes.error.message,true); return; }
+  if (pRes.error){ showToast('Error cargando productos: '+pRes.error.message,true); return; }
+  if (dRes.error){ showToast('Error cargando depósitos: '+dRes.error.message,true); return; }
+
+  clients = cRes.data||[];
+  products = pRes.data||[];
+  allDeposits = dRes.data||[];
+
+  // Calcular siguiente número correlativo: el mayor deposit_number existente + 1
+  const numeros = allDeposits.map(d=>d.deposit_number).filter(n=>n!=null);
+  nextDepositNumber = numeros.length ? (Math.max(...numeros) + 1) : null; // null = aún no se ha fijado el primero
+
+  // Cargar líneas de todos los depósitos para los totales de la lista
+  const { data: allLines } = await sb.from('deposit_lines').select('*');
+  const linesByDep = {};
+  (allLines||[]).forEach(l => { (linesByDep[l.deposit_id] = linesByDep[l.deposit_id]||[]).push(l); });
+  allDeposits.forEach(d => { d._lines = linesByDep[d.id]||[]; });
+
+  populateClientSelect();
+  updateHeaderStats();
+  renderList();
+}
+
+function populateClientSelect(){
+  const sel=$('clientSelect');
+  sel.innerHTML='<option value="">— elige cliente —</option>' + clients.map(c=>{
+    const name = c.commercial_name && c.commercial_name!==c.legal_name ? `${c.legal_name} (${c.commercial_name})` : c.legal_name;
+    return `<option value="${c.id}">${escapeHtml(name)} — ${escapeHtml(c.nif||'sin nif')}</option>`;
+  }).join('');
+}
+
+function updateHeaderStats(){
+  const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
+  const total = allDeposits.length;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v14`;
+}
+
+// ===== LISTA =====
+function depTotals(d){
+  const entregado = d._lines.reduce((s,l)=>s+(parseFloat(l.qty_delivered)||0),0);
+  let vendido=0, importe=0;
+  d._lines.forEach(l=>{
+    if (l.qty_remaining!=null){
+      const v=(parseFloat(l.qty_delivered)||0)-(parseFloat(l.qty_remaining)||0);
+      vendido+=v; importe+=v*(parseFloat(l.unit_price)||0);
+    }
+  });
+  const valorDeposito = d._lines.reduce((s,l)=>s+(parseFloat(l.qty_delivered)||0)*(parseFloat(l.unit_price)||0),0);
+  return { entregado, vendido, importe, valorDeposito, nProductos:d._lines.length };
+}
+
+function renderList(){
+  let result = allDeposits.slice();
+  if (filterStatus!=='all') result = result.filter(d=>d.status===filterStatus);
+  if (searchTerm){
+    const q=searchTerm.toLowerCase();
+    result = result.filter(d=>{
+      const c = clients.find(x=>x.id===d.client_id);
+      const name = c ? (c.legal_name+' '+(c.commercial_name||'')) : '';
+      return name.toLowerCase().includes(q);
+    });
+  }
+  const cont=$('depList');
+  if (result.length===0){
+    cont.innerHTML=`<div class="empty-state"><div class="empty-state-title">No hay depósitos</div><div class="empty-state-sub">pulsa "+ Nuevo depósito" para crear el primero</div></div>`;
+    return;
+  }
+  cont.innerHTML = result.map(d=>{
+    const c = clients.find(x=>x.id===d.client_id);
+    const clientName = c ? (c.commercial_name||c.legal_name) : '(cliente eliminado)';
+    const nif = c ? (c.nif||'') : '';
+    const city = c ? (c.city||'') : '';
+    const t = depTotals(d);
+    let dateLabel, dateVal;
+    if (d.status==='abierto'){ dateLabel='entregado'; dateVal=d.delivery_date; }
+    else if (d.status==='recontado'){ dateLabel='recontado'; dateVal=d.recount_date||d.delivery_date; }
+    else { dateLabel='facturado'; dateVal=d.invoice_date||d.delivery_date; }
+
+    let stat2, stat3;
+    if (d.status==='abierto'){
+      stat2 = `<div class="dep-stat"><div class="dep-stat-num">${t.entregado}</div><div class="dep-stat-label">uds entregadas</div></div>`;
+      stat3 = `<div class="dep-stat"><div class="dep-stat-num">${t.nProductos}</div><div class="dep-stat-label">productos</div></div>`;
+    } else {
+      stat2 = `<div class="dep-stat"><div class="dep-stat-num">${t.vendido} / ${t.entregado}</div><div class="dep-stat-label">vendido / entregado</div></div>`;
+      stat3 = `<div class="dep-stat"><div class="dep-stat-num">${fmtMoney(t.importe)}</div><div class="dep-stat-label">${d.status==='facturado'?'facturado':'a facturar'}</div></div>`;
+    }
+    return `
+      <div class="dep-card" data-id="${d.id}">
+        <span class="status-pill status-${d.status}">${d.status}</span>
+        <div>
+          <div class="dep-client">${d.deposit_number!=null?`<span style="color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:12px;">#${d.deposit_number}</span> `:''}${escapeHtml(clientName)}</div>
+          <div class="dep-meta">${escapeHtml(nif)}${city?' · '+escapeHtml(city):''} · ${dateLabel} ${fmtDate(dateVal)}</div>
+        </div>
+        <div class="dep-stat"><div class="dep-stat-num">${t.nProductos}</div><div class="dep-stat-label">productos</div></div>
+        ${stat2}
+        ${stat3}
+      </div>`;
+  }).join('');
+  cont.querySelectorAll('.dep-card[data-id]').forEach(card=>{
+    card.addEventListener('click',()=>openDeposit(card.dataset.id));
+  });
+}
+
+// ===== VISTA DETALLE =====
+function showListView(){ $('listView').classList.remove('hidden'); $('detailView').classList.remove('active'); }
+function showDetailView(){ $('listView').classList.add('hidden'); $('detailView').classList.add('active'); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function openNew(){
+  editing = null;
+  lines = [];
+  $('detailTitle').textContent = 'Nuevo depósito';
+  $('clientSelect').value = '';
+  $('clientSelect').disabled = false;
+  $('deliveryDate').value = todayISO();
+  $('statusDisplay').value = 'abierto';
+  $('depNotes').value = '';
+  // Numeración
+  const numInput = $('depositNumber');
+  if (nextDepositNumber === null){
+    // Primer depósito de la historia: editable, el usuario fija el número de partida
+    numInput.value = '';
+    numInput.readOnly = false;
+    numInput.placeholder = 'pon tu nº de inicio';
+  } else {
+    // Ya hay contador: autoasignar siguiente (pero editable por si quiere corregir)
+    numInput.value = nextDepositNumber;
+    numInput.readOnly = false;
+    numInput.placeholder = 'auto';
+  }
+  configureForStatus('abierto');
+  renderLines();
+  showDetailView();
+}
+
+async function openDeposit(id){
+  const d = allDeposits.find(x=>x.id===id);
+  if (!d) return;
+  editing = d;
+  // cargar líneas frescas
+  const { data, error } = await sb.from('deposit_lines').select('*').eq('deposit_id',id).order('sort_order');
+  if (error){ showToast('Error cargando líneas: '+error.message,true); return; }
+  lines = (data||[]).map(l=>({...l}));
+  $('detailTitle').textContent = 'Depósito · ' + d.status.toUpperCase();
+  $('clientSelect').value = d.client_id;
+  $('clientSelect').disabled = (d.status!=='abierto');
+  $('deliveryDate').value = d.delivery_date;
+  $('depositNumber').value = d.deposit_number != null ? d.deposit_number : '';
+  $('depositNumber').readOnly = false;
+  $('statusDisplay').value = d.status;
+  $('depNotes').value = d.notes||'';
+  configureForStatus(d.status);
+  renderLines();
+  showDetailView();
+}
+
+function configureForStatus(status){
+  // Mostrar/ocultar columnas y botones según estado
+  const isAbierto = status==='abierto';
+  const isRecontado = status==='recontado';
+  const isFacturado = status==='facturado';
+
+  // buscador de productos: solo en abierto
+  $('productSearchWrap').style.display = isAbierto ? 'block' : 'none';
+  // columnas resto/vendido: en recontado y facturado
+  document.querySelectorAll('.recount-col').forEach(el=>el.style.display = (isRecontado||isFacturado)?'table-cell':'none');
+  document.querySelectorAll('.import-col').forEach(el=>el.style.display = (isRecontado||isFacturado)?'table-cell':'none');
+
+  // botones
+  $('btnDelete').style.display = editing ? 'inline-flex' : 'none';
+  $('btnSave').style.display = (isAbierto||isRecontado) ? 'inline-flex' : 'none';
+  $('btnRecount').style.display = (editing && isAbierto) ? 'inline-flex' : 'none';
+  $('btnInvoice').style.display = (editing && isRecontado) ? 'inline-flex' : 'none';
+  $('btnPdfEntrega').style.display = editing ? 'inline-flex' : 'none';
+  $('btnPdfFactura').style.display = (editing && (isRecontado||isFacturado)) ? 'inline-flex' : 'none';
+}
+
+function renderLines(){
+  const status = $('statusDisplay').value;
+  const showRecount = (status==='recontado'||status==='facturado');
+  const body=$('linesBody');
+  if (lines.length===0){
+    body.innerHTML = `<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--text-faint);font-style:italic;">Sin productos. ${status==='abierto'?'Usa el buscador de arriba para añadir.':''}</td></tr>`;
+    renderSummary();
+    return;
+  }
+  body.innerHTML = lines.map((l,i)=>{
+    const delivered = parseFloat(l.qty_delivered)||0;
+    const remaining = l.qty_remaining!=null ? (parseFloat(l.qty_remaining)||0) : null;
+    const sold = remaining!=null ? (delivered-remaining) : null;
+    const price = parseFloat(l.unit_price)||0;
+    const importe = sold!=null ? sold*price : null;
+    let cells = `
+      <td class="code">${escapeHtml(l.product_code)}</td>
+      <td>${escapeHtml(l.product_name)}</td>`;
+    if (status==='abierto'){
+      cells += `<td class="num"><input type="number" min="0" step="1" value="${delivered}" data-i="${i}" data-f="delivered"></td>`;
+    } else {
+      cells += `<td class="num price">${delivered}</td>`;
+    }
+    if (showRecount){
+      cells += `<td class="num"><input type="number" min="0" step="1" class="recount" value="${remaining!=null?remaining:''}" data-i="${i}" data-f="remaining" ${status==='facturado'?'':''}></td>`;
+      cells += `<td class="num sold">${sold!=null?sold:'—'}</td>`;
+    }
+    if (status==='abierto'){
+      cells += `<td class="num"><input type="number" min="0" step="0.0001" value="${price}" data-i="${i}" data-f="price" style="width:90px;"></td>`;
+    } else {
+      cells += `<td class="num price">${fmtMoney(price)}</td>`;
+    }
+    if (showRecount){
+      cells += `<td class="num sold">${importe!=null?fmtMoney(importe):'—'}</td>`;
+    }
+    cells += `<td>${status==='abierto'?`<button class="del-line" data-del="${i}">×</button>`:''}</td>`;
+    return `<tr>${cells}</tr>`;
+  }).join('');
+
+  // bind inputs
+  body.querySelectorAll('input[data-i]').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const i=parseInt(inp.dataset.i), f=inp.dataset.f;
+      if (f==='delivered') lines[i].qty_delivered = parseFloat(inp.value)||0;
+      else if (f==='price') lines[i].unit_price = parseFloat(inp.value)||0;
+      else if (f==='remaining') lines[i].qty_remaining = inp.value==='' ? null : (parseFloat(inp.value)||0);
+      // recalcular solo summary y celdas dependientes sin re-render completo (para no perder foco)
+      if (f==='remaining' || f==='delivered' || f==='price') updateRowCalc(i);
+      renderSummary();
+    });
+  });
+  body.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.addEventListener('click',()=>{ lines.splice(parseInt(btn.dataset.del),1); renderLines(); });
+  });
+  renderSummary();
+}
+
+function updateRowCalc(i){
+  // actualiza las celdas "vendido" e "importe" de la fila i sin re-render
+  const rows = $('linesBody').querySelectorAll('tr');
+  const row = rows[i];
+  if (!row) return;
+  const l = lines[i];
+  const delivered = parseFloat(l.qty_delivered)||0;
+  const remaining = l.qty_remaining!=null ? (parseFloat(l.qty_remaining)||0) : null;
+  const sold = remaining!=null ? (delivered-remaining) : null;
+  const price = parseFloat(l.unit_price)||0;
+  const importe = sold!=null ? sold*price : null;
+  const soldCells = row.querySelectorAll('.sold');
+  if (soldCells.length>=1) soldCells[0].textContent = sold!=null?sold:'—';
+  if (soldCells.length>=2) soldCells[1].textContent = importe!=null?fmtMoney(importe):'—';
+}
+
+function renderSummary(){
+  const status=$('statusDisplay').value;
+  const entregado = lines.reduce((s,l)=>s+(parseFloat(l.qty_delivered)||0),0);
+  if (status==='abierto'){
+    const valor = lines.reduce((s,l)=>s+(parseFloat(l.qty_delivered)||0)*(parseFloat(l.unit_price)||0),0);
+    $('summaryBar').innerHTML = `
+      <div class="summary-item"><div class="summary-label">Productos</div><div class="summary-val">${lines.length}</div></div>
+      <div class="summary-item"><div class="summary-label">Uds entregadas</div><div class="summary-val">${entregado}</div></div>
+      <div class="summary-item"><div class="summary-label">Valor depósito (interno)</div><div class="summary-val">${fmtMoney(valor)}</div></div>`;
+  } else {
+    let vendido=0, importe=0;
+    lines.forEach(l=>{
+      if (l.qty_remaining!=null){ const v=(parseFloat(l.qty_delivered)||0)-(parseFloat(l.qty_remaining)||0); vendido+=v; importe+=v*(parseFloat(l.unit_price)||0); }
+    });
+    $('summaryBar').innerHTML = `
+      <div class="summary-item"><div class="summary-label">Total vendido</div><div class="summary-val">${vendido} uds</div></div>
+      <div class="summary-item"><div class="summary-label">Importe a ${status==='facturado'?'cobrar':'facturar'}</div><div class="summary-val">${fmtMoney(importe)}</div></div>`;
+  }
+}
+
+// ===== BUSCADOR DE PRODUCTOS =====
+function renderSearchResults(term){
+  const box=$('searchResults');
+  if (!term){ box.classList.remove('active'); box.innerHTML=''; return; }
+  const q=term.toLowerCase();
+  const matches = products.filter(p=>p.is_active && ((p.code||'').toLowerCase().includes(q) || (p.name||'').toLowerCase().includes(q))).slice(0,12);
+  if (matches.length===0){ box.classList.add('active'); box.innerHTML='<div class="search-no-results">Sin resultados para "'+escapeHtml(term)+'"</div>'; return; }
+  searchHighlight = -1;
+  box.classList.add('active');
+  box.innerHTML = matches.map((p,idx)=>`
+    <div class="search-item" data-pid="${p.id}" data-idx="${idx}">
+      <span class="search-item-code">${escapeHtml(p.code)}</span>
+      <span class="search-item-name">${escapeHtml(p.name)}</span>
+      <span class="search-item-price">${fmtMoney(p.current_price)}</span>
+    </div>`).join('');
+  box.querySelectorAll('.search-item[data-pid]').forEach(item=>{
+    item.addEventListener('click',()=>addLine(item.dataset.pid));
+  });
+}
+
+function addLine(productId){
+  const p = products.find(x=>x.id===productId);
+  if (!p) return;
+  // evitar duplicado
+  if (lines.some(l=>l.product_id===productId)){ showToast('Ese producto ya está en el depósito',true); return; }
+  lines.push({
+    product_id: p.id,
+    product_code: p.code,
+    product_name: p.name,
+    qty_delivered: 0,
+    qty_remaining: null,
+    unit_price: parseFloat(p.current_price)||0,   // PRECIO CONGELADO
+    unit_cost: parseFloat(p.current_cost)||0,
+    vat_rate: p.vat_rate||21
+  });
+  $('productSearch').value='';
+  $('searchResults').classList.remove('active');
+  renderLines();
+}
+
+// ===== GUARDAR / TRANSICIONES =====
+async function saveDeposit(silent=false){
+  const clientId = $('clientSelect').value;
+  if (!clientId){ showToast('Elige un cliente',true); return false; }
+  if (lines.length===0){ showToast('Añade al menos un producto',true); return false; }
+
+  const status = $('statusDisplay').value;
+  const depNumRaw = $('depositNumber').value.trim();
+  const depNum = depNumRaw === '' ? null : parseInt(depNumRaw);
+  const depPayload = {
+    user_id: currentUser.id,
+    client_id: clientId,
+    delivery_date: $('deliveryDate').value || todayISO(),
+    status: status,
+    deposit_number: depNum,
+    notes: $('depNotes').value.trim()||null,
+    updated_at: new Date().toISOString()
+  };
+
+  let depId;
+  if (editing){
+    depId = editing.id;
+    const { error } = await sb.from('deposits').update(depPayload).eq('id',depId);
+    if (error){ showToast('Error guardando: '+error.message,true); return false; }
+  } else {
+    const { data, error } = await sb.from('deposits').insert(depPayload).select().single();
+    if (error){ showToast('Error creando: '+error.message,true); return false; }
+    depId = data.id;
+    editing = data;
+  }
+
+  // Reescribir líneas: borrar las que ya no están y upsert del resto
+  // Estrategia simple: borrar todas las del depósito y reinsertar
+  await sb.from('deposit_lines').delete().eq('deposit_id',depId);
+  const linesPayload = lines.map((l,idx)=>({
+    user_id: currentUser.id,
+    deposit_id: depId,
+    product_id: l.product_id,
+    product_code: l.product_code,
+    product_name: l.product_name,
+    qty_delivered: parseFloat(l.qty_delivered)||0,
+    qty_remaining: l.qty_remaining!=null ? (parseFloat(l.qty_remaining)||0) : null,
+    unit_price: parseFloat(l.unit_price)||0,
+    unit_cost: parseFloat(l.unit_cost)||0,
+    vat_rate: l.vat_rate||21,
+    sort_order: idx
+  }));
+  const { error: linesErr } = await sb.from('deposit_lines').insert(linesPayload);
+  if (linesErr){ showToast('Error guardando líneas: '+linesErr.message,true); return false; }
+
+  // Actualizar el contador global si se usó un número correlativo
+  if (depNum != null){
+    await sb.from('settings').update({ next_deposit_number: depNum + 1 }).eq('user_id', currentUser.id);
+  }
+
+  if (!silent) showToast('Depósito guardado');
+  await loadAll();
+  return depId;
+}
+
+async function transitionTo(newStatus){
+  // Guardar primero el estado actual
+  const depId = await saveDeposit(true);
+  if (!depId) return;
+  const patch = { status:newStatus, updated_at:new Date().toISOString() };
+  if (newStatus==='recontado') patch.recount_date = todayISO();
+  if (newStatus==='facturado') patch.invoice_date = todayISO();
+  const { error } = await sb.from('deposits').update(patch).eq('id',depId);
+  if (error){ showToast('Error: '+error.message,true); return; }
+  showToast(newStatus==='recontado'?'Pasado a recuento':'Marcado como facturado');
+  await loadAll();
+  await openDeposit(depId);
+}
+
+async function deleteDeposit(){
+  if (!editing) return;
+  if (!confirm('¿Eliminar este depósito y todas sus líneas?\n\nEsta acción no se puede deshacer.')) return;
+  const { error } = await sb.from('deposits').delete().eq('id',editing.id);
+  if (error){ showToast('Error eliminando: '+error.message,true); return; }
+  showToast('Depósito eliminado');
+  await loadAll();
+  showListView();
+}
+
+// ===== GENERACIÓN PDF =====
+function getClient(){ return clients.find(c=>c.id===$('clientSelect').value); }
+
+function generatePDF(tipo){
+  // tipo: 'entrega' | 'liquidacion'
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const c = getClient();
+  const pageW = doc.internal.pageSize.getWidth();
+  const M = 16; // margen
+
+  // ---- Cabecera emisor ----
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(26,77,110);
+  doc.text(EMISOR.nombre, M, 22);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
+  doc.text(EMISOR.tagline, M, 27);
+  doc.setFontSize(8); doc.setTextColor(70,70,70);
+  doc.text(`${EMISOR.persona}  ·  Tel: ${EMISOR.tel}`, M, 33);
+  doc.text(`${EMISOR.email}  ·  ${EMISOR.web}`, M, 37);
+
+  // ---- Título documento (derecha) ----
+  doc.setFont('helvetica','bold'); doc.setFontSize(22); doc.setTextColor(192,100,31);
+  doc.text('DEPÓSITO', pageW-M, 22, {align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
+  doc.text(tipo==='entrega'?'albarán de entrega':'liquidación de venta', pageW-M, 27, {align:'right'});
+  const depNumShow = editing && editing.deposit_number != null ? editing.deposit_number : ($('depositNumber').value || '—');
+  const numDep = 'Nº ' + depNumShow;
+  doc.setFontSize(9); doc.setTextColor(40,40,40);
+  doc.text(numDep, pageW-M, 33, {align:'right'});
+
+  // línea separadora
+  doc.setDrawColor(26,77,110); doc.setLineWidth(0.5);
+  doc.line(M, 42, pageW-M, 42);
+
+  // ---- Bloque cliente ----
+  let y = 50;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(130,130,130);
+  doc.text('CLIENTE', M, y);
+  doc.text('FECHA', pageW-M, y, {align:'right'});
+  doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(26,26,26);
+  const clientName = c ? (c.commercial_name && c.commercial_name!==c.legal_name ? `${c.legal_name} — ${c.commercial_name}` : c.legal_name) : '—';
+  doc.text(clientName, M, y+5);
+  const fecha = tipo==='entrega' ? fmtDate($('deliveryDate').value) : fmtDate(editing && editing.recount_date ? editing.recount_date : todayISO());
+  doc.setFontSize(10);
+  doc.text(fecha, pageW-M, y+5, {align:'right'});
+  doc.setFontSize(9); doc.setTextColor(80,80,80);
+  let cliLine2 = [];
+  if (c && c.nif) cliLine2.push('NIF: '+c.nif);
+  if (c && c.address) cliLine2.push(c.address);
+  if (c && c.city) cliLine2.push(c.city);
+  doc.text(cliLine2.join('  ·  '), M, y+11);
+
+  // ---- Tabla ----
+  const showRecount = (tipo==='liquidacion');
+  let head, rows;
+  if (showRecount){
+    head = [['Cód.','Producto','Entregado','Resto','Vendido','Importe']];
+    rows = lines.map(l=>{
+      const delivered=parseFloat(l.qty_delivered)||0;
+      const remaining=l.qty_remaining!=null?(parseFloat(l.qty_remaining)||0):0;
+      const sold=delivered-remaining;
+      const price=parseFloat(l.unit_price)||0;
+      return [l.product_code, l.product_name, String(delivered), String(remaining), String(sold), fmtMoney(sold*price)];
+    });
+  } else {
+    head = [['Cód.','Producto','Entregado','Precio ud.']];
+    rows = lines.map(l=>[l.product_code, l.product_name, String(parseFloat(l.qty_delivered)||0), fmtMoney(parseFloat(l.unit_price)||0)]);
+  }
+
+  doc.autoTable({
+    startY: y+18,
+    head: head,
+    body: rows,
+    theme:'striped',
+    headStyles:{ fillColor:[26,77,110], textColor:[255,255,255], fontSize:8, fontStyle:'bold' },
+    bodyStyles:{ fontSize:9, textColor:[40,40,40] },
+    alternateRowStyles:{ fillColor:[250,251,252] },
+    margin:{ left:M, right:M },
+    columnStyles: showRecount ? {
+      0:{cellWidth:22}, 2:{halign:'center'}, 3:{halign:'center',textColor:[192,100,31]}, 4:{halign:'center',textColor:[26,110,77],fontStyle:'bold'}, 5:{halign:'right'}
+    } : {
+      0:{cellWidth:22}, 2:{halign:'center'}, 3:{halign:'right'}
+    }
+  });
+
+  let endY = doc.lastAutoTable.finalY + 8;
+
+  // ---- Total (solo liquidación) ----
+  if (showRecount){
+    let vendido=0, importe=0;
+    lines.forEach(l=>{ const v=(parseFloat(l.qty_delivered)||0)-(l.qty_remaining!=null?(parseFloat(l.qty_remaining)||0):0); vendido+=v; importe+=v*(parseFloat(l.unit_price)||0); });
+    doc.setDrawColor(26,77,110); doc.setLineWidth(0.5); doc.line(pageW-M-80, endY, pageW-M, endY);
+    endY+=6;
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(130,130,130);
+    doc.text('TOTAL VENDIDO', pageW-M-80, endY);
+    doc.text('IMPORTE A PAGAR', pageW-M, endY, {align:'right'});
+    endY+=6;
+    doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(26,110,77);
+    doc.text(vendido+' uds', pageW-M-80, endY);
+    doc.text(fmtMoney(importe), pageW-M, endY, {align:'right'});
+  }
+
+  // ---- Pie ----
+  const footY = doc.internal.pageSize.getHeight()-18;
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(150,150,150);
+  if (tipo==='entrega'){
+    doc.text('Albarán de depósito. La mercancía sigue siendo propiedad de Magilu hasta su venta. Solo se factura la cantidad vendida tras el recuento.', pageW/2, footY, {align:'center', maxWidth:pageW-2*M});
+  } else {
+    doc.text('Liquidación de mercancía vendida en depósito. Importe correspondiente solo a las unidades vendidas.', pageW/2, footY, {align:'center', maxWidth:pageW-2*M});
+  }
+  doc.text(`${EMISOR.nombre} · ${EMISOR.persona} · ${EMISOR.tel} · ${EMISOR.email}`, pageW/2, footY+4, {align:'center'});
+
+  // Nombre del archivo
+  const cliShort = (c ? (c.commercial_name||c.legal_name) : 'cliente').replace(/[^a-zA-Z0-9]/g,'_').slice(0,20);
+  const fname = `deposito_${tipo}_${cliShort}_${todayISO()}.pdf`;
+  doc.save(fname);
+}
+
+// ===== EVENTOS =====
+function bindEvents(){
+  $('btnNew').addEventListener('click', openNew);
+  $('btnBack').addEventListener('click', showListView);
+  $('btnSave').addEventListener('click', ()=>saveDeposit(false));
+  $('btnDelete').addEventListener('click', deleteDeposit);
+  $('btnRecount').addEventListener('click', ()=>transitionTo('recontado'));
+  $('btnInvoice').addEventListener('click', ()=>transitionTo('facturado'));
+  $('btnPdfEntrega').addEventListener('click', ()=>{ try{ generatePDF('entrega'); }catch(e){ showToast('Error generando PDF: '+e.message,true); console.error(e);} });
+  $('btnPdfFactura').addEventListener('click', ()=>{ try{ generatePDF('liquidacion'); }catch(e){ showToast('Error generando PDF: '+e.message,true); console.error(e);} });
+
+  // filtros
+  document.querySelectorAll('.filter-btn[data-status]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      filterStatus = btn.dataset.status;
+      document.querySelectorAll('.filter-btn[data-status]').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderList();
+    });
+  });
+  let searchTimer;
+  $('searchInput').addEventListener('input',(e)=>{
+    clearTimeout(searchTimer);
+    searchTimer=setTimeout(()=>{ searchTerm=e.target.value.trim(); renderList(); },180);
+  });
+
+  // buscador productos
+  let prodTimer;
+  $('productSearch').addEventListener('input',(e)=>{
+    clearTimeout(prodTimer);
+    prodTimer=setTimeout(()=>renderSearchResults(e.target.value.trim()),120);
+  });
+  $('productSearch').addEventListener('keydown',(e)=>{
+    const items = $('searchResults').querySelectorAll('.search-item[data-pid]');
+    if (e.key==='ArrowDown'){ e.preventDefault(); searchHighlight=Math.min(searchHighlight+1,items.length-1); }
+    else if (e.key==='ArrowUp'){ e.preventDefault(); searchHighlight=Math.max(searchHighlight-1,0); }
+    else if (e.key==='Enter'){ e.preventDefault(); if(searchHighlight>=0&&items[searchHighlight]) addLine(items[searchHighlight].dataset.pid); return; }
+    else return;
+    items.forEach((it,idx)=>it.classList.toggle('highlighted',idx===searchHighlight));
+  });
+  document.addEventListener('click',(e)=>{
+    if (!$('productSearchWrap').contains(e.target)) $('searchResults').classList.remove('active');
+  });
+}
+
+(async function init(){
+  const ok=await checkAuth();
+  if (!ok) return;
+  bindEvents();
+  await loadAll();
+  $('loadingScreen').style.display='none';
+  $('app').style.display='block';
+})();
+</script>
+
+</body>
+</html>
