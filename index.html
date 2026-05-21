@@ -282,11 +282,11 @@ html, body {
     <div class="module-metric" id="metric-productos"><span class="metric-loading">cargando…</span></div>
   </a>
 
-  <a href="#" class="module-card disabled" onclick="return false;">
+  <a href="./depositos.html" class="module-card">
     <div class="module-icon">📋</div>
     <div class="module-name">Depósitos</div>
     <div class="module-desc">Entregas en depósito, recuentos y facturación.</div>
-    <span class="module-soon">Próximamente</span>
+    <div class="module-metric" id="metric-depositos"><span class="metric-loading">cargando…</span></div>
   </a>
 
   <a href="#" class="module-card disabled" onclick="return false;">
@@ -306,7 +306,7 @@ html, body {
 </main>
 
 <div class="footer-note" data-version="ok">
-  magilu finance · datos en tiempo real desde supabase · v11 · 2026-05-21
+  magilu finance · datos en tiempo real desde supabase · v13 · 2026-05-21
 </div>
 
 </div><!-- /#app -->
@@ -383,6 +383,15 @@ async function loadMetrics() {
     $('metric-productos').textContent = `${total} productos · ${activos} activos`;
   } catch (e) {
     $('metric-productos').innerHTML = '<span class="metric-loading">—</span>';
+  }
+
+  // Depósitos
+  try {
+    const { count: total } = await sb.from('deposits').select('*', { count: 'exact', head: true });
+    const { count: abiertos } = await sb.from('deposits').select('*', { count: 'exact', head: true }).eq('status', 'abierto');
+    $('metric-depositos').textContent = `${total} depósitos · ${abiertos} abiertos`;
+  } catch (e) {
+    $('metric-depositos').innerHTML = '<span class="metric-loading">—</span>';
   }
 
   // Plan financiero: leer margen de settings
