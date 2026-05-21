@@ -142,7 +142,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v14</div>
+      <div class="subtitle" id="headerStats">— · v15</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -171,9 +171,11 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
       <div class="detail-box-title" id="detailTitle">Nuevo depósito</div>
 
       <div class="field-row">
-        <div class="field" style="flex:2;">
+        <div class="field product-search" id="clientSearchWrap" style="flex:2;">
           <label>Cliente *</label>
-          <select id="clientSelect"><option value="">— elige cliente —</option></select>
+          <input type="text" id="clientSearch" placeholder="escribe nombre del cliente..." autocomplete="off">
+          <input type="hidden" id="clientSelect" value="">
+          <div class="search-results" id="clientResults"></div>
         </div>
         <div class="field" style="max-width:120px;">
           <label>Nº depósito</label>
@@ -339,17 +341,50 @@ async function loadAll(){
 }
 
 function populateClientSelect(){
-  const sel=$('clientSelect');
-  sel.innerHTML='<option value="">— elige cliente —</option>' + clients.map(c=>{
-    const name = c.commercial_name && c.commercial_name!==c.legal_name ? `${c.legal_name} (${c.commercial_name})` : c.legal_name;
-    return `<option value="${c.id}">${escapeHtml(name)} — ${escapeHtml(c.nif||'sin nif')}</option>`;
-  }).join('');
+  // Ya no rellena un desplegable; el buscador escribible se encarga.
+  // Esta función se mantiene por compatibilidad con loadAll().
+}
+
+function clientDisplayName(c){
+  if (!c) return '';
+  return c.commercial_name && c.commercial_name!==c.legal_name ? `${c.legal_name} (${c.commercial_name})` : c.legal_name;
+}
+
+// Fija el cliente elegido: guarda id en el hidden y muestra el nombre en el input visible
+function setClient(clientId){
+  $('clientSelect').value = clientId || '';
+  const c = clients.find(x=>x.id===clientId);
+  $('clientSearch').value = c ? clientDisplayName(c) : '';
+  $('clientResults').classList.remove('active');
+}
+
+function renderClientResults(term){
+  const box=$('clientResults');
+  if (!term){ box.classList.remove('active'); box.innerHTML=''; return; }
+  const q=term.toLowerCase();
+  const matches = clients.filter(c=>{
+    const name=(c.legal_name+' '+(c.commercial_name||'')).toLowerCase();
+    const nif=(c.nif||'').toLowerCase();
+    const city=(c.city||'').toLowerCase();
+    return name.includes(q) || nif.includes(q) || city.includes(q);
+  }).slice(0,12);
+  if (matches.length===0){ box.classList.add('active'); box.innerHTML='<div class="search-no-results">Sin clientes para "'+escapeHtml(term)+'"</div>'; return; }
+  box.classList.add('active');
+  box.innerHTML = matches.map(c=>`
+    <div class="search-item" data-cid="${c.id}">
+      <span class="search-item-code">${escapeHtml(c.nif||'—')}</span>
+      <span class="search-item-name">${escapeHtml(clientDisplayName(c))}</span>
+      <span class="search-item-price">${escapeHtml(c.city||'')}</span>
+    </div>`).join('');
+  box.querySelectorAll('.search-item[data-cid]').forEach(item=>{
+    item.addEventListener('click',()=>setClient(item.dataset.cid));
+  });
 }
 
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v14`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v15`;
 }
 
 // ===== LISTA =====
@@ -427,7 +462,9 @@ function openNew(){
   lines = [];
   $('detailTitle').textContent = 'Nuevo depósito';
   $('clientSelect').value = '';
-  $('clientSelect').disabled = false;
+  $('clientSearch').value = '';
+  $('clientSearch').readOnly = false;
+  $('clientResults').classList.remove('active');
   $('deliveryDate').value = todayISO();
   $('statusDisplay').value = 'abierto';
   $('depNotes').value = '';
@@ -458,8 +495,8 @@ async function openDeposit(id){
   if (error){ showToast('Error cargando líneas: '+error.message,true); return; }
   lines = (data||[]).map(l=>({...l}));
   $('detailTitle').textContent = 'Depósito · ' + d.status.toUpperCase();
-  $('clientSelect').value = d.client_id;
-  $('clientSelect').disabled = (d.status!=='abierto');
+  setClient(d.client_id);
+  $('clientSearch').readOnly = (d.status!=='abierto');
   $('deliveryDate').value = d.delivery_date;
   $('depositNumber').value = d.deposit_number != null ? d.deposit_number : '';
   $('depositNumber').readOnly = false;
@@ -852,6 +889,18 @@ function bindEvents(){
     searchTimer=setTimeout(()=>{ searchTerm=e.target.value.trim(); renderList(); },180);
   });
 
+  // buscador clientes
+  let cliTimer;
+  $('clientSearch').addEventListener('input',(e)=>{
+    // si el usuario edita el texto, se invalida la selección previa hasta que elija de la lista
+    $('clientSelect').value = '';
+    clearTimeout(cliTimer);
+    cliTimer=setTimeout(()=>renderClientResults(e.target.value.trim()),120);
+  });
+  $('clientSearch').addEventListener('focus',(e)=>{
+    if (e.target.value.trim()) renderClientResults(e.target.value.trim());
+  });
+
   // buscador productos
   let prodTimer;
   $('productSearch').addEventListener('input',(e)=>{
@@ -868,6 +917,7 @@ function bindEvents(){
   });
   document.addEventListener('click',(e)=>{
     if (!$('productSearchWrap').contains(e.target)) $('searchResults').classList.remove('active');
+    if (!$('clientSearchWrap').contains(e.target)) $('clientResults').classList.remove('active');
   });
 }
 
