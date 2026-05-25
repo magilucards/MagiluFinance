@@ -166,7 +166,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v18</div>
+      <div class="subtitle" id="headerStats">— · v19</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -452,7 +452,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v18`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v19`;
 }
 
 // ===== LISTA =====
@@ -785,8 +785,13 @@ async function saveDeposit(silent=false){
     await sb.from('settings').update({ next_deposit_number: depNum + 1 }).eq('user_id', currentUser.id);
   }
 
-  if (!silent) showToast('Depósito guardado');
   await loadAll();
+  // Refrescar la vista para que aparezcan los botones correctos (PDF, liquidar, etc.)
+  // Sin esto, tras crear un depósito nuevo no salían los botones hasta salir y volver a entrar.
+  if (!silent){
+    showToast('Depósito guardado');
+    await openDeposit(depId);
+  }
   return depId;
 }
 
