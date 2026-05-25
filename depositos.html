@@ -118,6 +118,30 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .toast.error .toast-icon { color:var(--red-bright); }
 .toast-icon { color:var(--primary); margin-right:6px; }
 
+/* Modal de liquidación */
+.modal-overlay { position:fixed; inset:0; background:rgba(5,9,18,0.85); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+.modal-overlay.active { display:flex; }
+.liq-modal { background:var(--bg-elev); border:1px solid var(--border-strong); border-radius:12px; width:100%; max-width:460px; box-shadow:0 30px 80px rgba(0,0,0,0.5); }
+.liq-header { display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid var(--border); }
+.liq-title { font-family:'Fraunces',serif; font-size:20px; font-weight:500; }
+.liq-title em { font-style:italic; color:var(--primary); font-weight:400; }
+.modal-close { background:none; border:none; color:var(--text-dim); font-size:24px; cursor:pointer; line-height:1; padding:0 4px; }
+.modal-close:hover { color:var(--red-bright); }
+.liq-body { padding:24px; }
+.liq-amount-box { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px 18px; margin-bottom:20px; text-align:center; }
+.liq-amount-label { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); font-weight:600; }
+.liq-amount-base { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:600; color:var(--text); margin-top:4px; }
+.liq-field { margin-bottom:18px; }
+.liq-field label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-faint); font-weight:600; margin-bottom:8px; }
+.liq-options { display:flex; gap:6px; flex-wrap:wrap; }
+.liq-opt { background:var(--bg); border:1px solid var(--border-strong); color:var(--text-dim); font-family:'Inter Tight',sans-serif; font-size:12px; padding:8px 12px; border-radius:6px; cursor:pointer; }
+.liq-opt:hover { border-color:var(--primary-dim); color:var(--text); }
+.liq-opt.active { background:var(--primary-dim); color:var(--bg); border-color:var(--primary-dim); font-weight:600; }
+.liq-summary { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px 18px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim); line-height:1.8; }
+.liq-summary .liq-total { color:var(--primary); font-weight:600; font-size:15px; }
+.liq-summary .liq-row { display:flex; justify-content:space-between; }
+.liq-actions { display:flex; justify-content:flex-end; gap:10px; padding:16px 24px; border-top:1px solid var(--border); }
+
 .pager-tag { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); text-align:center; padding:16px; }
 
 @media (max-width:768px) {
@@ -142,7 +166,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v16</div>
+      <div class="subtitle" id="headerStats">— · v18</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -231,6 +255,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
         <button class="btn-pdf" id="btnPdfEntrega" style="display:none;">PDF entrega</button>
         <button class="btn-pdf" id="btnPdfFactura" style="display:none;">PDF liquidación</button>
         <button class="btn-secondary" id="btnRecount" style="display:none;">Pasar a recuento</button>
+        <button class="btn-primary" id="btnLiquidar" style="display:none;">Liquidar (pago + factura)</button>
         <button class="btn-secondary" id="btnInvoice" style="display:none;">Marcar facturado</button>
         <button class="btn-primary" id="btnSave">Guardar depósito</button>
       </div>
@@ -239,6 +264,47 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 
 </main>
 </div><!-- /#app -->
+
+<!-- MODAL DE LIQUIDACIÓN (al pasar a recuento) -->
+<div class="modal-overlay" id="liqModal">
+  <div class="liq-modal">
+    <div class="liq-header">
+      <div class="liq-title">Liquidar <em>recuento</em></div>
+      <button class="modal-close" id="liqClose">×</button>
+    </div>
+    <div class="liq-body">
+      <div class="liq-amount-box">
+        <div class="liq-amount-label">Vendido en este recuento</div>
+        <div class="liq-amount-base" id="liqBase">—</div>
+      </div>
+
+      <div class="liq-field">
+        <label>¿Cómo te paga el cliente?</label>
+        <div class="liq-options" id="liqPayment">
+          <button type="button" class="liq-opt active" data-pay="efectivo">Efectivo</button>
+          <button type="button" class="liq-opt" data-pay="transferencia">Transferencia</button>
+          <button type="button" class="liq-opt" data-pay="bizum">Bizum</button>
+          <button type="button" class="liq-opt" data-pay="pagare">Pagaré</button>
+          <button type="button" class="liq-opt" data-pay="remesa">Remesa</button>
+        </div>
+      </div>
+
+      <div class="liq-field">
+        <label>Régimen de la operación</label>
+        <div class="liq-options" id="liqRegime">
+          <button type="button" class="liq-opt active" data-regime="A">A — con factura (IVA/RE)</button>
+          <button type="button" class="liq-opt" data-regime="B">B — sin impuestos</button>
+        </div>
+      </div>
+
+      <div class="liq-summary" id="liqSummary"></div>
+    </div>
+    <div class="liq-actions">
+      <button class="btn-secondary" id="liqCancel">Cancelar</button>
+      <button class="btn-primary" id="liqConfirm">Confirmar recuento</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast" class="toast"></div>
 
@@ -386,7 +452,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v16`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v18`;
 }
 
 // ===== LISTA =====
@@ -525,6 +591,7 @@ function configureForStatus(status){
   $('btnDelete').style.display = editing ? 'inline-flex' : 'none';
   $('btnSave').style.display = (isAbierto||isRecontado) ? 'inline-flex' : 'none';
   $('btnRecount').style.display = (editing && isAbierto) ? 'inline-flex' : 'none';
+  $('btnLiquidar').style.display = (editing && isRecontado) ? 'inline-flex' : 'none';
   $('btnInvoice').style.display = (editing && isRecontado) ? 'inline-flex' : 'none';
   $('btnPdfEntrega').style.display = editing ? 'inline-flex' : 'none';
   $('btnPdfFactura').style.display = (editing && (isRecontado||isFacturado)) ? 'inline-flex' : 'none';
@@ -737,9 +804,158 @@ async function transitionTo(newStatus){
   await openDeposit(depId);
 }
 
+// ===== LIQUIDACIÓN DEL RECUENTO (modal con forma de pago + régimen) =====
+let liqState = { payment:'efectivo', regime:'A', base:0, depId:null };
+
+function calcLiquidacion(){
+  // base = importe vendido (sin impuestos)
+  let base = 0;
+  lines.forEach(l=>{
+    if (l.qty_remaining!=null){
+      const v=(parseFloat(l.qty_delivered)||0)-(parseFloat(l.qty_remaining)||0);
+      base += v*(parseFloat(l.unit_price)||0);
+    }
+  });
+  liqState.base = base;
+
+  const c = getClient();
+  const clienteRE = c && c.vat_regime === 'recargo_equivalencia';
+  const IVA = 0.21, RE = 0.052;
+
+  let iva=0, re=0, total=base;
+  if (liqState.regime === 'A'){
+    iva = base * IVA;
+    re = clienteRE ? base * RE : 0;
+    total = base + iva + re;
+  }
+  return { base, iva, re, total, clienteRE };
+}
+
+function renderLiqSummary(){
+  const { base, iva, re, total, clienteRE } = calcLiquidacion();
+  $('liqBase').textContent = fmtMoney(base);
+  let html = '';
+  if (liqState.regime === 'A'){
+    html += `<div class="liq-row"><span>Base vendida</span><span>${fmtMoney(base)}</span></div>`;
+    html += `<div class="liq-row"><span>IVA 21%</span><span>${fmtMoney(iva)}</span></div>`;
+    if (clienteRE) html += `<div class="liq-row"><span>RE 5,2%</span><span>${fmtMoney(re)}</span></div>`;
+    else html += `<div class="liq-row" style="color:var(--text-faint)"><span>RE</span><span>cliente régimen general</span></div>`;
+  } else {
+    html += `<div class="liq-row"><span>Importe (sin impuestos)</span><span>${fmtMoney(base)}</span></div>`;
+    html += `<div class="liq-row" style="color:var(--text-faint)"><span>Operación en B</span><span>sin IVA/RE</span></div>`;
+  }
+  html += `<div class="liq-row liq-total"><span>${liqState.payment==='efectivo'?'Cobrado en efectivo':'Pendiente de cobro'}</span><span>${fmtMoney(total)}</span></div>`;
+  if (liqState.payment==='efectivo'){
+    html += `<div style="margin-top:8px;color:var(--text-faint);font-size:11px;">Pagado en efectivo → no genera cobro pendiente.</div>`;
+  } else {
+    html += `<div style="margin-top:8px;color:var(--amber-bright);font-size:11px;">No es efectivo → se creará un cobro pendiente en Tesorería.</div>`;
+  }
+  $('liqSummary').innerHTML = html;
+}
+
+function openLiqModal(){
+  // Validar que hay recuento hecho
+  const algunRecuento = lines.some(l=>l.qty_remaining!=null);
+  if (!algunRecuento){ showToast('Primero cuenta lo que queda en cada línea',true); return; }
+  // Precargar valores previos si el depósito ya fue liquidado antes (modo edición)
+  liqState.payment = (editing && editing.payment_method) ? editing.payment_method : 'efectivo';
+  liqState.regime = (editing && editing.regime) ? editing.regime : 'A';
+  document.querySelectorAll('#liqPayment .liq-opt').forEach(b=>b.classList.toggle('active', b.dataset.pay===liqState.payment));
+  document.querySelectorAll('#liqRegime .liq-opt').forEach(b=>b.classList.toggle('active', b.dataset.regime===liqState.regime));
+  renderLiqSummary();
+  $('liqModal').classList.add('active');
+}
+
+function closeLiqModal(){ $('liqModal').classList.remove('active'); }
+
+async function confirmLiquidacion(){
+  // 1) Guardar el depósito con sus recuentos
+  const depId = await saveDeposit(true);
+  if (!depId) return;
+
+  const { total } = calcLiquidacion();
+  const c = getClient();
+
+  // 2) ¿Ya existe un cobro vinculado a este depósito?
+  const { data: existentes } = await sb.from('pending_collections').select('*').eq('deposit_id', depId);
+  const cobroPrevio = (existentes && existentes.length) ? existentes[0] : null;
+
+  // AVISO si el cobro previo ya está marcado como cobrado (opción 3)
+  if (cobroPrevio && cobroPrevio.status === 'cobrado'){
+    const ok = confirm(
+      '⚠ ATENCIÓN\n\n'+
+      'Este depósito ya tiene un cobro MARCADO COMO COBRADO en Tesorería '+
+      `(${fmtMoney(cobroPrevio.amount)}).\n\n`+
+      'Si continúas, ese cobro se va a modificar o eliminar, lo que puede '+
+      'descuadrar tu caja.\n\n¿Seguro que quieres continuar?'
+    );
+    if (!ok){ closeLiqModal(); return; }
+  }
+
+  // 3) Pasar el depósito a recontado y guardar pago/régimen elegidos
+  const patch = {
+    status:'recontado',
+    recount_date: editing && editing.recount_date ? editing.recount_date : todayISO(),
+    payment_method: liqState.payment,
+    regime: liqState.regime,
+    updated_at:new Date().toISOString()
+  };
+  const { error: upErr } = await sb.from('deposits').update(patch).eq('id',depId);
+  if (upErr){ showToast('Error: '+upErr.message,true); return; }
+
+  // 4) Sincronizar el cobro pendiente
+  const esEfectivo = (liqState.payment === 'efectivo');
+
+  if (esEfectivo){
+    // Efectivo → NO debe haber cobro pendiente. Si existía uno, borrarlo.
+    if (cobroPrevio){
+      await sb.from('pending_collections').delete().eq('id', cobroPrevio.id);
+      showToast('Liquidado en efectivo · cobro pendiente anterior eliminado');
+    } else {
+      showToast('Liquidado · cobrado en efectivo');
+    }
+  } else {
+    // No efectivo → debe haber cobro pendiente
+    const cobroData = {
+      user_id: currentUser.id,
+      deposit_id: depId,
+      invoice_date: todayISO(),
+      amount: Math.round(total*100)/100,
+      regime: liqState.regime,
+      payment_method: liqState.payment,
+      client_name: c ? clientDisplayName(c) : null,
+      notes: `Depósito #${$('depositNumber').value||'?'} · recuento ${fmtDate(todayISO())}`
+    };
+    if (cobroPrevio){
+      // Actualizar el existente (conserva su status salvo que recalculemos)
+      const { error } = await sb.from('pending_collections').update(cobroData).eq('id', cobroPrevio.id);
+      if (error){ showToast('Error actualizando el cobro: '+error.message,true); console.error(error); }
+      else showToast(`Cobro pendiente actualizado · ${fmtMoney(total)}`);
+    } else {
+      // Crear nuevo
+      cobroData.status = 'pendiente';
+      const { error } = await sb.from('pending_collections').insert(cobroData);
+      if (error){ showToast('Recuento guardado, pero error creando el cobro: '+error.message,true); console.error(error); }
+      else showToast(`Cobro pendiente de ${fmtMoney(total)} creado`);
+    }
+  }
+
+  closeLiqModal();
+  await loadAll();
+  await openDeposit(depId);
+}
+
 async function deleteDeposit(){
   if (!editing) return;
-  if (!confirm('¿Eliminar este depósito y todas sus líneas?\n\nEsta acción no se puede deshacer.')) return;
+  const { data: cobros } = await sb.from('pending_collections').select('id,amount,status').eq('deposit_id', editing.id);
+  let msg = '¿Eliminar este depósito y todas sus líneas?\n\nEsta acción no se puede deshacer.';
+  if (cobros && cobros.length){
+    msg += `\n\n⚠ Tiene un cobro asociado en Tesorería (${fmtMoney(cobros[0].amount)}, ${cobros[0].status}). También se eliminará.`;
+  }
+  if (!confirm(msg)) return;
+  if (cobros && cobros.length){
+    await sb.from('pending_collections').delete().eq('deposit_id', editing.id);
+  }
   const { error } = await sb.from('deposits').delete().eq('id',editing.id);
   if (error){ showToast('Error eliminando: '+error.message,true); return; }
   showToast('Depósito eliminado');
@@ -879,7 +1095,30 @@ function bindEvents(){
   $('btnSave').addEventListener('click', ()=>saveDeposit(false));
   $('btnDelete').addEventListener('click', deleteDeposit);
   $('btnRecount').addEventListener('click', ()=>transitionTo('recontado'));
+  $('btnLiquidar').addEventListener('click', ()=>openLiqModal());
   $('btnInvoice').addEventListener('click', ()=>transitionTo('facturado'));
+
+  // Modal de liquidación
+  $('liqClose').addEventListener('click', closeLiqModal);
+  $('liqCancel').addEventListener('click', closeLiqModal);
+  $('liqConfirm').addEventListener('click', confirmLiquidacion);
+  $('liqModal').addEventListener('click', (e)=>{ if (e.target===$('liqModal')) closeLiqModal(); });
+  document.querySelectorAll('#liqPayment .liq-opt').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      liqState.payment = btn.dataset.pay;
+      document.querySelectorAll('#liqPayment .liq-opt').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderLiqSummary();
+    });
+  });
+  document.querySelectorAll('#liqRegime .liq-opt').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      liqState.regime = btn.dataset.regime;
+      document.querySelectorAll('#liqRegime .liq-opt').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      renderLiqSummary();
+    });
+  });
   $('btnPdfEntrega').addEventListener('click', ()=>{ try{ generatePDF('entrega'); }catch(e){ showToast('Error generando PDF: '+e.message,true); console.error(e);} });
   $('btnPdfFactura').addEventListener('click', ()=>{ try{ generatePDF('liquidacion'); }catch(e){ showToast('Error generando PDF: '+e.message,true); console.error(e);} });
 
