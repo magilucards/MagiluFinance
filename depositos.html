@@ -118,6 +118,18 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .toast.error .toast-icon { color:var(--red-bright); }
 .toast-icon { color:var(--primary); margin-right:6px; }
 
+/* Tira de info del cliente */
+.client-info-bar { display:flex; flex-wrap:wrap; gap:18px; align-items:center; padding:10px 14px; margin-bottom:14px; background:var(--bg); border:1px solid var(--border); border-radius:8px; }
+.client-info-item { display:flex; align-items:center; gap:8px; font-size:12px; }
+.cii-label { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); font-weight:600; }
+.cii-val { color:var(--text-dim); }
+.cii-val.mono { font-family:'JetBrains Mono',monospace; }
+.cii-copy { background:transparent; border:1px solid var(--border-strong); color:var(--text-dim); width:22px; height:22px; border-radius:4px; cursor:pointer; font-size:12px; display:inline-flex; align-items:center; justify-content:center; padding:0; }
+.cii-copy:hover { border-color:var(--primary); color:var(--primary); }
+.cii-re-toggle { display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:var(--text-dim); margin-left:auto; padding:4px 10px; border:1px solid var(--border-strong); border-radius:5px; }
+.cii-re-toggle input { accent-color:var(--primary); }
+.cii-re-toggle:hover { border-color:var(--primary-dim); }
+
 /* Modal de liquidación */
 .modal-overlay { position:fixed; inset:0; background:rgba(5,9,18,0.85); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
 .modal-overlay.active { display:flex; }
@@ -166,7 +178,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v19</div>
+      <div class="subtitle" id="headerStats">— · v21</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -209,9 +221,36 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
           <label>Fecha entrega</label>
           <input type="date" id="deliveryDate" class="mono">
         </div>
+        <div class="field" id="recountDateWrap" style="display:none;">
+          <label>Fecha recuento</label>
+          <input type="date" id="recountDate" class="mono">
+        </div>
         <div class="field">
           <label>Estado</label>
           <input type="text" id="statusDisplay" class="mono" readonly value="abierto" style="text-transform:uppercase;">
+        </div>
+      </div>
+
+      <!-- Tira de info del cliente seleccionado -->
+      <div class="client-info-bar" id="clientInfoBar" style="display:none;">
+        <div class="client-info-item">
+          <span class="cii-label">Email</span>
+          <span class="cii-val mono" id="cibEmail">—</span>
+          <button type="button" class="cii-copy" id="cibCopyEmail" title="Copiar email">⧉</button>
+        </div>
+        <div class="client-info-item">
+          <span class="cii-label">Tel</span>
+          <span class="cii-val mono" id="cibPhone">—</span>
+        </div>
+        <div class="client-info-item">
+          <span class="cii-label">NIF</span>
+          <span class="cii-val mono" id="cibNif">—</span>
+        </div>
+        <div class="client-info-item">
+          <label class="cii-re-toggle" title="Marca si este cliente debe llevar recargo de equivalencia">
+            <input type="checkbox" id="cibHasRE">
+            <span>Cliente con <strong>RE</strong> (recargo)</span>
+          </label>
         </div>
       </div>
 
@@ -381,7 +420,7 @@ async function checkAuth(){
 async function loadAll(){
   // Cargar clientes (solo los que son clientes), productos y depósitos
   const [cRes, pRes, dRes] = await Promise.all([
-    sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,is_client').eq('is_client',true).order('legal_name'),
+    sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,email,phone,vat_regime,is_client').eq('is_client',true).order('legal_name'),
     sb.from('products').select('id,code,name,current_price,current_cost,vat_rate,is_active').order('code'),
     sb.from('deposits').select('*').order('delivery_date',{ascending:false})
   ]);
@@ -424,6 +463,27 @@ function setClient(clientId){
   const c = clients.find(x=>x.id===clientId);
   $('clientSearch').value = c ? clientDisplayName(c) : '';
   $('clientResults').classList.remove('active');
+  // Rellenar tira de info
+  const bar = $('clientInfoBar');
+  if (!c){ bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  $('cibEmail').textContent = c.email || '—';
+  $('cibPhone').textContent = c.phone || '—';
+  $('cibNif').textContent = c.nif || '—';
+  // Precargar el toggle de RE según la ficha del cliente
+  // (si el depósito ya tiene su propio dato guardado, openDeposit lo sobreescribirá después)
+  $('cibHasRE').checked = (c.vat_regime === 'recargo_equivalencia');
+  // guardar el régimen original en el dataset para detectar cambios
+  $('cibHasRE').dataset.originalRegime = c.vat_regime || '';
+  $('cibHasRE').dataset.clientId = c.id;
+}
+
+function copyToClipboard(text){
+  if (!text || text === '—'){ showToast('No hay nada que copiar', true); return; }
+  navigator.clipboard.writeText(text).then(
+    () => showToast('Copiado: ' + text),
+    () => showToast('No se pudo copiar', true)
+  );
 }
 
 function renderClientResults(term){
@@ -452,7 +512,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v19`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v21`;
 }
 
 // ===== LISTA =====
@@ -533,7 +593,9 @@ function openNew(){
   $('clientSearch').value = '';
   $('clientSearch').readOnly = false;
   $('clientResults').classList.remove('active');
+  $('clientInfoBar').style.display = 'none';
   $('deliveryDate').value = todayISO();
+  $('recountDate').value = '';
   $('statusDisplay').value = 'abierto';
   $('depNotes').value = '';
   // Numeración
@@ -566,10 +628,16 @@ async function openDeposit(id){
   setClient(d.client_id);
   $('clientSearch').readOnly = (d.status!=='abierto');
   $('deliveryDate').value = d.delivery_date;
+  $('recountDate').value = d.recount_date || '';
   $('depositNumber').value = d.deposit_number != null ? d.deposit_number : '';
   $('depositNumber').readOnly = false;
   $('statusDisplay').value = d.status;
   $('depNotes').value = d.notes||'';
+  // Si el depósito tiene guardado su propio "has_re" (por haberlo marcado en una liquidación previa),
+  // ese valor manda sobre lo que diga la ficha del cliente
+  if (d.client_has_re !== undefined && d.client_has_re !== null){
+    $('cibHasRE').checked = !!d.client_has_re;
+  }
   configureForStatus(d.status);
   renderLines();
   showDetailView();
@@ -586,6 +654,9 @@ function configureForStatus(status){
   // columnas resto/vendido: en recontado y facturado
   document.querySelectorAll('.recount-col').forEach(el=>el.style.display = (isRecontado||isFacturado)?'table-cell':'none');
   document.querySelectorAll('.import-col').forEach(el=>el.style.display = (isRecontado||isFacturado)?'table-cell':'none');
+
+  // Campo fecha de recuento: visible en recontado y facturado
+  $('recountDateWrap').style.display = (isRecontado||isFacturado) ? 'flex' : 'none';
 
   // botones
   $('btnDelete').style.display = editing ? 'inline-flex' : 'none';
@@ -638,6 +709,10 @@ function renderLines(){
 
   // bind inputs
   body.querySelectorAll('input[data-i]').forEach(inp=>{
+    // Al enfocar (clic o tab), seleccionar todo para escribir directamente sin borrar el valor previo
+    inp.addEventListener('focus',()=>{ inp.select(); });
+    // En móvil, focus a veces no basta: forzar selección también al tocar
+    inp.addEventListener('click',()=>{ inp.select(); });
     inp.addEventListener('input',()=>{
       const i=parseInt(inp.dataset.i), f=inp.dataset.f;
       if (f==='delivered') lines[i].qty_delivered = parseFloat(inp.value)||0;
@@ -739,13 +814,19 @@ async function saveDeposit(silent=false){
   const status = $('statusDisplay').value;
   const depNumRaw = $('depositNumber').value.trim();
   const depNum = depNumRaw === '' ? null : parseInt(depNumRaw);
+  const recountDateVal = $('recountDate').value || null;
+  // client_has_re: solo guardamos si está visible la tira (cliente seleccionado).
+  // Valor: lo que dice el checkbox. Null si no hay cliente.
+  const clientHasRE = ($('clientInfoBar').style.display !== 'none') ? $('cibHasRE').checked : null;
   const depPayload = {
     user_id: currentUser.id,
     client_id: clientId,
     delivery_date: $('deliveryDate').value || todayISO(),
+    recount_date: recountDateVal,
     status: status,
     deposit_number: depNum,
     notes: $('depNotes').value.trim()||null,
+    client_has_re: clientHasRE,
     updated_at: new Date().toISOString()
   };
 
@@ -796,11 +877,14 @@ async function saveDeposit(silent=false){
 }
 
 async function transitionTo(newStatus){
-  // Guardar primero el estado actual
+  // Si pasamos a recontado y el campo está vacío, prerrellenar con hoy
+  if (newStatus === 'recontado' && !$('recountDate').value){
+    $('recountDate').value = todayISO();
+  }
+  // Guardar primero el estado actual (con la fecha de recuento ya puesta)
   const depId = await saveDeposit(true);
   if (!depId) return;
   const patch = { status:newStatus, updated_at:new Date().toISOString() };
-  if (newStatus==='recontado') patch.recount_date = todayISO();
   if (newStatus==='facturado') patch.invoice_date = todayISO();
   const { error } = await sb.from('deposits').update(patch).eq('id',depId);
   if (error){ showToast('Error: '+error.message,true); return; }
@@ -823,8 +907,15 @@ function calcLiquidacion(){
   });
   liqState.base = base;
 
+  // RE: usar el toggle del depósito (que puede haber sido corregido), no la ficha del cliente
+  // Si la tira no está visible (sin cliente), caer al campo de la ficha
   const c = getClient();
-  const clienteRE = c && c.vat_regime === 'recargo_equivalencia';
+  let clienteRE;
+  if ($('clientInfoBar').style.display !== 'none'){
+    clienteRE = $('cibHasRE').checked;
+  } else {
+    clienteRE = c && c.vat_regime === 'recargo_equivalencia';
+  }
   const IVA = 0.21, RE = 0.052;
 
   let iva=0, re=0, total=base;
@@ -1029,19 +1120,53 @@ function generatePDF(tipo){
 
   // ---- Tabla ----
   const showRecount = (tipo==='liquidacion');
+  // Para liquidación: ¿cliente con RE? usar toggle del depósito, no la ficha
+  let liqClienteRE = false;
+  if (showRecount){
+    if ($('clientInfoBar').style.display !== 'none'){
+      liqClienteRE = $('cibHasRE').checked;
+    } else if (c){
+      liqClienteRE = c.vat_regime === 'recargo_equivalencia';
+    }
+  }
+  const IVA_RATE = 0.21, RE_RATE = 0.052;
+
   let head, rows;
   if (showRecount){
-    head = [['Cód.','Producto','Entregado','Resto','Vendido','Importe']];
+    // Columnas: Cód · Producto · Entreg. · Resto · Vend. · Precio · Base · IVA · RE · Total
+    const headCols = liqClienteRE
+      ? ['Cód.','Producto','Entreg.','Resto','Vend.','Precio','Base','IVA','RE','Total']
+      : ['Cód.','Producto','Entreg.','Resto','Vend.','Precio','Base','IVA','Total'];
+    head = [headCols];
     rows = lines.map(l=>{
       const delivered=parseFloat(l.qty_delivered)||0;
       const remaining=l.qty_remaining!=null?(parseFloat(l.qty_remaining)||0):0;
       const sold=delivered-remaining;
       const price=parseFloat(l.unit_price)||0;
-      return [l.product_code, l.product_name, String(delivered), String(remaining), String(sold), fmtMoney(sold*price)];
+      const base = sold*price;
+      const iva = base*IVA_RATE;
+      const re = liqClienteRE ? base*RE_RATE : 0;
+      const total = base + iva + re;
+      const row = [l.product_code, l.product_name, String(delivered), String(remaining), String(sold), fmtMoney(price), fmtMoney(base), fmtMoney(iva)];
+      if (liqClienteRE) row.push(fmtMoney(re));
+      row.push(fmtMoney(total));
+      return row;
     });
   } else {
     head = [['Cód.','Producto','Entregado','Precio ud.']];
     rows = lines.map(l=>[l.product_code, l.product_name, String(parseFloat(l.qty_delivered)||0), fmtMoney(parseFloat(l.unit_price)||0)]);
+  }
+
+  // Estilos de columnas para liquidación: nº centrado, importes a la derecha
+  let colStyles;
+  if (showRecount){
+    if (liqClienteRE){
+      colStyles = { 0:{cellWidth:18}, 2:{halign:'center',cellWidth:13}, 3:{halign:'center',cellWidth:11,textColor:[192,100,31]}, 4:{halign:'center',cellWidth:12,textColor:[26,110,77],fontStyle:'bold'}, 5:{halign:'right',cellWidth:14}, 6:{halign:'right',cellWidth:16}, 7:{halign:'right',cellWidth:14}, 8:{halign:'right',cellWidth:12}, 9:{halign:'right',fontStyle:'bold'} };
+    } else {
+      colStyles = { 0:{cellWidth:20}, 2:{halign:'center',cellWidth:14}, 3:{halign:'center',cellWidth:12,textColor:[192,100,31]}, 4:{halign:'center',cellWidth:13,textColor:[26,110,77],fontStyle:'bold'}, 5:{halign:'right',cellWidth:16}, 6:{halign:'right',cellWidth:18}, 7:{halign:'right',cellWidth:16}, 8:{halign:'right',fontStyle:'bold'} };
+    }
+  } else {
+    colStyles = { 0:{cellWidth:22}, 2:{halign:'center'}, 3:{halign:'right'} };
   }
 
   doc.autoTable({
@@ -1049,32 +1174,90 @@ function generatePDF(tipo){
     head: head,
     body: rows,
     theme:'striped',
-    headStyles:{ fillColor:[26,77,110], textColor:[255,255,255], fontSize:8, fontStyle:'bold' },
-    bodyStyles:{ fontSize:9, textColor:[40,40,40] },
+    headStyles:{ fillColor:[26,77,110], textColor:[255,255,255], fontSize:7.5, fontStyle:'bold' },
+    bodyStyles:{ fontSize: showRecount?7.5:9, textColor:[40,40,40] },
     alternateRowStyles:{ fillColor:[250,251,252] },
     margin:{ left:M, right:M },
-    columnStyles: showRecount ? {
-      0:{cellWidth:22}, 2:{halign:'center'}, 3:{halign:'center',textColor:[192,100,31]}, 4:{halign:'center',textColor:[26,110,77],fontStyle:'bold'}, 5:{halign:'right'}
-    } : {
-      0:{cellWidth:22}, 2:{halign:'center'}, 3:{halign:'right'}
-    }
+    columnStyles: colStyles
   });
 
   let endY = doc.lastAutoTable.finalY + 8;
 
-  // ---- Total (solo liquidación) ----
+  // ---- Cuadro de totales (solo liquidación) ----
   if (showRecount){
-    let vendido=0, importe=0;
-    lines.forEach(l=>{ const v=(parseFloat(l.qty_delivered)||0)-(l.qty_remaining!=null?(parseFloat(l.qty_remaining)||0):0); vendido+=v; importe+=v*(parseFloat(l.unit_price)||0); });
-    doc.setDrawColor(26,77,110); doc.setLineWidth(0.5); doc.line(pageW-M-80, endY, pageW-M, endY);
-    endY+=6;
+    let vendido=0, baseTotal=0;
+    lines.forEach(l=>{
+      const v=(parseFloat(l.qty_delivered)||0)-(l.qty_remaining!=null?(parseFloat(l.qty_remaining)||0):0);
+      vendido+=v;
+      baseTotal+=v*(parseFloat(l.unit_price)||0);
+    });
+    const ivaTotal = baseTotal*IVA_RATE;
+    const reTotal = liqClienteRE ? baseTotal*RE_RATE : 0;
+    const totalFinal = baseTotal + ivaTotal + reTotal;
+
+    // Cuadro a la derecha con base / IVA / (RE) / TOTAL
+    const boxX = pageW - M - 75;
+    const boxW = 75;
+    let bx = boxX, by = endY;
+
+    doc.setDrawColor(220,220,220); doc.setLineWidth(0.3);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
+
+    // Fila Base
+    doc.text('Base imponible', bx+2, by+5);
+    doc.setTextColor(40,40,40);
+    doc.text(fmtMoney(baseTotal), bx+boxW-2, by+5, {align:'right'});
+    doc.line(bx, by+7, bx+boxW, by+7);
+    by+=8;
+
+    // Fila IVA
+    doc.setTextColor(90,90,90);
+    doc.text('IVA (21%)', bx+2, by+5);
+    doc.setTextColor(40,40,40);
+    doc.text(fmtMoney(ivaTotal), bx+boxW-2, by+5, {align:'right'});
+    doc.line(bx, by+7, bx+boxW, by+7);
+    by+=8;
+
+    // Fila RE (solo si aplica)
+    if (liqClienteRE){
+      doc.setTextColor(90,90,90);
+      doc.text('Recargo equiv. (5,2%)', bx+2, by+5);
+      doc.setTextColor(40,40,40);
+      doc.text(fmtMoney(reTotal), bx+boxW-2, by+5, {align:'right'});
+      doc.line(bx, by+7, bx+boxW, by+7);
+      by+=8;
+    }
+
+    // Fila TOTAL destacada
+    doc.setFillColor(26,77,110);
+    doc.rect(bx, by, boxW, 10, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(255,255,255);
+    doc.text('TOTAL', bx+3, by+6.5);
+    doc.text(fmtMoney(totalFinal), bx+boxW-3, by+6.5, {align:'right'});
+    by+=12;
+
+    // Total unidades vendidas (izquierda)
     doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(130,130,130);
-    doc.text('TOTAL VENDIDO', pageW-M-80, endY);
-    doc.text('IMPORTE A PAGAR', pageW-M, endY, {align:'right'});
-    endY+=6;
-    doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(26,110,77);
-    doc.text(vendido+' uds', pageW-M-80, endY);
-    doc.text(fmtMoney(importe), pageW-M, endY, {align:'right'});
+    doc.text('TOTAL UDS. VENDIDAS', M, endY+5);
+    doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(26,110,77);
+    doc.text(vendido+' uds', M, endY+13);
+
+    endY = by + 4;
+
+    // ---- AVISO informativo (no es factura) ----
+    doc.setFillColor(252,247,237); // amarillo muy suave
+    doc.setDrawColor(217,168,77);
+    doc.setLineWidth(0.4);
+    const avisoX = M, avisoW = pageW - 2*M;
+    const aviso = 'Esto NO es una factura. Es un documento informativo de las unidades vendidas en el periodo comprendido entre la fecha de entrega y la fecha de recuento. Recibirá la factura oficial en breve en su correo electrónico.';
+    // Calcular altura necesaria
+    doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+    const avisoLines = doc.splitTextToSize(aviso, avisoW - 8);
+    const avisoH = 6 + avisoLines.length*4;
+    doc.rect(avisoX, endY, avisoW, avisoH, 'FD');
+    doc.setTextColor(140,90,20);
+    doc.text(avisoLines, avisoX+4, endY+5);
+    endY += avisoH + 4;
   }
 
   // ---- Pie ----
@@ -1083,7 +1266,7 @@ function generatePDF(tipo){
   if (tipo==='entrega'){
     doc.text('Albarán de depósito. La mercancía sigue siendo propiedad de Magilu hasta su venta. Solo se factura la cantidad vendida tras el recuento.', pageW/2, footY, {align:'center', maxWidth:pageW-2*M});
   } else {
-    doc.text('Liquidación de mercancía vendida en depósito. Importe correspondiente solo a las unidades vendidas.', pageW/2, footY, {align:'center', maxWidth:pageW-2*M});
+    doc.text('Documento informativo de venta en depósito. La factura oficial será emitida y enviada por correo electrónico.', pageW/2, footY, {align:'center', maxWidth:pageW-2*M});
   }
   doc.text(`${EMISOR.nombre} · ${EMISOR.persona} · ${EMISOR.tel} · ${EMISOR.email}`, pageW/2, footY+4, {align:'center'});
 
@@ -1152,6 +1335,49 @@ function bindEvents(){
   });
   $('clientSearch').addEventListener('focus',(e)=>{
     if (e.target.value.trim()) renderClientResults(e.target.value.trim());
+  });
+
+  // Copiar email del cliente al portapapeles
+  $('cibCopyEmail').addEventListener('click', ()=>{
+    copyToClipboard($('cibEmail').textContent);
+  });
+
+  // Toggle "Cliente tiene RE": cuando cambia, ofrecer propagar a la ficha del cliente
+  $('cibHasRE').addEventListener('change', async ()=>{
+    const checkbox = $('cibHasRE');
+    const clientId = checkbox.dataset.clientId;
+    if (!clientId) return;
+
+    const original = checkbox.dataset.originalRegime; // lo que dice la ficha del cliente
+    const ahoraTieneRE = checkbox.checked;
+    const fichaTieneRE = (original === 'recargo_equivalencia');
+
+    // Si lo que marca el checkbox coincide con la ficha, no hay nada que preguntar
+    if (ahoraTieneRE === fichaTieneRE) return;
+
+    // Ha cambiado respecto a la ficha → preguntar si propagar
+    const nuevoRegimen = ahoraTieneRE ? 'recargo_equivalencia' : 'general';
+    const txtNuevo = ahoraTieneRE ? 'CON recargo de equivalencia' : 'régimen GENERAL (sin RE)';
+    const txtViejo = fichaTieneRE ? 'CON recargo' : 'régimen general';
+
+    const propagar = confirm(
+      `Has marcado este cliente como ${txtNuevo}, pero su ficha dice "${txtViejo}".\n\n`+
+      `¿Quieres corregir también la FICHA DEL CLIENTE para que el sistema lo recuerde la próxima vez?\n\n`+
+      `→ Aceptar: corrige la ficha (mejor para no volver a tocarlo).\n`+
+      `→ Cancelar: aplicar solo a este depósito.`
+    );
+
+    if (propagar){
+      const { error } = await sb.from('clients').update({ vat_regime: nuevoRegimen, updated_at: new Date().toISOString() }).eq('id', clientId);
+      if (error){ showToast('Error corrigiendo ficha: '+error.message, true); return; }
+      // actualizar también el array local de clientes para que no se desincronice
+      const c = clients.find(x=>x.id===clientId);
+      if (c) c.vat_regime = nuevoRegimen;
+      checkbox.dataset.originalRegime = nuevoRegimen;
+      showToast('Ficha del cliente corregida. Próximos depósitos lo cogerán bien.');
+    } else {
+      showToast('Cambio aplicado solo a este depósito.');
+    }
   });
 
   // buscador productos
