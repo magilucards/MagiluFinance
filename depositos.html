@@ -178,7 +178,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v21</div>
+      <div class="subtitle" id="headerStats">— · v23</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -512,7 +512,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v21`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v23`;
 }
 
 // ===== LISTA =====
@@ -1104,15 +1104,40 @@ function generatePDF(tipo){
   let y = 50;
   doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(130,130,130);
   doc.text('CLIENTE', M, y);
-  doc.text('FECHA', pageW-M, y, {align:'right'});
   doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(26,26,26);
   const clientName = c ? (c.commercial_name && c.commercial_name!==c.legal_name ? `${c.legal_name} — ${c.commercial_name}` : c.legal_name) : '—';
   doc.text(clientName, M, y+5);
-  const fecha = tipo==='entrega' ? fmtDate($('deliveryDate').value) : fmtDate(editing && editing.recount_date ? editing.recount_date : todayISO());
-  doc.setFontSize(10);
-  doc.text(fecha, pageW-M, y+5, {align:'right'});
+
+  // Fechas (a la derecha). En liquidación, dos fechas en dos líneas. En entrega, solo una.
+  const fEntrega = fmtDate($('deliveryDate').value);
+  const recISO = (editing && editing.recount_date) ? editing.recount_date : ($('recountDate').value || todayISO());
+  const fRecuento = fmtDate(recISO);
+
+  if (tipo === 'liquidacion'){
+    // Fila 1: ENTREGA
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(130,130,130);
+    doc.text('FECHA ENTREGA', pageW-M, y, {align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(26,26,26);
+    doc.text(fEntrega, pageW-M, y+5, {align:'right'});
+    // Fila 2: RECUENTO (debajo)
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(130,130,130);
+    doc.text('FECHA RECUENTO', pageW-M, y+10, {align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(26,26,26);
+    doc.text(fRecuento, pageW-M, y+15, {align:'right'});
+  } else {
+    // Albarán de entrega: una sola fecha
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(130,130,130);
+    doc.text('FECHA', pageW-M, y, {align:'right'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(26,26,26);
+    doc.text(fEntrega, pageW-M, y+5, {align:'right'});
+  }
+
   doc.setFontSize(9); doc.setTextColor(80,80,80);
   let cliLine2 = [];
+  if (c && c.nif) cliLine2.push('NIF: '+c.nif);
+  if (c && c.address) cliLine2.push(c.address);
+  if (c && c.city) cliLine2.push(c.city);
+  doc.text(cliLine2.join('  ·  '), M, y+11);
   if (c && c.nif) cliLine2.push('NIF: '+c.nif);
   if (c && c.address) cliLine2.push(c.address);
   if (c && c.city) cliLine2.push(c.city);
