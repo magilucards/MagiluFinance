@@ -178,7 +178,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v23</div>
+      <div class="subtitle" id="headerStats">— · v24</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -512,7 +512,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v23`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v24`;
 }
 
 // ===== LISTA =====
@@ -1137,11 +1137,9 @@ function generatePDF(tipo){
   if (c && c.nif) cliLine2.push('NIF: '+c.nif);
   if (c && c.address) cliLine2.push(c.address);
   if (c && c.city) cliLine2.push(c.city);
-  doc.text(cliLine2.join('  ·  '), M, y+11);
-  if (c && c.nif) cliLine2.push('NIF: '+c.nif);
-  if (c && c.address) cliLine2.push(c.address);
-  if (c && c.city) cliLine2.push(c.city);
-  doc.text(cliLine2.join('  ·  '), M, y+11);
+  // En liquidación bajamos la línea de NIF/dirección para no solapar con FECHA RECUENTO
+  const niflineY = (tipo === 'liquidacion') ? y+22 : y+11;
+  doc.text(cliLine2.join('  ·  '), M, niflineY);
 
   // ---- Tabla ----
   const showRecount = (tipo==='liquidacion');
@@ -1195,7 +1193,7 @@ function generatePDF(tipo){
   }
 
   doc.autoTable({
-    startY: y+18,
+    startY: (tipo === 'liquidacion') ? y+30 : y+18,
     head: head,
     body: rows,
     theme:'striped',
