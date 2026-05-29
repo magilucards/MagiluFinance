@@ -293,6 +293,13 @@ html, body {
     <div class="module-metric" id="metric-depositos"><span class="metric-loading">cargando…</span></div>
   </a>
 
+  <a href="./recaudacion.html" class="module-card" id="card-recaudacion">
+    <div class="module-icon">💰</div>
+    <div class="module-name">Recaudación</div>
+    <div class="module-desc">Resumen diario, semanal y mensual. Base, IVA, RE, A/B.</div>
+    <div class="module-metric" id="metric-recaudacion"><span class="metric-loading">cargando…</span></div>
+  </a>
+
   <a href="#" class="module-card disabled" onclick="return false;">
     <div class="module-icon">🚚</div>
     <div class="module-name">Rutas</div>
@@ -310,7 +317,7 @@ html, body {
 </main>
 
 <div class="footer-note" data-version="ok">
-  magilu finance · datos en tiempo real desde supabase · v15 · 2026-05-21
+  magilu finance · datos en tiempo real desde supabase · v16 · 2026-05-21
 </div>
 
 </div><!-- /#app -->
@@ -396,6 +403,52 @@ async function loadMetrics() {
     $('metric-depositos').textContent = `${total} depósitos · ${abiertos} abiertos`;
   } catch (e) {
     $('metric-depositos').innerHTML = '<span class="metric-loading">—</span>';
+  }
+
+  // Recaudación: total recaudado del día (hoy) y del mes en curso
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const monthStart = today.slice(0,8) + '01';
+    const { data: deps } = await sb.from('deposits')
+      .select('id, recount_date, invoice_date, regime, client_has_re, client_id')
+      .in('status', ['recontado','facturado']);
+    if (deps && deps.length) {
+      const depIds = deps.map(d=>d.id);
+      const { data: lns } = await sb.from('deposit_lines')
+        .select('deposit_id, qty_delivered, qty_remaining, unit_price')
+        .in('deposit_id', depIds);
+      // base por depósito
+      const baseByDep = new Map();
+      (lns||[]).forEach(l=>{
+        const sold = (parseFloat(l.qty_delivered)||0) - (l.qty_remaining!=null ? parseFloat(l.qty_remaining)||0 : 0);
+        baseByDep.set(l.deposit_id, (baseByDep.get(l.deposit_id)||0) + sold * (parseFloat(l.unit_price)||0));
+      });
+      // necesitamos vat_regime de los clientes para los que no tienen client_has_re definido
+      const clientIds = [...new Set(deps.map(d=>d.client_id))];
+      const { data: clis } = await sb.from('clients').select('id, vat_regime').in('id', clientIds);
+      const clientRE = new Map((clis||[]).map(c=>[c.id, c.vat_regime==='recargo_equivalencia']));
+      let hoyT=0, mesT=0;
+      deps.forEach(d=>{
+        const dia = d.recount_date || d.invoice_date;
+        if (!dia) return;
+        const base = baseByDep.get(d.id) || 0;
+        const regime = d.regime === 'B' ? 'B' : 'A';
+        const tieneRE = (d.client_has_re !== null && d.client_has_re !== undefined)
+          ? !!d.client_has_re
+          : !!clientRE.get(d.client_id);
+        const iva = regime==='A' ? base*0.21 : 0;
+        const re = (regime==='A' && tieneRE) ? base*0.052 : 0;
+        const total = base + iva + re;
+        if (dia === today) hoyT += total;
+        if (dia >= monthStart) mesT += total;
+      });
+      $('metric-recaudacion').textContent = `hoy ${fmtMoney(hoyT)} · mes ${fmtMoney(mesT)}`;
+    } else {
+      $('metric-recaudacion').textContent = 'sin liquidaciones';
+    }
+  } catch (e) {
+    console.error(e);
+    $('metric-recaudacion').innerHTML = '<span class="metric-loading">—</span>';
   }
 
   // Plan financiero: leer margen de settings

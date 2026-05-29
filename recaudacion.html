@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recaudación · Magilu Finance</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#050912">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<style>
+:root {
+  --bg:#050912; --bg-elev:#0b1326; --bg-card:#11192e; --border:#1f2a44; --border-strong:#2c3a5c;
+  --text:#e2ebf2; --text-dim:#8a9bb2; --text-faint:#4f5d76;
+  --primary:#6ee2c5; --primary-dim:#4ab9a0; --primary-bright:#8fefd5;
+  --accent:#2a4670; --accent-bright:#3f6299;
+  --amber:#d4a04a; --amber-bright:#e8b85a; --red:#e07560; --red-bright:#ee8a76;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:var(--bg); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+.mono { font-family:'JetBrains Mono',monospace; }
+
+.loading-screen { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:1000; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+
+/* Header */
+.app-header { background:var(--bg-elev); border-bottom:1px solid var(--border); padding:20px 32px; position:sticky; top:0; z-index:10; }
+.header-inner { display:flex; align-items:center; gap:24px; max-width:1400px; margin:0 auto; }
+.back-link { display:inline-flex; align-items:center; gap:6px; color:var(--text-dim); text-decoration:none; font-size:12px; padding:7px 14px; border:1px solid var(--border-strong); border-radius:6px; font-family:'JetBrains Mono',monospace; letter-spacing:0.04em; }
+.back-link:hover { border-color:var(--primary); color:var(--primary); }
+h1 { font-family:'Fraunces',serif; font-size:28px; font-weight:500; letter-spacing:-0.01em; }
+h1 em { font-style:italic; color:var(--primary); font-weight:400; }
+.subtitle { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.1em; }
+
+/* Auth */
+.auth-screen { position:fixed; inset:0; background:var(--bg); display:none; align-items:center; justify-content:center; z-index:999; }
+.auth-screen.active { display:flex; }
+.auth-card { background:var(--bg-elev); border:1px solid var(--border); border-radius:12px; padding:32px; width:100%; max-width:380px; }
+.auth-card h2 { font-family:'Fraunces',serif; font-size:22px; font-weight:500; margin-bottom:8px; }
+.auth-card .sub { font-size:12px; color:var(--text-dim); margin-bottom:20px; }
+.auth-card input { width:100%; background:var(--bg); border:1px solid var(--border-strong); color:var(--text); padding:10px 12px; border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:13px; margin-bottom:10px; }
+.auth-card button { width:100%; background:var(--primary); color:var(--bg); border:none; padding:11px; border-radius:6px; font-family:'Inter Tight'; font-weight:600; cursor:pointer; }
+.auth-error { color:var(--red-bright); font-size:12px; margin-top:6px; min-height:16px; }
+
+/* Section */
+.section-label { max-width:1400px; margin:28px auto 0; padding:0 32px; font-family:'Fraunces',serif; font-size:17px; font-style:italic; color:var(--primary); }
+.section-note { max-width:1400px; margin:4px auto 0; padding:0 32px; font-size:13px; color:var(--text-dim); }
+.main { max-width:1400px; margin:0 auto; padding:20px 32px 60px; }
+
+/* Día navegador */
+.day-nav { display:flex; align-items:center; justify-content:space-between; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:14px 20px; margin-bottom:18px; }
+.day-nav-btn { background:var(--bg-elev); border:1px solid var(--border-strong); color:var(--text-dim); padding:7px 14px; border-radius:6px; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:12px; }
+.day-nav-btn:hover { border-color:var(--primary); color:var(--primary); }
+.day-nav-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.day-nav-center { text-align:center; }
+.day-nav-date { font-family:'Fraunces',serif; font-size:20px; font-weight:500; }
+.day-nav-meta { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.08em; margin-top:2px; }
+.day-nav-input { background:transparent; border:none; color:var(--text); font-family:inherit; font-size:inherit; text-align:center; cursor:pointer; }
+
+/* Cards de A/B */
+.resumen-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+@media(max-width:768px){ .resumen-grid{ grid-template-columns:1fr; } }
+.card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:20px; }
+.card-title { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); font-weight:600; margin-bottom:14px; }
+.line { display:flex; justify-content:space-between; padding:7px 0; font-family:'JetBrains Mono',monospace; font-size:13px; border-bottom:1px solid var(--border); }
+.line:last-child { border-bottom:none; }
+.line .lbl { color:var(--text-dim); }
+.line .val { color:var(--text); font-weight:500; }
+.line.total { border-top:2px solid var(--border-strong); margin-top:6px; padding-top:12px; border-bottom:none; }
+.line.total .lbl { color:var(--text); font-weight:600; font-family:'Inter Tight'; }
+.line.total .val { color:var(--primary); font-weight:600; font-size:16px; }
+.bloque-b { background:rgba(212,160,74,0.06); border-color:rgba(212,160,74,0.3); }
+.bloque-b .card-title { color:var(--amber-bright); }
+.bloque-b .line.total .val { color:var(--amber-bright); }
+
+/* Total general */
+.total-general { background:linear-gradient(135deg,rgba(110,226,197,0.1),rgba(63,98,153,0.08)); border:1px solid var(--primary-dim); border-radius:12px; padding:22px 28px; display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.total-general .lbl { font-family:'Fraunces',serif; font-size:18px; font-style:italic; }
+.total-general .val { font-family:'JetBrains Mono',monospace; font-size:30px; font-weight:600; color:var(--primary-bright); }
+
+/* Tabla método x estado */
+.matrix { width:100%; border-collapse:collapse; }
+.matrix th { text-align:right; padding:9px 12px; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); border-bottom:1px solid var(--border-strong); font-weight:600; }
+.matrix th:first-child { text-align:left; }
+.matrix td { padding:9px 12px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:13px; text-align:right; }
+.matrix td:first-child { text-align:left; color:var(--text-dim); font-family:'Inter Tight'; }
+.matrix .cobrado { color:var(--primary); }
+.matrix .pendiente { color:var(--amber-bright); }
+.matrix tr.total-row td { border-top:2px solid var(--border-strong); border-bottom:none; font-weight:600; color:var(--text); padding-top:12px; }
+.matrix .colgroup-head { background:var(--bg-elev); color:var(--text-dim); font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; text-align:center; }
+.zero { color:var(--text-faint); }
+
+/* Tiendas del día */
+.tienda-row { display:grid; grid-template-columns:1fr auto auto auto auto; gap:16px; align-items:center; padding:12px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; margin-bottom:8px; }
+@media(max-width:768px){ .tienda-row{ grid-template-columns:1fr; gap:8px; } }
+.tienda-name { font-weight:500; }
+.tienda-meta { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); }
+.pill { font-family:'JetBrains Mono',monospace; font-size:10px; padding:3px 9px; border-radius:12px; text-transform:uppercase; letter-spacing:0.04em; }
+.pill-cobrado { background:rgba(110,226,197,0.12); color:var(--primary); }
+.pill-pendiente { background:rgba(212,160,74,0.12); color:var(--amber-bright); }
+.pill-a { background:rgba(63,98,153,0.18); color:var(--accent-bright); }
+.pill-b { background:rgba(212,160,74,0.18); color:var(--amber-bright); }
+.tienda-importe { font-family:'JetBrains Mono',monospace; font-weight:600; min-width:90px; text-align:right; }
+
+/* Periodo (semana/mes) */
+.periodo-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:768px){ .periodo-grid{ grid-template-columns:1fr; } }
+.periodo-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:18px; }
+.periodo-big { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:600; color:var(--primary); margin:6px 0; }
+.periodo-sub { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); }
+
+.empty-day { text-align:center; padding:40px 20px; color:var(--text-faint); font-style:italic; background:var(--bg-card); border:1px dashed var(--border); border-radius:10px; }
+
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--bg-elev); border:1px solid var(--border-strong); padding:12px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none; transition:opacity 0.2s; box-shadow:0 10px 30px rgba(0,0,0,0.5); z-index:200; border-left:3px solid var(--primary); }
+.toast.active { opacity:1; }
+.toast.error { border-left-color:var(--red); }
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">cargando recaudación...</div>
+
+<!-- Login (mismo patrón que el resto) -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <h2>Magilu <em style="font-style:italic;color:#6ee2c5;">Finance</em></h2>
+    <div class="sub">Inicia sesión para acceder.</div>
+    <input type="email" id="authEmail" placeholder="Email" autocomplete="email">
+    <input type="password" id="authPassword" placeholder="Contraseña" autocomplete="current-password">
+    <button id="authLoginBtn">Entrar</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" style="display:none;">
+
+<header class="app-header">
+  <div class="header-inner">
+    <a href="./" class="back-link">← Inicio</a>
+    <div>
+      <h1>Recau<em>dación</em></h1>
+      <div class="subtitle" id="headerStats">cálculo en vivo · v1</div>
+    </div>
+  </div>
+</header>
+
+<div class="section-label">Resumen del día</div>
+<div class="section-note">Agrupa cada depósito por su fecha de liquidación (recuento). Cálculo en vivo desde la base de datos.</div>
+
+<div class="main">
+
+  <!-- Navegador de día -->
+  <div class="day-nav">
+    <button class="day-nav-btn" id="btnDayPrev">← día anterior</button>
+    <div class="day-nav-center">
+      <div class="day-nav-date" id="dayDateLabel">—</div>
+      <div class="day-nav-meta" id="dayMeta">—</div>
+      <input type="date" id="dayDatePicker" class="day-nav-input" style="margin-top:4px;font-size:11px;">
+    </div>
+    <button class="day-nav-btn" id="btnDayNext">día siguiente →</button>
+  </div>
+
+  <!-- Bloques A y B -->
+  <div class="resumen-grid">
+    <div class="card" id="blockA">
+      <div class="card-title">Bloque A — con factura</div>
+      <div class="line"><span class="lbl">Base imponible</span><span class="val mono" id="aBase">0,00 €</span></div>
+      <div class="line"><span class="lbl">IVA (21%)</span><span class="val mono" id="aIva">0,00 €</span></div>
+      <div class="line"><span class="lbl">RE (5,2%)</span><span class="val mono" id="aRe">0,00 €</span></div>
+      <div class="line total"><span class="lbl">Total A</span><span class="val mono" id="aTotal">0,00 €</span></div>
+    </div>
+    <div class="card bloque-b" id="blockB">
+      <div class="card-title">Bloque B — sin factura</div>
+      <div class="line"><span class="lbl">Importe en B</span><span class="val mono" id="bBase">0,00 €</span></div>
+      <div class="line" style="opacity:0.5;"><span class="lbl">sin IVA</span><span class="val">—</span></div>
+      <div class="line" style="opacity:0.5;"><span class="lbl">sin RE</span><span class="val">—</span></div>
+      <div class="line total"><span class="lbl">Total B</span><span class="val mono" id="bTotal">0,00 €</span></div>
+    </div>
+  </div>
+
+  <!-- Total general -->
+  <div class="total-general">
+    <span class="lbl">Total recaudado del día</span>
+    <span class="val" id="totalGeneral">0,00 €</span>
+  </div>
+
+  <!-- Tabla método × estado × A/B -->
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">Por método de pago × estado × régimen (importe con impuestos)</div>
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th rowspan="2" style="vertical-align:bottom;">Método</th>
+          <th colspan="2" class="colgroup-head">Régimen A</th>
+          <th colspan="2" class="colgroup-head">Régimen B</th>
+          <th rowspan="2" style="vertical-align:bottom;">Total</th>
+        </tr>
+        <tr>
+          <th>Cobrado</th><th>Pendiente</th>
+          <th>Cobrado</th><th>Pendiente</th>
+        </tr>
+      </thead>
+      <tbody id="matrixBody">
+        <!-- relleno por JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Tiendas del día -->
+  <div class="card-title" style="padding:0 4px;margin-bottom:10px;">Tiendas liquidadas en el día</div>
+  <div id="tiendasList">
+    <div class="empty-day">Cargando...</div>
+  </div>
+
+</div>
+
+<div class="section-label">Sumas del periodo</div>
+<div class="section-note">Totales acumulados (basados en la fecha del día visible).</div>
+<div class="main">
+  <div class="periodo-grid">
+    <div class="periodo-card">
+      <div class="periodo-sub" id="weekRange">SEMANA —</div>
+      <div class="periodo-big" id="weekTotal">0,00 €</div>
+      <div class="periodo-sub" id="weekDetail">—</div>
+    </div>
+    <div class="periodo-card">
+      <div class="periodo-sub" id="monthRange">MES —</div>
+      <div class="periodo-big" id="monthTotal">0,00 €</div>
+      <div class="periodo-sub" id="monthDetail">—</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1" crossorigin="anonymous"></script>
+
+<script>
+'use strict';
+
+const SUPABASE_URL = 'https://bgrsjftxwuduvlglfpky.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3Uhr0TMJEtq4_9CJc1D19Q_nfrkRq_2';
+
+if (!window.supabase || typeof window.supabase.createClient !== 'function'){
+  document.getElementById('loadingScreen').innerHTML = '<div style="color:#ee8a76;text-align:center;padding:24px;">No se pudo cargar Supabase SDK. Recarga la página.</div>';
+  throw new Error('Supabase SDK no disponible');
+}
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false }
+});
+
+let currentUser = null;
+let allLiquidaciones = []; // todas las liquidaciones cargadas (toda la historia)
+let currentDay = todayISO();
+const IVA_RATE = 0.21;
+const RE_RATE = 0.052;
+
+// ============ UTILIDADES ============
+function $(id){ return document.getElementById(id); }
+function todayISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function fmtMoney(n){ return (Math.round((n||0)*100)/100).toFixed(2).replace('.',',') + ' €'; }
+function fmtDate(iso){
+  if (!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function fmtDateLong(iso){
+  if (!iso) return '—';
+  const d = new Date(iso+'T00:00:00');
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return `${dias[d.getDay()]} ${d.getDate()} de ${meses[d.getMonth()]}`;
+}
+function addDays(iso, n){
+  const d = new Date(iso+'T00:00:00');
+  d.setDate(d.getDate()+n);
+  return d.toISOString().slice(0,10);
+}
+function startOfWeek(iso){
+  // Semana ISO: lunes a domingo
+  const d = new Date(iso+'T00:00:00');
+  const day = d.getDay(); // 0=domingo
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate()+diff);
+  return d.toISOString().slice(0,10);
+}
+function endOfWeek(iso){ return addDays(startOfWeek(iso), 6); }
+function startOfMonth(iso){ return iso.slice(0,8)+'01'; }
+function endOfMonth(iso){
+  const d = new Date(iso+'T00:00:00');
+  d.setMonth(d.getMonth()+1); d.setDate(0);
+  return d.toISOString().slice(0,10);
+}
+function fmtRange(a, b){
+  // Rangos como "25 may – 31 may 2026"
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const [ya,ma,da] = a.split('-').map(Number);
+  const [yb,mb,db] = b.split('-').map(Number);
+  return `${da} ${meses[ma-1]} – ${db} ${meses[mb-1]} ${yb}`;
+}
+function fmtMonth(iso){
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const [y,m] = iso.split('-').map(Number);
+  return `${meses[m-1]} ${y}`;
+}
+function showToast(msg, error=false){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast active' + (error?' error':'');
+  setTimeout(()=>t.classList.remove('active'), 3000);
+}
+
+// ============ AUTH ============
+async function init(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (session){ currentUser = session.user; await showApp(); }
+  else showAuth();
+}
+function showAuth(){ $('loadingScreen').style.display='none'; $('authScreen').classList.add('active'); }
+async function showApp(){
+  $('loadingScreen').style.display='none';
+  $('authScreen').classList.remove('active');
+  $('app').style.display='block';
+  await loadData();
+  render();
+}
+sb.auth.onAuthStateChange((event, session)=>{
+  if (event==='SIGNED_OUT' || !session){ currentUser=null; location.href='./'; }
+});
+$('authLoginBtn').addEventListener('click', async ()=>{
+  const email = $('authEmail').value.trim();
+  const pwd = $('authPassword').value;
+  if (!email || !pwd){ $('authError').textContent='Email y contraseña.'; return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if (error){ $('authError').textContent = error.message; return; }
+  currentUser = data.user; await showApp();
+});
+$('authPassword').addEventListener('keydown', e=>{ if (e.key==='Enter') $('authLoginBtn').click(); });
+
+// ============ CARGA DE DATOS ============
+// Pull único: todos los depósitos liquidados (recontado/facturado) con sus líneas y su cobro
+async function loadData(){
+  // Depósitos con cliente
+  const { data: deps, error: depErr } = await sb.from('deposits')
+    .select('id, client_id, status, recount_date, invoice_date, delivery_date, regime, payment_method, client_has_re, deposit_number')
+    .in('status', ['recontado','facturado']);
+  if (depErr){ showToast('Error cargando depósitos: '+depErr.message, true); return; }
+
+  // Clientes
+  const { data: clients, error: cliErr } = await sb.from('clients')
+    .select('id, legal_name, commercial_name, vat_regime');
+  if (cliErr){ showToast('Error cargando clientes: '+cliErr.message, true); return; }
+  const clientMap = new Map(clients.map(c=>[c.id, c]));
+
+  // Líneas (solo de esos depósitos)
+  const depIds = deps.map(d=>d.id);
+  let lines = [];
+  if (depIds.length){
+    // Por seguridad parto en bloques si fuera muy grande (no crítico ahora)
+    const { data: lns, error: lnErr } = await sb.from('deposit_lines')
+      .select('deposit_id, qty_delivered, qty_remaining, unit_price')
+      .in('deposit_id', depIds);
+    if (lnErr){ showToast('Error cargando líneas: '+lnErr.message, true); return; }
+    lines = lns||[];
+  }
+  // Agrupar líneas por depósito
+  const linesByDep = new Map();
+  lines.forEach(l=>{
+    if (!linesByDep.has(l.deposit_id)) linesByDep.set(l.deposit_id, []);
+    linesByDep.get(l.deposit_id).push(l);
+  });
+
+  // Cobros pendientes vinculados a depósitos (solo para saber si está cobrado o pendiente)
+  const { data: cobros, error: cobErr } = await sb.from('pending_collections')
+    .select('deposit_id, status');
+  if (cobErr){ showToast('Error cargando cobros: '+cobErr.message, true); return; }
+  const cobroByDep = new Map();
+  (cobros||[]).forEach(c=>{ if (c.deposit_id) cobroByDep.set(c.deposit_id, c); });
+
+  // Construir el array maestro
+  allLiquidaciones = deps.map(d=>{
+    const c = clientMap.get(d.client_id);
+    const cobro = cobroByDep.get(d.id);
+    // Base vendida del depósito (la realidad)
+    const ls = linesByDep.get(d.id) || [];
+    let base = 0;
+    ls.forEach(l=>{
+      const sold = (parseFloat(l.qty_delivered)||0) - (l.qty_remaining!=null ? parseFloat(l.qty_remaining)||0 : 0);
+      base += sold * (parseFloat(l.unit_price)||0);
+    });
+    // ¿Tiene RE? Manda el dato del depósito, si null cae a la ficha
+    const tieneRE = (d.client_has_re !== null && d.client_has_re !== undefined)
+      ? !!d.client_has_re
+      : (c && c.vat_regime === 'recargo_equivalencia');
+    // Día de liquidación
+    const dia = d.recount_date || d.invoice_date || d.delivery_date;
+    // Régimen A o B (si no está marcado, asumimos A)
+    const regime = (d.regime === 'B') ? 'B' : 'A';
+    // Cálculo
+    const iva = regime === 'A' ? base * IVA_RATE : 0;
+    const re  = (regime === 'A' && tieneRE) ? base * RE_RATE : 0;
+    const total = base + iva + re;
+    // Estado cobrado/pendiente
+    // - Si NO hay cobro vinculado → significa que se liquidó como cobrado (efectivo en mano, normalmente)
+    // - Si hay cobro y su status='cobrado' → cobrado
+    // - Si hay cobro y su status='pendiente' → pendiente
+    let estado;
+    if (!cobro) estado = 'cobrado';
+    else estado = (cobro.status === 'cobrado') ? 'cobrado' : 'pendiente';
+    return {
+      id: d.id,
+      dia,
+      delivery_date: d.delivery_date,
+      cliente: c ? (c.commercial_name || c.legal_name || '—') : '—',
+      regime,
+      tieneRE,
+      payment_method: d.payment_method || 'otro',
+      estado,
+      deposit_number: d.deposit_number,
+      base, iva, re, total
+    };
+  });
+
+  // Por defecto, el día más reciente con datos. Si hoy no tiene, vamos a hoy igualmente.
+  // Si quieres ir directo al último día con liquidaciones, descomenta:
+  // const days = [...new Set(allLiquidaciones.map(l=>l.dia))].sort().reverse();
+  // currentDay = days[0] || todayISO();
+}
+
+// ============ RENDER ============
+const METODOS = [
+  { code:'efectivo',      label:'Efectivo' },
+  { code:'transferencia', label:'Transferencia' },
+  { code:'bizum',         label:'Bizum' },
+  { code:'pagare',        label:'Pagaré' },
+  { code:'remesa',        label:'Remesa' }
+];
+
+function render(){
+  renderHeaderStats();
+  renderDayNav();
+  renderDayResumen();
+  renderMatrix();
+  renderTiendas();
+  renderPeriodos();
+}
+
+function renderHeaderStats(){
+  const total = allLiquidaciones.length;
+  $('headerStats').textContent = `${total} liquidaciones · cálculo en vivo · v1`;
+}
+
+function renderDayNav(){
+  $('dayDateLabel').textContent = fmtDateLong(currentDay);
+  const liquidacionesDelDia = allLiquidaciones.filter(l=>l.dia === currentDay);
+  $('dayMeta').textContent = `${liquidacionesDelDia.length} ${liquidacionesDelDia.length===1?'tienda liquidada':'tiendas liquidadas'} · ${currentDay.slice(0,4)}`;
+  $('dayDatePicker').value = currentDay;
+}
+
+function renderDayResumen(){
+  const liqs = allLiquidaciones.filter(l=>l.dia === currentDay);
+  let aBase=0, aIva=0, aRe=0, bBase=0;
+  liqs.forEach(l=>{
+    if (l.regime === 'A'){ aBase+=l.base; aIva+=l.iva; aRe+=l.re; }
+    else bBase += l.base;
+  });
+  const aTotal = aBase+aIva+aRe;
+  $('aBase').textContent = fmtMoney(aBase);
+  $('aIva').textContent = fmtMoney(aIva);
+  $('aRe').textContent = fmtMoney(aRe);
+  $('aTotal').textContent = fmtMoney(aTotal);
+  $('bBase').textContent = fmtMoney(bBase);
+  $('bTotal').textContent = fmtMoney(bBase);
+  $('totalGeneral').textContent = fmtMoney(aTotal + bBase);
+}
+
+function renderMatrix(){
+  const liqs = allLiquidaciones.filter(l=>l.dia === currentDay);
+  // Buckets: por metodo × regimen × estado
+  const cellTotal = (metodo, regime, estado) =>
+    liqs.filter(l=>l.payment_method===metodo && l.regime===regime && l.estado===estado)
+        .reduce((s,l)=>s+l.total, 0);
+
+  let rowsHtml = '';
+  let sumACob=0, sumAPen=0, sumBCob=0, sumBPen=0;
+  METODOS.forEach(m=>{
+    const aCob = cellTotal(m.code, 'A', 'cobrado');
+    const aPen = cellTotal(m.code, 'A', 'pendiente');
+    const bCob = cellTotal(m.code, 'B', 'cobrado');
+    const bPen = cellTotal(m.code, 'B', 'pendiente');
+    const totalRow = aCob+aPen+bCob+bPen;
+    sumACob+=aCob; sumAPen+=aPen; sumBCob+=bCob; sumBPen+=bPen;
+    rowsHtml += `<tr>
+      <td>${m.label}</td>
+      <td class="${aCob>0?'cobrado':'zero'}">${aCob>0?fmtMoney(aCob):'—'}</td>
+      <td class="${aPen>0?'pendiente':'zero'}">${aPen>0?fmtMoney(aPen):'—'}</td>
+      <td class="${bCob>0?'cobrado':'zero'}">${bCob>0?fmtMoney(bCob):'—'}</td>
+      <td class="${bPen>0?'pendiente':'zero'}">${bPen>0?fmtMoney(bPen):'—'}</td>
+      <td class="${totalRow>0?'':'zero'}">${totalRow>0?fmtMoney(totalRow):'—'}</td>
+    </tr>`;
+  });
+  const granTotal = sumACob+sumAPen+sumBCob+sumBPen;
+  rowsHtml += `<tr class="total-row">
+    <td>TOTAL</td>
+    <td class="cobrado">${sumACob>0?fmtMoney(sumACob):'—'}</td>
+    <td class="pendiente">${sumAPen>0?fmtMoney(sumAPen):'—'}</td>
+    <td class="cobrado">${sumBCob>0?fmtMoney(sumBCob):'—'}</td>
+    <td class="pendiente">${sumBPen>0?fmtMoney(sumBPen):'—'}</td>
+    <td>${granTotal>0?fmtMoney(granTotal):'—'}</td>
+  </tr>`;
+  $('matrixBody').innerHTML = rowsHtml;
+}
+
+function renderTiendas(){
+  const liqs = allLiquidaciones.filter(l=>l.dia === currentDay).sort((a,b)=>a.cliente.localeCompare(b.cliente));
+  const cont = $('tiendasList');
+  if (!liqs.length){
+    cont.innerHTML = '<div class="empty-day">Sin liquidaciones en este día.</div>';
+    return;
+  }
+  cont.innerHTML = liqs.map(l=>{
+    const fechaEntregaDiff = (l.delivery_date && l.delivery_date !== l.dia) ? ` · depósito entregado el ${fmtDate(l.delivery_date)}` : '';
+    const metodoLabel = METODOS.find(m=>m.code===l.payment_method)?.label || l.payment_method;
+    return `<div class="tienda-row">
+      <div>
+        <div class="tienda-name">${escapeHtml(l.cliente)}</div>
+        <div class="tienda-meta">${metodoLabel}${fechaEntregaDiff}${l.deposit_number?' · nº '+l.deposit_number:''}</div>
+      </div>
+      <span class="pill ${l.regime==='A'?'pill-a':'pill-b'}">${l.regime}</span>
+      <span class="pill ${l.estado==='cobrado'?'pill-cobrado':'pill-pendiente'}">${l.estado}</span>
+      <span class="tienda-importe">${fmtMoney(l.total)}</span>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function renderPeriodos(){
+  // Semana del currentDay
+  const wA = startOfWeek(currentDay), wB = endOfWeek(currentDay);
+  const mA = startOfMonth(currentDay), mB = endOfMonth(currentDay);
+  const semana = allLiquidaciones.filter(l=>l.dia>=wA && l.dia<=wB);
+  const mes = allLiquidaciones.filter(l=>l.dia>=mA && l.dia<=mB);
+  const summary = (arr)=>{
+    let totalA=0, totalB=0, cobrado=0, pendiente=0;
+    arr.forEach(l=>{
+      if (l.regime==='A') totalA += l.total;
+      else totalB += l.total;
+      if (l.estado==='cobrado') cobrado += l.total;
+      else pendiente += l.total;
+    });
+    return { total:totalA+totalB, totalA, totalB, cobrado, pendiente };
+  };
+  const sw = summary(semana);
+  const sm = summary(mes);
+  $('weekRange').textContent = 'SEMANA ' + fmtRange(wA, wB).toUpperCase();
+  $('weekTotal').textContent = fmtMoney(sw.total);
+  $('weekDetail').textContent = `A: ${fmtMoney(sw.totalA)} · B: ${fmtMoney(sw.totalB)} · cobrado ${fmtMoney(sw.cobrado)} · pendiente ${fmtMoney(sw.pendiente)}`;
+  $('monthRange').textContent = 'MES ' + fmtMonth(currentDay).toUpperCase();
+  $('monthTotal').textContent = fmtMoney(sm.total);
+  $('monthDetail').textContent = `A: ${fmtMoney(sm.totalA)} · B: ${fmtMoney(sm.totalB)} · cobrado ${fmtMoney(sm.cobrado)} · pendiente ${fmtMoney(sm.pendiente)}`;
+}
+
+// ============ EVENTOS NAVEGACIÓN ============
+$('btnDayPrev').addEventListener('click', ()=>{ currentDay = addDays(currentDay, -1); render(); });
+$('btnDayNext').addEventListener('click', ()=>{ currentDay = addDays(currentDay, 1); render(); });
+$('dayDatePicker').addEventListener('change', (e)=>{ if (e.target.value){ currentDay = e.target.value; render(); } });
+
+// Permitir teclas izq/der para navegar
+document.addEventListener('keydown', (e)=>{
+  if (e.target.tagName==='INPUT') return;
+  if (e.key==='ArrowLeft'){ currentDay = addDays(currentDay, -1); render(); }
+  if (e.key==='ArrowRight'){ currentDay = addDays(currentDay, 1); render(); }
+});
+
+// Arrancar
+init();
+</script>
+</body>
+</html>
