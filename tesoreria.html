@@ -373,6 +373,7 @@
       <button class="tab active" data-tab="liquidez" onclick="switchTab('liquidez')">💧 Liquidez</button>
       <button class="tab" data-tab="calendario" onclick="switchTab('calendario')">📅 Calendario A/B</button>
       <button class="tab" data-tab="pendientes" onclick="switchTab('pendientes')">⏳ Cobros pendientes</button>
+      <button class="tab" data-tab="pagos" onclick="switchTab('pagos')">🧮 Pagos</button>
     </div>
 
     <!-- ===== TAB: LIQUIDEZ ===== -->
@@ -424,6 +425,10 @@
     <div class="tab-content" id="tab-pendientes">
       <h2 class="main-title">Cobros pendientes</h2>
 
+      <div class="toolbar" style="margin-bottom:16px;">
+        <button class="btn btn-primary" onclick="openRemesaModal()">📄 Generar remesa SEPA (XML)</button>
+      </div>
+
       <div class="pending-metrics" id="pendingMetrics"></div>
 
       <div class="filter-bar" id="pendingFilters">
@@ -437,8 +442,96 @@
 
       <div class="pending-table" id="pendingTable"></div>
     </div>
+
+    <!-- ===== TAB: PAGOS (consulta método × estado) ===== -->
+    <div class="tab-content" id="tab-pagos">
+      <h2 class="main-title">Consulta de pagos</h2>
+      <p class="section-subtitle">Marca las casillas (forma de pago × estado) que quieras y se irán sumando en el total. Datos en vivo de todos los cobros.</p>
+      <div class="pagos-toolbar">
+        <button class="btn" onclick="pagosSelectAll(true)">✓ Marcar todo</button>
+        <button class="btn" onclick="pagosSelectAll(false)">✕ Limpiar</button>
+        <button class="btn" onclick="pagosSelectEstado('pendiente')">Solo pendientes</button>
+        <button class="btn" onclick="pagosSelectEstado('cobrado')">Solo cobrados</button>
+      </div>
+      <div class="pagos-total-box">
+        <div class="pagos-total-label">Total seleccionado</div>
+        <div class="pagos-total-value" id="pagosTotal">0,00 €</div>
+        <div class="pagos-total-count" id="pagosTotalCount">0 cobros seleccionados</div>
+      </div>
+      <div id="pagosMatrix"></div>
+    </div>
   </div>
 </div>
+
+<style>
+  #tab-pagos .pagos-toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  #tab-pagos .pagos-total-box { background:var(--bg-card); border:1px solid var(--border-strong); border-left:3px solid var(--primary); border-radius:8px; padding:16px 20px; margin-bottom:20px; }
+  #tab-pagos .pagos-total-label { font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; }
+  #tab-pagos .pagos-total-value { font-family:'Fraunces',serif; font-size:30px; font-weight:600; color:var(--primary-bright); line-height:1.2; }
+  #tab-pagos .pagos-total-count { font-size:12px; color:var(--text-faint); }
+  #tab-pagos table.pagos-table { width:100%; border-collapse:collapse; font-size:13px; }
+  #tab-pagos .pagos-table th, #tab-pagos .pagos-table td { border:1px solid var(--border); padding:8px 10px; text-align:center; vertical-align:middle; }
+  #tab-pagos .pagos-table thead th { background:var(--bg-elev); color:var(--text-dim); font-weight:600; }
+  #tab-pagos .pagos-metodo { text-align:left; font-weight:600; color:var(--text); white-space:nowrap; }
+  #tab-pagos .pagos-filatot { font-family:'JetBrains Mono',monospace; color:var(--text-dim); }
+  #tab-pagos .pagos-check { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; margin:0; }
+  #tab-pagos .pagos-check input { width:18px; height:18px; accent-color:var(--primary); cursor:pointer; }
+  #tab-pagos .pagos-cellinfo { display:flex; flex-direction:column; align-items:center; line-height:1.25; }
+  #tab-pagos .pagos-amt { font-family:'JetBrains Mono',monospace; color:var(--text); font-weight:600; }
+  #tab-pagos .pagos-cnt { font-size:11px; color:var(--text-faint); }
+  #tab-pagos .pagos-dim { color:var(--text-faint); }
+</style>
+
+<!-- MODAL: Remesa SEPA (adeudos directos Cuaderno 19 / pain.008.001.02) -->
+<div class="modal-overlay" id="remesaModal" onclick="if(event.target===this)closeModal('remesaModal')">
+  <div class="modal modal-wide">
+    <h3>📄 Remesa SEPA — adeudos directos (Cuaderno 19)</h3>
+    <p>Genera el XML <code>pain.008.001.02</code> con los cobros de remesa pendientes para subirlo a la banca electrónica (Sabadell). Los datos que rellenes se guardan para la próxima vez.</p>
+
+    <div class="modal-section">
+      <h4>Datos del acreedor (tu empresa)</h4>
+      <div class="modal-fields-2">
+        <div class="modal-field"><label for="remNm">Nombre / razón social</label><input id="remNm" type="text" maxlength="70"></div>
+        <div class="modal-field"><label for="remCif">CIF</label><input id="remCif" type="text" maxlength="20"></div>
+        <div class="modal-field"><label for="remIban">IBAN del acreedor</label><input id="remIban" type="text" placeholder="ES.."></div>
+        <div class="modal-field"><label for="remSepaId">Identificador de Acreedor SEPA</label><input id="remSepaId" type="text" placeholder="ESxxZZZ........"></div>
+        <div class="modal-field"><label for="remBic">BIC del acreedor (opcional)</label><input id="remBic" type="text"></div>
+        <div class="modal-field"><label for="remColDate">Fecha de cobro (cargo)</label><input id="remColDate" type="date"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h4>Cobros a incluir <span id="remCount" style="color:var(--text-faint);font-weight:400;"></span></h4>
+      <div style="overflow-x:auto;"><div id="remesaLines" style="min-width:760px;"></div></div>
+    </div>
+
+    <div id="remesaIssues"></div>
+
+    <div class="day-summary">
+      <div class="day-summary-item"><div class="day-summary-label">Nº adeudos</div><div class="day-summary-value" id="remTotalN">0</div></div>
+      <div class="day-summary-item"><div class="day-summary-label">Total remesa</div><div class="day-summary-value" id="remTotalImporte">0,00 €</div></div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:20px;">
+      <button class="btn" onclick="closeModal('remesaModal')">Cancelar</button>
+      <button class="btn" onclick="saveRemesaData()">💾 Guardar datos</button>
+      <button class="btn btn-primary" onclick="downloadRemesaXML()">⬇ Descargar XML SEPA</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  #remesaModal .modal { max-width: 880px; }
+  #remesaModal .rem-row { display:grid; grid-template-columns: 1.4fr 0.8fr 1.7fr 1.1fr 1fr 0.8fr; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); }
+  #remesaModal .rem-row.head { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.03em; border-bottom:1px solid var(--border-strong); }
+  #remesaModal .rem-row input, #remesaModal .rem-row select { width:100%; padding:6px 8px; font-size:12px; background:var(--bg); border:1px solid var(--border-strong); color:var(--text); border-radius:5px; }
+  #remesaModal .rem-name { font-weight:600; color:var(--text); font-size:13px; }
+  #remesaModal .rem-amt { font-family:'JetBrains Mono',monospace; text-align:right; color:var(--text); }
+  #remesaModal .rem-warn { color:var(--amber-bright); font-size:10px; display:block; }
+  #remesaModal .rem-issues { background:rgba(224,117,96,0.08); border:1px solid var(--red); border-radius:6px; padding:12px 14px; margin:14px 0; font-size:13px; color:var(--red-bright); }
+  #remesaModal .rem-issues ul { margin:6px 0 0 18px; }
+  #remesaModal .rem-ok { background:rgba(110,226,197,0.08); border:1px solid var(--primary-dim); border-radius:6px; padding:10px 14px; margin:14px 0; font-size:13px; color:var(--primary-bright); }
+</style>
 
 <div class="modal-overlay" id="movementModal" onclick="if(event.target===this)closeModal('movementModal')">
   <div class="modal">
@@ -1160,6 +1253,448 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tabName));
   if (tabName === 'calendario') renderCalendar();
   if (tabName === 'pendientes') renderPending();
+  if (tabName === 'pagos') renderPagos();
+}
+
+// ============================================
+// PAGOS (consulta forma de pago × estado, con suma en vivo)
+// ============================================
+const PAGO_METODOS = [
+  { code:'efectivo',      label:'Efectivo' },
+  { code:'tarjeta',       label:'Tarjeta' },
+  { code:'transferencia', label:'Transferencia' },
+  { code:'bizum',         label:'Bizum' },
+  { code:'pagare',        label:'Pagaré' },
+  { code:'remesa',        label:'Remesa' },
+  { code:'pendiente',     label:'Pendiente (sin método)' },
+  { code:'otro',          label:'Otro' }
+];
+const PAGO_ESTADOS = [
+  { code:'pendiente',  label:'Pendiente' },
+  { code:'cobrado',    label:'Cobrado' },
+  { code:'incidencia', label:'Incidencia' }
+];
+let pagosSelected = new Set(); // claves "metodo|estado"
+let pagosAgg = {};
+
+function pagoMetodoCode(pm){
+  const code = (pm || 'otro').toLowerCase();
+  return PAGO_METODOS.some(m => m.code === code) ? code : 'otro';
+}
+
+function renderPagos(){
+  // Agregar todos los cobros por método × estado
+  pagosAgg = {};
+  PAGO_METODOS.forEach(m => { pagosAgg[m.code] = {}; PAGO_ESTADOS.forEach(e => { pagosAgg[m.code][e.code] = { count:0, sum:0 }; }); });
+  pendingCollections.forEach(p => {
+    const m = pagoMetodoCode(p.payment_method);
+    const e = PAGO_ESTADOS.some(x => x.code === p.status) ? p.status : 'pendiente';
+    pagosAgg[m][e].count += 1;
+    pagosAgg[m][e].sum += parseFloat(p.amount) || 0;
+  });
+
+  // Limpiar selección huérfana: claves de celdas que ya no tienen datos.
+  pagosSelected.forEach(key => {
+    const [m, e] = key.split('|');
+    if (!(pagosAgg[m] && pagosAgg[m][e] && pagosAgg[m][e].count > 0)) pagosSelected.delete(key);
+  });
+
+  const cont = document.getElementById('pagosMatrix');
+  if (!cont) return;
+  cont.textContent = '';
+
+  const table = document.createElement('table');
+  table.className = 'pagos-table';
+
+  const thead = document.createElement('thead');
+  const htr = document.createElement('tr');
+  const corner = document.createElement('th'); corner.textContent = 'Forma de pago'; htr.appendChild(corner);
+  PAGO_ESTADOS.forEach(e => { const th = document.createElement('th'); th.textContent = e.label; htr.appendChild(th); });
+  const thTot = document.createElement('th'); thTot.textContent = 'Total fila'; htr.appendChild(thTot);
+  thead.appendChild(htr); table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  PAGO_METODOS.forEach(m => {
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.className = 'pagos-metodo'; tdName.textContent = m.label; tr.appendChild(tdName);
+    let filaSum = 0;
+    PAGO_ESTADOS.forEach(e => {
+      const cell = pagosAgg[m.code][e.code];
+      filaSum += cell.sum;
+      const td = document.createElement('td'); td.className = 'pagos-cell';
+      if (cell.count === 0){
+        const dim = document.createElement('span'); dim.className = 'pagos-dim'; dim.textContent = '—'; td.appendChild(dim);
+      } else {
+        const key = m.code + '|' + e.code;
+        const lbl = document.createElement('label'); lbl.className = 'pagos-check';
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = pagosSelected.has(key);
+        cb.onchange = () => { if (cb.checked) pagosSelected.add(key); else pagosSelected.delete(key); recalcPagosTotal(); };
+        lbl.appendChild(cb);
+        const info = document.createElement('span'); info.className = 'pagos-cellinfo';
+        const amt = document.createElement('span'); amt.className = 'pagos-amt'; amt.textContent = formatMoney(cell.sum);
+        const cnt = document.createElement('span'); cnt.className = 'pagos-cnt'; cnt.textContent = cell.count + (cell.count === 1 ? ' cobro' : ' cobros');
+        info.appendChild(amt); info.appendChild(cnt);
+        lbl.appendChild(info);
+        td.appendChild(lbl);
+      }
+      tr.appendChild(td);
+    });
+    const tdTot = document.createElement('td'); tdTot.className = 'pagos-filatot'; tdTot.textContent = formatMoney(filaSum); tr.appendChild(tdTot);
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  cont.appendChild(table);
+
+  recalcPagosTotal();
+}
+
+function recalcPagosTotal(){
+  let total = 0, n = 0;
+  pagosSelected.forEach(key => {
+    const [m, e] = key.split('|');
+    if (pagosAgg[m] && pagosAgg[m][e]){ total += pagosAgg[m][e].sum; n += pagosAgg[m][e].count; }
+  });
+  const tEl = document.getElementById('pagosTotal');
+  if (tEl) tEl.textContent = formatMoney(total);
+  const nEl = document.getElementById('pagosTotalCount');
+  if (nEl) nEl.textContent = n + (n === 1 ? ' cobro seleccionado' : ' cobros seleccionados');
+}
+
+function pagosSelectAll(on){
+  pagosSelected.clear();
+  if (on){
+    for (const m in pagosAgg) for (const e in pagosAgg[m]) if (pagosAgg[m][e].count > 0) pagosSelected.add(m + '|' + e);
+  }
+  renderPagos();
+}
+
+function pagosSelectEstado(estado){
+  pagosSelected.clear();
+  for (const m in pagosAgg) if (pagosAgg[m][estado] && pagosAgg[m][estado].count > 0) pagosSelected.add(m + '|' + estado);
+  renderPagos();
+}
+
+// ============================================
+// REMESA SEPA (adeudos directos — pain.008.001.02 / Cuaderno 19)
+// ============================================
+let remesaRows = [];
+let remesaCreditor = { name:'', cif:'', iban:'', bic:'', sepa_id:'' };
+const SEQ_TYPES = ['FRST','RCUR','OOFF','FNAL'];
+
+function isoDateLocal(d){ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+function isoDateTimeLocal(d){ const p=n=>String(n).padStart(2,'0'); return isoDateLocal(d)+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+// CreDtTm con offset de zona horaria (algunos canales de Sabadell lo exigen)
+function isoDateTimeOffset(d){ const p=n=>String(n).padStart(2,'0'); const off=-d.getTimezoneOffset(); const sg=off>=0?'+':'-'; const a=Math.abs(off); return isoDateTimeLocal(d)+sg+p(Math.floor(a/60))+':'+p(a%60); }
+// Validación de BIC (8 u 11, charset). Si no cumple, se trata como ausente (IBAN-only).
+function bicValid(b){ if(!b) return false; return /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(String(b).replace(/\s+/g,'').toUpperCase()); }
+
+// Validación IBAN (formato + dígito de control mod-97)
+function ibanValid(raw){
+  if (!raw) return false;
+  const v = String(raw).replace(/\s+/g,'').toUpperCase();
+  if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(v)) return false;
+  const re = v.slice(4) + v.slice(0,4);
+  let rem = 0;
+  for (let i=0; i<re.length; i++){
+    const ch = re[i];
+    const val = (ch >= 'A' && ch <= 'Z') ? (ch.charCodeAt(0)-55) : (ch.charCodeAt(0)-48);
+    rem = (val > 9) ? (rem*100 + val) % 97 : (rem*10 + val) % 97;
+  }
+  return rem === 1;
+}
+// Saneo al juego de caracteres SEPA (sin acentos ni símbolos raros)
+function sanitizeSEPA(t){
+  if (!t) return '';
+  let x = String(t).normalize('NFD').replace(/[̀-ͯ]/g,'');
+  x = x.replace(/[^A-Za-z0-9\/\-?:().,'+ ]/g,' ');
+  return x.replace(/\s+/g,' ').trim();
+}
+function xmlEsc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;'); }
+
+function downloadTextFile(filename, content, mime){
+  const blob = new Blob([content], { type: mime || 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+async function openRemesaModal(){
+  // 1) Datos del acreedor (settings)
+  const { data: st } = await supabaseClient.from('settings')
+    .select('company_legal_name,company_cif,creditor_iban,creditor_bic,creditor_sepa_id')
+    .eq('user_id', currentUser.id).maybeSingle();
+  remesaCreditor = {
+    name: st?.company_legal_name || '', cif: st?.company_cif || '',
+    iban: st?.creditor_iban || '', bic: st?.creditor_bic || '', sepa_id: st?.creditor_sepa_id || ''
+  };
+  document.getElementById('remNm').value = remesaCreditor.name;
+  document.getElementById('remCif').value = remesaCreditor.cif;
+  document.getElementById('remIban').value = remesaCreditor.iban;
+  document.getElementById('remBic').value = remesaCreditor.bic;
+  document.getElementById('remSepaId').value = remesaCreditor.sepa_id;
+  if (!document.getElementById('remColDate').value){
+    const d = new Date(); d.setDate(d.getDate()+5);
+    document.getElementById('remColDate').value = isoDateLocal(d);
+  }
+
+  // 2) Cobros de remesa pendientes y NO exportados aún
+  const { data: cobros, error } = await supabaseClient.from('pending_collections')
+    .select('id, amount, client_name, deposit_id, notes')
+    .eq('payment_method','remesa').eq('status','pendiente').is('remesa_exported_at', null)
+    .order('invoice_date');
+  if (error){ showToast(friendlyErrorMessage(error), true); return; }
+
+  // 3) Resolver cliente (vía depósito) para IBAN/mandato
+  const depIds = [...new Set((cobros||[]).map(c=>c.deposit_id).filter(Boolean))];
+  const depMap = new Map(), cliMap = new Map();
+  if (depIds.length){
+    const { data: deps } = await supabaseClient.from('deposits').select('id,client_id,deposit_number').in('id', depIds);
+    (deps||[]).forEach(d=>depMap.set(d.id, d));
+    const cliIds = [...new Set((deps||[]).map(d=>d.client_id).filter(Boolean))];
+    if (cliIds.length){
+      const { data: clis } = await supabaseClient.from('clients')
+        .select('id,legal_name,commercial_name,nif,iban,bic,sepa_mandate_ref,sepa_mandate_date,sepa_seq_type').in('id', cliIds);
+      (clis||[]).forEach(c=>cliMap.set(c.id, c));
+    }
+  }
+
+  remesaRows = (cobros||[]).map(co=>{
+    const dep = co.deposit_id ? depMap.get(co.deposit_id) : null;
+    const cli = (dep && dep.client_id) ? cliMap.get(dep.client_id) : null;
+    return {
+      cobro_id: co.id,
+      client_id: cli ? cli.id : null,
+      client_name: (cli ? (cli.commercial_name || cli.legal_name) : co.client_name) || 'Cliente',
+      amount: parseFloat(co.amount) || 0,
+      iban: (cli?.iban || '').replace(/\s+/g,'').toUpperCase(),
+      bic: cli?.bic || '',
+      rum: cli?.sepa_mandate_ref || '',
+      mandate_date: cli?.sepa_mandate_date || '',
+      seq_type: cli?.sepa_seq_type || 'RCUR',
+      concepto: co.notes || ('Cobro' + (dep ? ' depósito #' + (dep.deposit_number ?? '?') : ''))
+    };
+  });
+
+  renderRemesaTable();
+  document.getElementById('remesaIssues').innerHTML = '';
+  document.getElementById('remesaModal').classList.add('open');
+}
+
+function renderRemesaTable(){
+  const cont = document.getElementById('remesaLines');
+  cont.textContent = '';
+  const head = document.createElement('div'); head.className = 'rem-row head';
+  ['Cliente','Importe','IBAN deudor','Ref. mandato (RUM)','Fecha firma','Tipo'].forEach(h=>{
+    const s = document.createElement('div'); s.textContent = h; head.appendChild(s);
+  });
+  cont.appendChild(head);
+
+  if (!remesaRows.length){
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding:18px;text-align:center;color:var(--text-faint);';
+    empty.textContent = 'No hay cobros de remesa pendientes (sin exportar).';
+    cont.appendChild(empty);
+  }
+
+  remesaRows.forEach((r, idx)=>{
+    const row = document.createElement('div'); row.className = 'rem-row';
+    // Cliente
+    const nameC = document.createElement('div');
+    const nm = document.createElement('div'); nm.className = 'rem-name'; nm.textContent = r.client_name; nameC.appendChild(nm);
+    if (!r.client_id){ const w = document.createElement('span'); w.className='rem-warn'; w.textContent='manual · no se recuerda'; nameC.appendChild(w); }
+    row.appendChild(nameC);
+    // Importe
+    const amtC = document.createElement('div'); amtC.className = 'rem-amt'; amtC.textContent = formatMoney(r.amount); row.appendChild(amtC);
+    // IBAN
+    const ibanIn = document.createElement('input'); ibanIn.type='text'; ibanIn.value = r.iban;
+    ibanIn.oninput = ()=>{ r.iban = ibanIn.value.replace(/\s+/g,'').toUpperCase(); };
+    row.appendChild(ibanIn);
+    // RUM
+    const rumIn = document.createElement('input'); rumIn.type='text'; rumIn.value = r.rum;
+    rumIn.oninput = ()=>{ r.rum = rumIn.value; };
+    row.appendChild(rumIn);
+    // Fecha firma
+    const dateIn = document.createElement('input'); dateIn.type='date'; dateIn.value = r.mandate_date || '';
+    dateIn.oninput = ()=>{ r.mandate_date = dateIn.value; };
+    row.appendChild(dateIn);
+    // Tipo
+    const seqSel = document.createElement('select');
+    SEQ_TYPES.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; if (r.seq_type===t) o.selected=true; seqSel.appendChild(o); });
+    seqSel.onchange = ()=>{ r.seq_type = seqSel.value; };
+    row.appendChild(seqSel);
+
+    cont.appendChild(row);
+  });
+
+  const total = remesaRows.reduce((s,r)=>s+r.amount, 0);
+  document.getElementById('remTotalN').textContent = remesaRows.length;
+  document.getElementById('remTotalImporte').textContent = formatMoney(total);
+  document.getElementById('remCount').textContent = '· ' + remesaRows.length + ' cobro(s)';
+}
+
+function readRemesaCreditor(){
+  return {
+    name: document.getElementById('remNm').value.trim(),
+    cif: document.getElementById('remCif').value.trim(),
+    iban: document.getElementById('remIban').value.replace(/\s+/g,'').toUpperCase(),
+    bic: document.getElementById('remBic').value.replace(/\s+/g,'').toUpperCase(),
+    sepa_id: document.getElementById('remSepaId').value.trim()
+  };
+}
+
+function validateRemesa(creditor, rows, collectionDate){
+  const issues = [];
+  if (!creditor.name) issues.push('Falta el nombre / razón social de tu empresa (acreedor).');
+  if (!ibanValid(creditor.iban)) issues.push('El IBAN del acreedor está vacío o no es válido.');
+  if (!creditor.sepa_id) issues.push('Falta tu Identificador de Acreedor SEPA.');
+  if (!collectionDate) issues.push('Falta la fecha de cobro (cargo).');
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  if (collectionDate && new Date(collectionDate+'T00:00:00') < hoy) issues.push('La fecha de cobro no puede ser anterior a hoy.');
+  if (!rows.length) issues.push('No hay cobros de remesa para exportar.');
+  rows.forEach(r=>{
+    const who = r.client_name || 'cobro';
+    if (!ibanValid(r.iban)) issues.push(`${who}: IBAN del deudor vacío o no válido.`);
+    if (!r.rum) issues.push(`${who}: falta la referencia de mandato (RUM).`);
+    if (!r.mandate_date) issues.push(`${who}: falta la fecha de firma del mandato.`);
+    else if (new Date(r.mandate_date+'T00:00:00') > hoy) issues.push(`${who}: la fecha de firma del mandato no puede ser futura.`);
+    if (!SEQ_TYPES.includes(r.seq_type)) issues.push(`${who}: falta el tipo de adeudo (FRST/RCUR).`);
+    if (!(r.amount > 0)) issues.push(`${who}: importe no válido.`);
+  });
+  return issues;
+}
+
+function buildRemesaXML(creditor, rows, collectionDate, msgId){
+  const e = xmlEsc, s = sanitizeSEPA;
+  const cents = r => Math.round((parseFloat(r.amount)||0) * 100); // céntimos enteros: el cuadre es exacto
+  const fmtC = c => (c/100).toFixed(2);
+  const groups = {};
+  rows.forEach(r=>{ (groups[r.seq_type] = groups[r.seq_type] || []).push(r); });
+  const nbTx = rows.length;
+  const msgCents = rows.reduce((a,r)=>a+cents(r), 0);
+  const credBic = bicValid(creditor.bic) ? creditor.bic.replace(/\s+/g,'').toUpperCase() : null;
+  const cdtrAgt = credBic
+    ? `<CdtrAgt><FinInstnId><BIC>${e(credBic)}</BIC></FinInstnId></CdtrAgt>`
+    : `<CdtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></CdtrAgt>`;
+  let txCounter = 0;
+  let pmtInfs = '';
+  Object.keys(groups).forEach(seq=>{
+    const grp = groups[seq];
+    const gCents = grp.reduce((a,r)=>a+cents(r), 0);
+    let txs = '';
+    grp.forEach(r=>{
+      txCounter++;
+      const e2e = (msgId + '-' + txCounter).slice(0,35);
+      const dbtrBic = bicValid(r.bic) ? r.bic.replace(/\s+/g,'').toUpperCase() : null;
+      const dbtrAgt = dbtrBic
+        ? `<DbtrAgt><FinInstnId><BIC>${e(dbtrBic)}</BIC></FinInstnId></DbtrAgt>`
+        : `<DbtrAgt><FinInstnId><Othr><Id>NOTPROVIDED</Id></Othr></FinInstnId></DbtrAgt>`;
+      const ustrd = s(r.concepto).slice(0,140) || 'Cobro';
+      txs += `
+        <DrctDbtTxInf>
+          <PmtId><EndToEndId>${e(e2e)}</EndToEndId></PmtId>
+          <InstdAmt Ccy="EUR">${fmtC(cents(r))}</InstdAmt>
+          <DrctDbtTx><MndtRltdInf><MndtId>${e(s(r.rum).slice(0,35))}</MndtId><DtOfSgnt>${e(r.mandate_date)}</DtOfSgnt><AmdmntInd>false</AmdmntInd></MndtRltdInf></DrctDbtTx>
+          ${dbtrAgt}
+          <Dbtr><Nm>${e(s(r.client_name).slice(0,70))}</Nm></Dbtr>
+          <DbtrAcct><Id><IBAN>${e(r.iban.replace(/\s+/g,'').toUpperCase())}</IBAN></Id></DbtrAcct>
+          <RmtInf><Ustrd>${e(ustrd)}</Ustrd></RmtInf>
+        </DrctDbtTxInf>`;
+    });
+    pmtInfs += `
+      <PmtInf>
+        <PmtInfId>${e((msgId + '-' + seq).slice(0,35))}</PmtInfId>
+        <PmtMtd>DD</PmtMtd>
+        <BtchBookg>true</BtchBookg>
+        <NbOfTxs>${grp.length}</NbOfTxs>
+        <CtrlSum>${fmtC(gCents)}</CtrlSum>
+        <PmtTpInf><SvcLvl><Cd>SEPA</Cd></SvcLvl><LclInstrm><Cd>CORE</Cd></LclInstrm><SeqTp>${e(seq)}</SeqTp></PmtTpInf>
+        <ReqdColltnDt>${e(collectionDate)}</ReqdColltnDt>
+        <Cdtr><Nm>${e(s(creditor.name).slice(0,70))}</Nm></Cdtr>
+        <CdtrAcct><Id><IBAN>${e(creditor.iban.replace(/\s+/g,'').toUpperCase())}</IBAN></Id></CdtrAcct>
+        ${cdtrAgt}
+        <ChrgBr>SLEV</ChrgBr>
+        <CdtrSchmeId><Id><PrvtId><Othr><Id>${e(creditor.sepa_id)}</Id><SchmeNm><Prtry>SEPA</Prtry></SchmeNm></Othr></PrvtId></Id></CdtrSchmeId>${txs}
+      </PmtInf>`;
+  });
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.008.001.02" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <CstmrDrctDbtInitn>
+    <GrpHdr>
+      <MsgId>${e(msgId)}</MsgId>
+      <CreDtTm>${e(isoDateTimeOffset(new Date()))}</CreDtTm>
+      <NbOfTxs>${nbTx}</NbOfTxs>
+      <CtrlSum>${fmtC(msgCents)}</CtrlSum>
+      <InitgPty><Nm>${e(s(creditor.name).slice(0,70))}</Nm><Id><OrgId><Othr><Id>${e(creditor.sepa_id)}</Id></Othr></OrgId></Id></InitgPty>
+    </GrpHdr>${pmtInfs}
+  </CstmrDrctDbtInitn>
+</Document>`;
+}
+
+async function saveRemesaData(silent){
+  remesaCreditor = readRemesaCreditor();
+  const { error: e1 } = await supabaseClient.from('settings').update({
+    company_legal_name: remesaCreditor.name || null,
+    company_cif: remesaCreditor.cif || null,
+    creditor_iban: remesaCreditor.iban || null,
+    creditor_bic: remesaCreditor.bic || null,
+    creditor_sepa_id: remesaCreditor.sepa_id || null
+  }).eq('user_id', currentUser.id);
+  if (e1){ showToast(friendlyErrorMessage(e1), true); return false; }
+  // Persistir mandato por cliente (solo filas con cliente)
+  let failed = 0;
+  for (const r of remesaRows){
+    if (!r.client_id) continue;
+    const { error } = await supabaseClient.from('clients').update({
+      iban: r.iban || null,
+      sepa_mandate_ref: r.rum || null,
+      sepa_mandate_date: r.mandate_date || null,
+      sepa_seq_type: SEQ_TYPES.includes(r.seq_type) ? r.seq_type : null
+    }).eq('id', r.client_id);
+    if (error){ failed++; console.error('mandato cliente', r.client_id, error); }
+  }
+  if (failed) showToast(`Aviso: ${failed} mandato(s) de cliente no se pudieron guardar (revisa permisos)`, true);
+  else if (!silent) showToast('Datos de remesa guardados');
+  return true;
+}
+
+async function downloadRemesaXML(){
+  const creditor = readRemesaCreditor();
+  const collectionDate = document.getElementById('remColDate').value;
+  const issuesEl = document.getElementById('remesaIssues');
+
+  const issues = validateRemesa(creditor, remesaRows, collectionDate);
+  if (issues.length){
+    issuesEl.innerHTML = '<div class="rem-issues"><strong>Corrige esto antes de generar la remesa:</strong><ul>' +
+      issues.map(i=>'<li>'+xmlEsc(i)+'</li>').join('') + '</ul></div>';
+    return;
+  }
+  // Persistir datos para la próxima vez (no bloquea el fichero, que usa los datos en memoria)
+  const saved = await saveRemesaData(true);
+  if (!saved) return;
+
+  const msgId = 'MAGILU-' + isoDateTimeLocal(new Date()).replace(/[-:T]/g,'').slice(0,14);
+
+  // 1) Marcar como remesados ANTES de descargar: si esto falla, NO se descarga,
+  //    para que los mismos cobros no se puedan exportar dos veces (doble adeudo).
+  const ids = remesaRows.map(r=>r.cobro_id);
+  const { error: markErr } = await supabaseClient.from('pending_collections')
+    .update({ remesa_exported_at: new Date().toISOString(), remesa_file_ref: msgId })
+    .in('id', ids);
+  if (markErr){
+    issuesEl.innerHTML = '<div class="rem-issues">No se pudo registrar la remesa en la base de datos, así que NO se ha descargado (para evitar duplicar adeudos). Inténtalo de nuevo. Detalle: ' + xmlEsc(friendlyErrorMessage(markErr)) + '</div>';
+    return;
+  }
+
+  // 2) Generar y descargar el XML
+  const xml = buildRemesaXML(creditor, remesaRows, collectionDate, msgId);
+  downloadTextFile('remesa_sepa_' + isoDateLocal(new Date()) + '.xml', xml, 'application/xml');
+
+  issuesEl.innerHTML = '<div class="rem-ok">✓ Remesa generada (' + remesaRows.length + ' adeudos · ' +
+    formatMoney(remesaRows.reduce((s,r)=>s+(parseFloat(r.amount)||0),0)) + '). Archivo: ' + xmlEsc(msgId) + '</div>';
+  showToast('Remesa SEPA generada y descargada');
+  await loadPendingCollections();
+  renderPending();
 }
 
 // ============================================
@@ -1426,7 +1961,7 @@ function renderPendingLines() {
     const typeDiv = document.createElement('div'); typeDiv.className = 'modal-field';
     const typeL = document.createElement('label'); typeL.textContent = 'Tipo'; typeDiv.appendChild(typeL);
     const typeSel = document.createElement('select');
-    ['transferencia','bizum','pagare','remesa','pendiente','otro'].forEach(t => {
+    ['efectivo','tarjeta','transferencia','bizum','pagare','remesa','pendiente','otro'].forEach(t => {
       const o = document.createElement('option'); o.value = t; o.textContent = t.charAt(0).toUpperCase() + t.slice(1);
       if (line.payment_method === t) o.selected = true;
       typeSel.appendChild(o);

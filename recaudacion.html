@@ -263,7 +263,9 @@ const RE_RATE = 0.052;
 
 // ============ UTILIDADES ============
 function $(id){ return document.getElementById(id); }
-function todayISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
+// Formatea una fecha LOCAL como YYYY-MM-DD (sin pasar por UTC, que descuadraba un día).
+function isoLocal(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function todayISO(){ return isoLocal(new Date()); }
 function fmtMoney(n){ return (Math.round((n||0)*100)/100).toFixed(2).replace('.',',') + ' €'; }
 function fmtDate(iso){
   if (!iso) return '—';
@@ -278,24 +280,23 @@ function fmtDateLong(iso){
   return `${dias[d.getDay()]} ${d.getDate()} de ${meses[d.getMonth()]}`;
 }
 function addDays(iso, n){
-  const d = new Date(iso+'T00:00:00');
-  d.setDate(d.getDate()+n);
-  return d.toISOString().slice(0,10);
+  const [y,m,d] = iso.split('-').map(Number);
+  return isoLocal(new Date(y, m-1, d + n));
 }
 function startOfWeek(iso){
   // Semana ISO: lunes a domingo
-  const d = new Date(iso+'T00:00:00');
-  const day = d.getDay(); // 0=domingo
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const day = dt.getDay(); // 0=domingo
   const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate()+diff);
-  return d.toISOString().slice(0,10);
+  dt.setDate(dt.getDate()+diff);
+  return isoLocal(dt);
 }
 function endOfWeek(iso){ return addDays(startOfWeek(iso), 6); }
 function startOfMonth(iso){ return iso.slice(0,8)+'01'; }
 function endOfMonth(iso){
-  const d = new Date(iso+'T00:00:00');
-  d.setMonth(d.getMonth()+1); d.setDate(0);
-  return d.toISOString().slice(0,10);
+  const [y,m] = iso.split('-').map(Number);
+  return isoLocal(new Date(y, m, 0)); // día 0 del mes siguiente = último día del actual
 }
 function fmtRange(a, b){
   // Rangos como "25 may – 31 may 2026"
@@ -407,9 +408,9 @@ async function loadData(){
     const re  = (regime === 'A' && tieneRE) ? base * RE_RATE : 0;
     const total = base + iva + re;
     // Estado cobrado/pendiente
-    // - Si NO hay cobro vinculado → significa que se liquidó como cobrado (efectivo en mano, normalmente)
     // - Si hay cobro y su status='cobrado' → cobrado
-    // - Si hay cobro y su status='pendiente' → pendiente
+    // - Si hay cobro y su status='pendiente' → pendiente (también el efectivo: ya no se da por pagado)
+    // - Si NO hay cobro vinculado → liquidaciones antiguas previas a este cambio; se asumen cobradas
     let estado;
     if (!cobro) estado = 'cobrado';
     else estado = (cobro.status === 'cobrado') ? 'cobrado' : 'pendiente';
@@ -420,7 +421,7 @@ async function loadData(){
       cliente: c ? (c.commercial_name || c.legal_name || '—') : '—',
       regime,
       tieneRE,
-      payment_method: d.payment_method || 'otro',
+      payment_method: ['efectivo','tarjeta','transferencia','bizum','pagare','remesa'].includes(d.payment_method) ? d.payment_method : 'otro',
       estado,
       deposit_number: d.deposit_number,
       base, iva, re, total
@@ -436,10 +437,12 @@ async function loadData(){
 // ============ RENDER ============
 const METODOS = [
   { code:'efectivo',      label:'Efectivo' },
+  { code:'tarjeta',       label:'Tarjeta' },
   { code:'transferencia', label:'Transferencia' },
   { code:'bizum',         label:'Bizum' },
   { code:'pagare',        label:'Pagaré' },
-  { code:'remesa',        label:'Remesa' }
+  { code:'remesa',        label:'Remesa' },
+  { code:'otro',          label:'Otro' }
 ];
 
 function render(){
