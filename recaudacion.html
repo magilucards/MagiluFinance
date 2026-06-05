@@ -96,6 +96,10 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 /* Tiendas del día */
 .tienda-row { display:grid; grid-template-columns:1fr auto auto auto auto; gap:16px; align-items:center; padding:12px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; margin-bottom:8px; }
 @media(max-width:768px){ .tienda-row{ grid-template-columns:1fr; gap:8px; } }
+a.tienda-row{ transition:border-color .15s, transform .05s; cursor:pointer; }
+a.tienda-row:hover{ border-color:var(--primary); }
+a.tienda-row:focus-visible{ border-color:var(--primary); outline:2px solid var(--primary); outline-offset:2px; }
+a.tienda-row:active{ transform:scale(0.997); }
 .tienda-name { font-weight:500; }
 .tienda-meta { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); }
 .pill { font-family:'JetBrains Mono',monospace; font-size:10px; padding:3px 9px; border-radius:12px; text-transform:uppercase; letter-spacing:0.04em; }
@@ -530,15 +534,15 @@ function renderTiendas(){
   cont.innerHTML = liqs.map(l=>{
     const fechaEntregaDiff = (l.delivery_date && l.delivery_date !== l.dia) ? ` · depósito entregado el ${fmtDate(l.delivery_date)}` : '';
     const metodoLabel = METODOS.find(m=>m.code===l.payment_method)?.label || l.payment_method;
-    return `<div class="tienda-row">
+    return `<a class="tienda-row" href="./depositos.html?dep=${encodeURIComponent(l.id)}" title="Abrir este depósito" style="text-decoration:none;color:inherit;">
       <div>
         <div class="tienda-name">${escapeHtml(l.cliente)}</div>
         <div class="tienda-meta">${metodoLabel}${fechaEntregaDiff}${l.deposit_number?' · nº '+l.deposit_number:''}</div>
       </div>
       <span class="pill ${l.regime==='A'?'pill-a':'pill-b'}">${l.regime}</span>
       <span class="pill ${l.estado==='cobrado'?'pill-cobrado':'pill-pendiente'}">${l.estado}</span>
-      <span class="tienda-importe">${fmtMoney(l.total)}</span>
-    </div>`;
+      <span class="tienda-importe">${fmtMoney(l.total)} ›</span>
+    </a>`;
   }).join('');
 }
 

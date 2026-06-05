@@ -178,7 +178,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v26</div>
+      <div class="subtitle" id="headerStats">— · v27</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -194,6 +194,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
       <button class="filter-btn" data-status="recontado">Recontados</button>
       <button class="filter-btn" data-status="facturado">Facturados</button>
       <button class="btn-secondary" id="btnSyncCal" title="Crea los cobros pendientes que falten y vuelca la facturación al calendario A/B de Tesorería" style="margin-left:8px;">↻ Sincronizar todo</button>
+      <button class="btn-secondary" id="btnFacturar" title="Depósitos recontados pendientes de crear factura" style="margin-left:8px;">📑 Facturar a Holded</button>
       <div class="search-box">
         <span style="color:var(--text-faint)">⌕</span>
         <input type="text" id="searchInput" placeholder="buscar cliente...">
@@ -303,8 +304,35 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     </div>
   </div>
 
+  <!-- ===== VISTA FACTURACIÓN (recontados pendientes de factura) ===== -->
+  <div id="factView" style="display:none;">
+    <div class="detail-box">
+      <div class="detail-box-title">Facturar a Holded</div>
+      <p style="color:var(--text-dim);font-size:13px;margin:6px 0 14px;">Depósitos en recuento pendientes de crear factura. Pulsa <strong>Marcar facturado</strong> en los que NO van a Holded (los facturas por otro medio), o selecciona y pulsa <strong>Emitir seleccionados a Holded</strong>.</p>
+      <div class="fact-toolbar">
+        <button class="btn-secondary" id="factBack">← Volver a la lista</button>
+        <button class="btn-secondary" id="factSelAll">Marcar / desmarcar todos</button>
+        <button class="btn-primary" id="factEmit">Emitir seleccionados a Holded</button>
+        <span id="factCount"></span>
+      </div>
+      <div id="factList"></div>
+      <div id="factLog"></div>
+    </div>
+  </div>
+
 </main>
 </div><!-- /#app -->
+
+<style>
+  #factView .fact-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  #factView #factCount { margin-left:auto; color:var(--text-faint); font-size:12px; }
+  #factView .fact-row { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:var(--bg-card); }
+  #factView .fact-cb { width:18px; height:18px; flex-shrink:0; accent-color:var(--primary); }
+  #factView .fact-info { flex:1; min-width:0; }
+  #factView .fact-mark { white-space:nowrap; }
+  #factView #factLog { margin-top:12px; display:flex; flex-direction:column; gap:4px; }
+  #factView .fact-warn { color:var(--amber-bright); font-size:11px; }
+</style>
 
 <!-- MODAL DE LIQUIDACIÓN (al pasar a recuento) -->
 <div class="modal-overlay" id="liqModal">
@@ -404,6 +432,8 @@ function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/&/g,'&a
 function fmtMoney(n){ return new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0) + ' €'; }
 function fmtDate(d){ if(!d) return '—'; const p=String(d).split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : d; }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
+const PAY_LABELS = { efectivo:'Efectivo', tarjeta:'Tarjeta', transferencia:'Transferencia', bizum:'Bizum', pagare:'Pagaré', remesa:'Remesa', otro:'Otro' };
+function payLabel(m){ return m ? (PAY_LABELS[m] || m) : null; }
 
 function showToast(msg, isError=false){
   const t=$('toast');
@@ -515,7 +545,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v26`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v27`;
 }
 
 // ===== LISTA =====
@@ -562,17 +592,29 @@ function renderList(){
     let stat2, stat3;
     if (d.status==='abierto'){
       stat2 = `<div class="dep-stat"><div class="dep-stat-num">${t.entregado}</div><div class="dep-stat-label">uds entregadas</div></div>`;
-      stat3 = `<div class="dep-stat"><div class="dep-stat-num">${t.nProductos}</div><div class="dep-stat-label">productos</div></div>`;
+      stat3 = `<div class="dep-stat"><div class="dep-stat-num">${fmtMoney(t.valorDeposito)}</div><div class="dep-stat-label">valor (interno)</div></div>`;
     } else {
       stat2 = `<div class="dep-stat"><div class="dep-stat-num">${t.vendido} / ${t.entregado}</div><div class="dep-stat-label">vendido / entregado</div></div>`;
       stat3 = `<div class="dep-stat"><div class="dep-stat-num">${fmtMoney(t.importe)}</div><div class="dep-stat-label">${d.status==='facturado'?'facturado':'a facturar'}</div></div>`;
     }
+    // Línea de impuestos (solo cuando ya hay recuento)
+    let taxLine = '';
+    if (d.status!=='abierto'){
+      const tx = depTaxTotals(d);
+      if (tx.regime==='B'){
+        taxLine = `<div class="dep-meta dep-tax">Rég. B (sin impuestos) · Base ${fmtMoney(tx.base)} · <strong>Total ${fmtMoney(tx.total)}</strong></div>`;
+      } else {
+        taxLine = `<div class="dep-meta dep-tax">Base ${fmtMoney(tx.base)} · IVA ${fmtMoney(tx.iva)}${tx.tieneRE?` · RE ${fmtMoney(tx.re)}`:''} · <strong>Total ${fmtMoney(tx.total)}</strong></div>`;
+      }
+    }
+    const payChip = d.payment_method ? ` · 💳 ${escapeHtml(payLabel(d.payment_method))}` : '';
     return `
       <div class="dep-card" data-id="${d.id}">
         <span class="status-pill status-${d.status}">${d.status}</span>
         <div>
           <div class="dep-client">${d.deposit_number!=null?`<span style="color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:12px;">#${d.deposit_number}</span> `:''}${escapeHtml(clientName)}</div>
-          <div class="dep-meta">${escapeHtml(nif)}${city?' · '+escapeHtml(city):''} · ${dateLabel} ${fmtDate(dateVal)}</div>
+          <div class="dep-meta">${escapeHtml(nif)}${city?' · '+escapeHtml(city):''} · ${dateLabel} ${fmtDate(dateVal)}${payChip}</div>
+          ${taxLine}
         </div>
         <div class="dep-stat"><div class="dep-stat-num">${t.nProductos}</div><div class="dep-stat-label">productos</div></div>
         ${stat2}
@@ -585,8 +627,82 @@ function renderList(){
 }
 
 // ===== VISTA DETALLE =====
-function showListView(){ $('listView').classList.remove('hidden'); $('detailView').classList.remove('active'); }
-function showDetailView(){ $('listView').classList.add('hidden'); $('detailView').classList.add('active'); window.scrollTo({top:0,behavior:'smooth'}); }
+function showListView(){ $('listView').classList.remove('hidden'); $('detailView').classList.remove('active'); $('factView').style.display='none'; }
+function showDetailView(){ $('listView').classList.add('hidden'); $('detailView').classList.add('active'); $('factView').style.display='none'; window.scrollTo({top:0,behavior:'smooth'}); }
+function showFacturacionView(){ $('listView').classList.add('hidden'); $('detailView').classList.remove('active'); $('factView').style.display='block'; window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ===== FACTURACIÓN A HOLDED (recontados pendientes de factura) =====
+function openFacturacionView(){ $('factLog').innerHTML=''; renderFacturacion(); showFacturacionView(); }
+
+function renderFacturacion(){
+  const pend = allDeposits.filter(d => d.status==='recontado' && !d.holded_invoice_id);
+  const cont = $('factList');
+  if (!pend.length){
+    cont.innerHTML = `<div class="empty-state"><div class="empty-state-title">No hay depósitos pendientes de facturar</div><div class="empty-state-sub">Aquí salen los recontados que aún no tienen factura.</div></div>`;
+    $('factCount').textContent = '';
+    return;
+  }
+  cont.innerHTML = pend.map(d=>{
+    const c = clients.find(x=>x.id===d.client_id);
+    const name = c ? (c.commercial_name||c.legal_name) : '(cliente)';
+    const tx = depTaxTotals(d);
+    const esB = tx.regime==='B';
+    const dia = d.recount_date || d.delivery_date;
+    const taxStr = esB
+      ? `Rég. B (sin impuestos) · Total ${fmtMoney(tx.total)}`
+      : `Base ${fmtMoney(tx.base)} · IVA ${fmtMoney(tx.iva)}${tx.tieneRE?` · RE ${fmtMoney(tx.re)}`:''} · Total ${fmtMoney(tx.total)}`;
+    return `
+      <div class="fact-row" data-id="${d.id}">
+        <input type="checkbox" class="fact-cb" data-id="${d.id}" ${esB?'disabled':'checked'}>
+        <div class="fact-info">
+          <div class="dep-client">${d.deposit_number!=null?`#${d.deposit_number} `:''}${escapeHtml(name)}${esB?' <span class="fact-warn">rég. B · no va a Holded</span>':''}</div>
+          <div class="dep-meta">${escapeHtml(c?(c.nif||''):'')}${c&&c.city?' · '+escapeHtml(c.city):''} · recuento ${fmtDate(dia)} · ${taxStr}</div>
+        </div>
+        <button class="btn-secondary fact-mark" data-id="${d.id}">✓ Marcar facturado</button>
+      </div>`;
+  }).join('');
+  cont.querySelectorAll('.fact-mark').forEach(b=>b.addEventListener('click',()=>markFacturado(b.dataset.id)));
+  cont.querySelectorAll('.fact-cb').forEach(cb=>cb.addEventListener('change',updateFactCount));
+  updateFactCount();
+}
+
+function updateFactCount(){
+  const n = document.querySelectorAll('#factList .fact-cb:checked').length;
+  $('factCount').textContent = n + ' seleccionado(s) para Holded';
+}
+
+async function markFacturado(id){
+  if (!confirm('¿Marcar este depósito como FACTURADO? (cambia el estado, NO envía nada a Holded)')) return;
+  const { error } = await sb.from('deposits').update({ status:'facturado', invoice_date: todayISO(), updated_at: new Date().toISOString() }).eq('id', id);
+  if (error){ showToast('Error: '+error.message, true); return; }
+  showToast('Depósito marcado como facturado');
+  await loadAll();
+  renderFacturacion();
+}
+
+async function emitSelectedHolded(){
+  const ids = [...document.querySelectorAll('#factList .fact-cb:checked')].map(cb=>cb.dataset.id);
+  if (!ids.length){ showToast('No has seleccionado ningún depósito', true); return; }
+  if (!confirm(`Vas a EMITIR ${ids.length} factura(s) REAL(es) en Holded (con número fiscal, irreversible salvo borrado en Holded). ¿Continuar?`)) return;
+  const log = $('factLog'); log.innerHTML = '';
+  let ok=0, fail=0;
+  for (const id of ids){
+    const dep = allDeposits.find(d=>d.id===id);
+    const c = dep ? clients.find(x=>x.id===dep.client_id) : null;
+    const name = c ? (c.commercial_name||c.legal_name) : id;
+    const { data, error } = await sb.rpc('holded_emit_invoice', { p_deposit_id: id, p_draft: false });
+    if (error || !(data && data.ok)){
+      fail++;
+      log.innerHTML += `<div style="color:var(--red-bright);font-size:13px;">✗ ${escapeHtml(name)}: ${escapeHtml(error ? error.message : 'no se pudo emitir')}</div>`;
+    } else {
+      ok++;
+      log.innerHTML += `<div style="color:var(--primary);font-size:13px;">✓ ${escapeHtml(name)}: factura ${escapeHtml(data.invoiceNum||'(emitida)')}</div>`;
+    }
+  }
+  showToast(`Holded: ${ok} emitida(s)${fail?`, ${fail} con error`:''}`);
+  await loadAll();
+  renderFacturacion();
+}
 
 function openNew(){
   editing = null;
@@ -771,14 +887,34 @@ function renderSummary(){
       <div class="summary-item"><div class="summary-label">Uds entregadas</div><div class="summary-val">${entregado}</div></div>
       <div class="summary-item"><div class="summary-label">Valor depósito (interno)</div><div class="summary-val">${fmtMoney(valor)}</div></div>`;
   } else {
-    let vendido=0, importe=0;
-    lines.forEach(l=>{
-      if (l.qty_remaining!=null){ const v=(parseFloat(l.qty_delivered)||0)-(parseFloat(l.qty_remaining)||0); vendido+=v; importe+=v*(parseFloat(l.unit_price)||0); }
-    });
-    $('summaryBar').innerHTML = `
+    let vendido=0;
+    lines.forEach(l=>{ if (l.qty_remaining!=null){ vendido += (parseFloat(l.qty_delivered)||0)-(parseFloat(l.qty_remaining)||0); } });
+    const tx = detailTax();
+    let html = `
       <div class="summary-item"><div class="summary-label">Total vendido</div><div class="summary-val">${vendido} uds</div></div>
-      <div class="summary-item"><div class="summary-label">Importe a ${status==='facturado'?'cobrar':'facturar'}</div><div class="summary-val">${fmtMoney(importe)}</div></div>`;
+      <div class="summary-item"><div class="summary-label">Base imponible</div><div class="summary-val">${fmtMoney(tx.base)}</div></div>`;
+    if (tx.regime==='A'){
+      html += `<div class="summary-item"><div class="summary-label">IVA 21%</div><div class="summary-val">${fmtMoney(tx.iva)}</div></div>`;
+      if (tx.hasRE) html += `<div class="summary-item"><div class="summary-label">RE 5,2%</div><div class="summary-val">${fmtMoney(tx.re)}</div></div>`;
+    } else {
+      html += `<div class="summary-item"><div class="summary-label">Régimen B</div><div class="summary-val">sin impuestos</div></div>`;
+    }
+    html += `<div class="summary-item"><div class="summary-label">Total a ${status==='facturado'?'cobrar':'facturar'}</div><div class="summary-val">${fmtMoney(tx.total)}</div></div>`;
+    $('summaryBar').innerHTML = html;
   }
+}
+
+// Desglose de impuestos del depósito en edición (base, IVA, RE, total) para el resumen del detalle.
+function detailTax(){
+  let base = 0;
+  lines.forEach(l=>{ if (l.qty_remaining!=null){ const v=(parseFloat(l.qty_delivered)||0)-(parseFloat(l.qty_remaining)||0); base += v*(parseFloat(l.unit_price)||0); } });
+  const regime = (editing && editing.regime) ? editing.regime : 'A';
+  let hasRE;
+  if ($('clientInfoBar').style.display !== 'none') hasRE = $('cibHasRE').checked;
+  else { const c = getClient(); hasRE = !!(c && c.vat_regime === 'recargo_equivalencia'); }
+  let iva=0, re=0, total=base;
+  if (regime === 'A'){ iva = base*0.21; re = hasRE ? base*0.052 : 0; total = base+iva+re; }
+  return { base, iva, re, total, regime, hasRE };
 }
 
 // ===== BUSCADOR DE PRODUCTOS =====
@@ -1083,7 +1219,7 @@ function depTaxTotals(d){
   const regime = (d.regime === 'B') ? 'B' : 'A';
   const iva = regime === 'A' ? base * 0.21 : 0;
   const re  = (regime === 'A' && tieneRE) ? base * 0.052 : 0;
-  return { regime, base, total: base + iva + re };
+  return { regime, base, iva, re, tieneRE, total: base + iva + re };
 }
 
 // Recalcula invoiced_a / invoiced_b del calendario para UN día, sumando todos
@@ -1434,6 +1570,15 @@ function bindEvents(){
   $('btnInvoice').addEventListener('click', ()=>transitionTo('facturado'));
   $('btnNextDeposit').addEventListener('click', ()=>{ const cid = editing ? editing.client_id : null; openNewForClient(cid); });
   $('btnSyncCal').addEventListener('click', syncAllCalendarDays);
+  $('btnFacturar').addEventListener('click', openFacturacionView);
+  $('factBack').addEventListener('click', showListView);
+  $('factEmit').addEventListener('click', emitSelectedHolded);
+  $('factSelAll').addEventListener('click', ()=>{
+    const cbs = [...document.querySelectorAll('#factList .fact-cb:not([disabled])')];
+    const allOn = cbs.every(cb=>cb.checked);
+    cbs.forEach(cb=>cb.checked = !allOn);
+    updateFactCount();
+  });
 
   // Modal de liquidación
   $('liqClose').addEventListener('click', closeLiqModal);
@@ -1556,6 +1701,11 @@ function bindEvents(){
   await loadAll();
   $('loadingScreen').style.display='none';
   $('app').style.display='block';
+  // Abrir un depósito directamente si viene ?dep=ID (enlaces desde Recaudación)
+  try {
+    const depId = new URLSearchParams(location.search).get('dep');
+    if (depId && allDeposits.some(d=>d.id===depId)) await openDeposit(depId);
+  } catch(e){ console.error('apertura por ?dep', e); }
 })();
 </script>
 

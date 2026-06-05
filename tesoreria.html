@@ -459,6 +459,8 @@
         <div class="pagos-total-count" id="pagosTotalCount">0 cobros seleccionados</div>
       </div>
       <div id="pagosMatrix"></div>
+      <h2 class="section-title" style="font-size:16px;margin-top:24px;">Detalle de los seleccionados</h2>
+      <div id="pagosDetalle"></div>
     </div>
   </div>
 </div>
@@ -1358,6 +1360,50 @@ function recalcPagosTotal(){
   if (tEl) tEl.textContent = formatMoney(total);
   const nEl = document.getElementById('pagosTotalCount');
   if (nEl) nEl.textContent = n + (n === 1 ? ' cobro seleccionado' : ' cobros seleccionados');
+  renderPagosDetalle();
+}
+
+// Lista detallada por cliente de los cobros de las celdas seleccionadas
+function renderPagosDetalle(){
+  const cont = document.getElementById('pagosDetalle');
+  if (!cont) return;
+  cont.textContent = '';
+  if (!pagosSelected.size){
+    const e = document.createElement('div');
+    e.style.cssText = 'color:var(--text-faint);font-size:13px;padding:8px;';
+    e.textContent = 'Marca casillas arriba para ver aquí el detalle por cliente.';
+    cont.appendChild(e); return;
+  }
+  const labelMet = c => (PAGO_METODOS.find(m=>m.code===c)||{}).label || c;
+  const labelEst = c => (PAGO_ESTADOS.find(x=>x.code===c)||{}).label || c;
+  const rows = pendingCollections.filter(p=>{
+    const m = pagoMetodoCode(p.payment_method);
+    const e = PAGO_ESTADOS.some(x=>x.code===p.status) ? p.status : 'pendiente';
+    return pagosSelected.has(m+'|'+e);
+  }).sort((a,b)=> String(b.invoice_date||'').localeCompare(String(a.invoice_date||'')));
+
+  if (!rows.length){
+    const e = document.createElement('div');
+    e.style.cssText = 'color:var(--text-faint);font-size:13px;padding:8px;';
+    e.textContent = 'No hay cobros en las celdas seleccionadas.';
+    cont.appendChild(e); return;
+  }
+  const table = document.createElement('table'); table.className = 'pagos-table';
+  const thead = document.createElement('thead'); const htr = document.createElement('tr');
+  ['Fecha','Cliente','Forma de pago','Estado','Importe'].forEach(h=>{ const th=document.createElement('th'); th.textContent=h; htr.appendChild(th); });
+  thead.appendChild(htr); table.appendChild(thead);
+  const tb = document.createElement('tbody');
+  rows.forEach(p=>{
+    const tr = document.createElement('tr');
+    const fecha = p.invoice_date ? String(p.invoice_date).split('-').reverse().join('/') : '—';
+    const m = pagoMetodoCode(p.payment_method);
+    const e = PAGO_ESTADOS.some(x=>x.code===p.status) ? p.status : 'pendiente';
+    const cells = [fecha, p.client_name || '—', labelMet(m), labelEst(e), formatMoney(parseFloat(p.amount)||0)];
+    cells.forEach((val,idx)=>{ const td=document.createElement('td'); td.textContent=val; if(idx===1) td.className='pagos-metodo'; if(idx===4) td.style.cssText='font-family:JetBrains Mono,monospace;text-align:right;'; tr.appendChild(td); });
+    tb.appendChild(tr);
+  });
+  table.appendChild(tb);
+  cont.appendChild(table);
 }
 
 function pagosSelectAll(on){
@@ -1502,7 +1548,8 @@ function renderRemesaTable(){
     // Cliente
     const nameC = document.createElement('div');
     const nm = document.createElement('div'); nm.className = 'rem-name'; nm.textContent = r.client_name; nameC.appendChild(nm);
-    if (!r.client_id){ const w = document.createElement('span'); w.className='rem-warn'; w.textContent='manual · no se recuerda'; nameC.appendChild(w); }
+    if (!r.client_id){ const w = document.createElement('span'); w.className='rem-warn'; w.textContent='manual sin ficha · no se incluye'; nameC.appendChild(w); }
+    else if (!ibanValid(r.iban)){ const w = document.createElement('span'); w.className='rem-warn'; w.textContent='sin IBAN → no se incluye'; nameC.appendChild(w); }
     row.appendChild(nameC);
     // Importe
     const amtC = document.createElement('div'); amtC.className = 'rem-amt'; amtC.textContent = formatMoney(r.amount); row.appendChild(amtC);
@@ -1510,10 +1557,11 @@ function renderRemesaTable(){
     const ibanIn = document.createElement('input'); ibanIn.type='text'; ibanIn.value = r.iban;
     ibanIn.oninput = ()=>{ r.iban = ibanIn.value.replace(/\s+/g,'').toUpperCase(); };
     row.appendChild(ibanIn);
-    // RUM
-    const rumIn = document.createElement('input'); rumIn.type='text'; rumIn.value = r.rum;
-    rumIn.oninput = ()=>{ r.rum = rumIn.value; };
-    row.appendChild(rumIn);
+    // RUM (automático e inmutable — solo lectura; se asigna al añadir IBAN)
+    const rumC = document.createElement('div');
+    rumC.style.cssText = 'font-family:JetBrains Mono,monospace;font-size:12px;color:var(--text-dim);';
+    rumC.textContent = r.rum || '— al guardar';
+    row.appendChild(rumC);
     // Fecha firma
     const dateIn = document.createElement('input'); dateIn.type='date'; dateIn.value = r.mandate_date || '';
     dateIn.oninput = ()=>{ r.mandate_date = dateIn.value; };
@@ -1543,25 +1591,8 @@ function readRemesaCreditor(){
   };
 }
 
-function validateRemesa(creditor, rows, collectionDate){
-  const issues = [];
-  if (!creditor.name) issues.push('Falta el nombre / razón social de tu empresa (acreedor).');
-  if (!ibanValid(creditor.iban)) issues.push('El IBAN del acreedor está vacío o no es válido.');
-  if (!creditor.sepa_id) issues.push('Falta tu Identificador de Acreedor SEPA.');
-  if (!collectionDate) issues.push('Falta la fecha de cobro (cargo).');
-  const hoy = new Date(); hoy.setHours(0,0,0,0);
-  if (collectionDate && new Date(collectionDate+'T00:00:00') < hoy) issues.push('La fecha de cobro no puede ser anterior a hoy.');
-  if (!rows.length) issues.push('No hay cobros de remesa para exportar.');
-  rows.forEach(r=>{
-    const who = r.client_name || 'cobro';
-    if (!ibanValid(r.iban)) issues.push(`${who}: IBAN del deudor vacío o no válido.`);
-    if (!r.rum) issues.push(`${who}: falta la referencia de mandato (RUM).`);
-    if (!r.mandate_date) issues.push(`${who}: falta la fecha de firma del mandato.`);
-    else if (new Date(r.mandate_date+'T00:00:00') > hoy) issues.push(`${who}: la fecha de firma del mandato no puede ser futura.`);
-    if (!SEQ_TYPES.includes(r.seq_type)) issues.push(`${who}: falta el tipo de adeudo (FRST/RCUR).`);
-    if (!(r.amount > 0)) issues.push(`${who}: importe no válido.`);
-  });
-  return issues;
+function renderIssues(title, arr){
+  return '<div class="rem-issues"><strong>'+xmlEsc(title)+'</strong><ul>'+arr.map(i=>'<li>'+xmlEsc(i)+'</li>').join('')+'</ul></div>';
 }
 
 function buildRemesaXML(creditor, rows, collectionDate, msgId){
@@ -1645,9 +1676,10 @@ async function saveRemesaData(silent){
   let failed = 0;
   for (const r of remesaRows){
     if (!r.client_id) continue;
+    // El RUM NO se escribe aquí: lo asigna el trigger de BD al guardar el IBAN
+    // (y es inmutable). Aquí solo persistimos IBAN, fecha de firma y tipo.
     const { error } = await supabaseClient.from('clients').update({
       iban: r.iban || null,
-      sepa_mandate_ref: r.rum || null,
       sepa_mandate_date: r.mandate_date || null,
       sepa_seq_type: SEQ_TYPES.includes(r.seq_type) ? r.seq_type : null
     }).eq('id', r.client_id);
@@ -1662,36 +1694,61 @@ async function downloadRemesaXML(){
   const creditor = readRemesaCreditor();
   const collectionDate = document.getElementById('remColDate').value;
   const issuesEl = document.getElementById('remesaIssues');
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
 
-  const issues = validateRemesa(creditor, remesaRows, collectionDate);
-  if (issues.length){
-    issuesEl.innerHTML = '<div class="rem-issues"><strong>Corrige esto antes de generar la remesa:</strong><ul>' +
-      issues.map(i=>'<li>'+xmlEsc(i)+'</li>').join('') + '</ul></div>';
-    return;
-  }
-  // Persistir datos para la próxima vez (no bloquea el fichero, que usa los datos en memoria)
+  // 1) Validar cabecera (acreedor + fecha de cobro)
+  const head = [];
+  if (!creditor.name) head.push('Falta el nombre / razón social del acreedor.');
+  if (!ibanValid(creditor.iban)) head.push('El IBAN del acreedor está vacío o no es válido.');
+  if (!creditor.sepa_id) head.push('Falta tu Identificador de Acreedor SEPA.');
+  if (!collectionDate) head.push('Falta la fecha de cobro (cargo).');
+  else if (new Date(collectionDate+'T00:00:00') < hoy) head.push('La fecha de cobro no puede ser anterior a hoy.');
+  if (head.length){ issuesEl.innerHTML = renderIssues('Corrige los datos del acreedor:', head); return; }
+
+  // 2) Guardar IBAN/fecha/tipo → el trigger de BD asigna el RUM a quien tenga IBAN
   const saved = await saveRemesaData(true);
   if (!saved) return;
 
-  const msgId = 'MAGILU-' + isoDateTimeLocal(new Date()).replace(/[-:T]/g,'').slice(0,14);
-
-  // 1) Marcar como remesados ANTES de descargar: si esto falla, NO se descarga,
-  //    para que los mismos cobros no se puedan exportar dos veces (doble adeudo).
-  const ids = remesaRows.map(r=>r.cobro_id);
-  const { error: markErr } = await supabaseClient.from('pending_collections')
-    .update({ remesa_exported_at: new Date().toISOString(), remesa_file_ref: msgId })
-    .in('id', ids);
-  if (markErr){
-    issuesEl.innerHTML = '<div class="rem-issues">No se pudo registrar la remesa en la base de datos, así que NO se ha descargado (para evitar duplicar adeudos). Inténtalo de nuevo. Detalle: ' + xmlEsc(friendlyErrorMessage(markErr)) + '</div>';
-    return;
+  // 3) Releer IBAN/RUM reales tras el trigger (el RUM es automático e inmutable)
+  const cids = [...new Set(remesaRows.map(r=>r.client_id).filter(Boolean))];
+  if (cids.length){
+    const { data: clis } = await supabaseClient.from('clients').select('id,iban,sepa_mandate_ref').in('id', cids);
+    const m = new Map((clis||[]).map(c=>[c.id, c]));
+    remesaRows.forEach(r=>{ const c = r.client_id ? m.get(r.client_id) : null; if (c){ r.iban = (c.iban||'').replace(/\s+/g,'').toUpperCase(); r.rum = c.sepa_mandate_ref || ''; } });
   }
 
-  // 2) Generar y descargar el XML
-  const xml = buildRemesaXML(creditor, remesaRows, collectionDate, msgId);
+  // 4) Partición: incluidos (cliente con IBAN válido + RUM) vs ignorados (sin IBAN / sin ficha)
+  const incluidos = [], ignorados = [];
+  remesaRows.forEach(r=>{ if (r.client_id && ibanValid(r.iban) && r.rum) incluidos.push(r); else ignorados.push(r); });
+
+  // 5) Validar el mandato de los incluidos
+  const issues = [];
+  incluidos.forEach(r=>{
+    const who = r.client_name || 'cobro';
+    if (!r.mandate_date) issues.push(`${who}: falta la fecha de firma del mandato.`);
+    else if (new Date(r.mandate_date+'T00:00:00') > hoy) issues.push(`${who}: la fecha de firma no puede ser futura.`);
+    if (!SEQ_TYPES.includes(r.seq_type)) issues.push(`${who}: falta el tipo de adeudo (FRST/RCUR).`);
+    if (!(r.amount > 0)) issues.push(`${who}: importe no válido.`);
+  });
+  if (!incluidos.length) issues.push('Ningún cobro tiene IBAN + mandato listos. Añade el IBAN en la ficha del cliente.');
+  if (issues.length){ issuesEl.innerHTML = renderIssues('Corrige esto antes de generar la remesa:', issues); return; }
+
+  const msgId = 'MAGILU-' + isoDateTimeLocal(new Date()).replace(/[-:T]/g,'').slice(0,14);
+
+  // 6) Marcar como remesados ANTES de descargar (si falla, no se descarga → evita doble adeudo)
+  const ids = incluidos.map(r=>r.cobro_id);
+  const { error: markErr } = await supabaseClient.from('pending_collections')
+    .update({ remesa_exported_at: new Date().toISOString(), remesa_file_ref: msgId }).in('id', ids);
+  if (markErr){ issuesEl.innerHTML = renderIssues('No se pudo registrar la remesa; no se descarga (evita duplicados):', [friendlyErrorMessage(markErr)]); return; }
+
+  // 7) Generar y descargar
+  const xml = buildRemesaXML(creditor, incluidos, collectionDate, msgId);
   downloadTextFile('remesa_sepa_' + isoDateLocal(new Date()) + '.xml', xml, 'application/xml');
 
-  issuesEl.innerHTML = '<div class="rem-ok">✓ Remesa generada (' + remesaRows.length + ' adeudos · ' +
-    formatMoney(remesaRows.reduce((s,r)=>s+(parseFloat(r.amount)||0),0)) + '). Archivo: ' + xmlEsc(msgId) + '</div>';
+  let okMsg = '✓ Remesa generada (' + incluidos.length + ' adeudos · ' +
+    formatMoney(incluidos.reduce((s,r)=>s+(parseFloat(r.amount)||0),0)) + '). Archivo: ' + xmlEsc(msgId);
+  if (ignorados.length) okMsg += '. Se ignoraron ' + ignorados.length + ' cobro(s) sin IBAN (añade el IBAN en la ficha del cliente para incluirlos la próxima vez).';
+  issuesEl.innerHTML = '<div class="rem-ok">' + okMsg + '</div>';
   showToast('Remesa SEPA generada y descargada');
   await loadPendingCollections();
   renderPending();
