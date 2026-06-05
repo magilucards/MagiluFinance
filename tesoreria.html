@@ -2411,14 +2411,24 @@ async function confirmCollect() {
     collected_account_id: accountId,
     collected_movement_id: mov.id,
   }).eq('id', id);
-  
+
+  // Sincronizar el cobro con Holded si el depósito tiene factura emitida (no bloqueante)
+  let holdedMsg = '';
+  if (p.deposit_id) {
+    try {
+      const { data: hp, error: hpErr } = await supabaseClient.rpc('holded_pay_invoice', { p_deposit_id: p.deposit_id, p_date: date });
+      if (hpErr) holdedMsg = ' · ⚠ Holded no actualizado: ' + friendlyErrorMessage(hpErr);
+      else if (hp && hp.ok && !hp.skipped) holdedMsg = ' · ✓ pago registrado en Holded';
+    } catch (e) { holdedMsg = ' · ⚠ Holded no actualizado'; }
+  }
+
   movements.unshift(mov);
   await loadPendingCollections();
   closeModal('collectModal');
   renderPending();
   renderAccounts(); renderKPIs(); renderAlerts();
   updateSyncTime();
-  showToast('Cobro registrado');
+  showToast('Cobro registrado' + holdedMsg, holdedMsg.indexOf('⚠') !== -1);
 }
 
 async function markIncidencia(id) {
@@ -2431,7 +2441,7 @@ async function markIncidencia(id) {
 }
 
 async function undoStatus(p) {
-  if (!confirm('¿Volver a marcar como pendiente?\n\nNota: si era cobrado, el movimiento y saldo NO se revierten automáticamente.')) return;
+  if (!confirm('¿Volver a marcar como pendiente?\n\nNota: si era cobrado, el movimiento y saldo NO se revierten automáticamente, y si la factura estaba pagada en Holded tendrás que quitar el pago allí a mano.')) return;
   await supabaseClient.from('pending_collections').update({
     status: 'pendiente',
     collected_date: null,
