@@ -91,11 +91,26 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .matrix .pendiente { color:var(--amber-bright); }
 .matrix tr.total-row td { border-top:2px solid var(--border-strong); border-bottom:none; font-weight:600; color:var(--text); padding-top:12px; }
 .matrix .colgroup-head { background:var(--bg-elev); color:var(--text-dim); font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; text-align:center; }
+/* Móvil: la tabla pasa a una ficha por método (solo con lo que tiene importe) */
+@media(max-width:600px){
+  .matrix, .matrix tbody, .matrix tr, .matrix td { display:block; width:100%; }
+  .matrix thead { display:none; }
+  .matrix tr { border:1px solid var(--border); border-radius:8px; padding:6px 12px; margin-bottom:8px; }
+  .matrix tr.row-zero { display:none; }
+  .matrix td { display:flex; justify-content:space-between; gap:12px; border:none; padding:5px 0; }
+  .matrix td::before { content:attr(data-label); color:var(--text-faint); font-family:'Inter Tight',sans-serif; font-size:11px; }
+  .matrix td.zero { display:none; }
+  .matrix td:first-child { color:var(--text); font-weight:600; font-size:14px; border-bottom:1px solid var(--border); padding-bottom:7px; margin-bottom:2px; }
+  .matrix td:first-child::before { content:none; }
+  .matrix tr.total-row { border-color:var(--primary-dim); }
+  .matrix tr.total-row td { border-top:none; padding-top:5px; }
+  .matrix tr.total-row td:first-child { border-bottom:1px solid var(--border); }
+}
 .zero { color:var(--text-faint); }
 
 /* Tiendas del día */
 .tienda-row { display:grid; grid-template-columns:1fr auto auto auto auto; gap:16px; align-items:center; padding:12px 16px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; margin-bottom:8px; }
-@media(max-width:768px){ .tienda-row{ grid-template-columns:1fr; gap:8px; } }
+@media(max-width:768px){ .tienda-row{ grid-template-columns:1fr; gap:8px; } .tienda-row .pill{ justify-self:start; } }
 a.tienda-row{ transition:border-color .15s, transform .05s; cursor:pointer; }
 a.tienda-row:hover{ border-color:var(--primary); }
 a.tienda-row:focus-visible{ border-color:var(--primary); outline:2px solid var(--primary); outline-offset:2px; }
@@ -508,23 +523,23 @@ function renderMatrix(){
     const bPen = cellTotal(m.code, 'B', 'pendiente');
     const totalRow = aCob+aPen+bCob+bPen;
     sumACob+=aCob; sumAPen+=aPen; sumBCob+=bCob; sumBPen+=bPen;
-    rowsHtml += `<tr>
+    rowsHtml += `<tr class="${totalRow>0?'':'row-zero'}">
       <td>${m.label}</td>
-      <td class="${aCob>0?'cobrado':'zero'}">${aCob>0?fmtMoney(aCob):'—'}</td>
-      <td class="${aPen>0?'pendiente':'zero'}">${aPen>0?fmtMoney(aPen):'—'}</td>
-      <td class="${bCob>0?'cobrado':'zero'}">${bCob>0?fmtMoney(bCob):'—'}</td>
-      <td class="${bPen>0?'pendiente':'zero'}">${bPen>0?fmtMoney(bPen):'—'}</td>
-      <td class="${totalRow>0?'':'zero'}">${totalRow>0?fmtMoney(totalRow):'—'}</td>
+      <td data-label="A · cobrado" class="${aCob>0?'cobrado':'zero'}">${aCob>0?fmtMoney(aCob):'—'}</td>
+      <td data-label="A · pendiente" class="${aPen>0?'pendiente':'zero'}">${aPen>0?fmtMoney(aPen):'—'}</td>
+      <td data-label="B · cobrado" class="${bCob>0?'cobrado':'zero'}">${bCob>0?fmtMoney(bCob):'—'}</td>
+      <td data-label="B · pendiente" class="${bPen>0?'pendiente':'zero'}">${bPen>0?fmtMoney(bPen):'—'}</td>
+      <td data-label="Total" class="${totalRow>0?'':'zero'}">${totalRow>0?fmtMoney(totalRow):'—'}</td>
     </tr>`;
   });
   const granTotal = sumACob+sumAPen+sumBCob+sumBPen;
   rowsHtml += `<tr class="total-row">
     <td>TOTAL</td>
-    <td class="cobrado">${sumACob>0?fmtMoney(sumACob):'—'}</td>
-    <td class="pendiente">${sumAPen>0?fmtMoney(sumAPen):'—'}</td>
-    <td class="cobrado">${sumBCob>0?fmtMoney(sumBCob):'—'}</td>
-    <td class="pendiente">${sumBPen>0?fmtMoney(sumBPen):'—'}</td>
-    <td>${granTotal>0?fmtMoney(granTotal):'—'}</td>
+    <td data-label="A · cobrado" class="cobrado${sumACob>0?'':' zero'}">${sumACob>0?fmtMoney(sumACob):'—'}</td>
+    <td data-label="A · pendiente" class="pendiente${sumAPen>0?'':' zero'}">${sumAPen>0?fmtMoney(sumAPen):'—'}</td>
+    <td data-label="B · cobrado" class="cobrado${sumBCob>0?'':' zero'}">${sumBCob>0?fmtMoney(sumBCob):'—'}</td>
+    <td data-label="B · pendiente" class="pendiente${sumBPen>0?'':' zero'}">${sumBPen>0?fmtMoney(sumBPen):'—'}</td>
+    <td data-label="Total">${granTotal>0?fmtMoney(granTotal):'—'}</td>
   </tr>`;
   $('matrixBody').innerHTML = rowsHtml;
 }

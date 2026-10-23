@@ -235,7 +235,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v30</div>
+      <div class="subtitle" id="headerStats">— · v31</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -278,7 +278,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
         </div>
         <div class="field" style="max-width:120px;">
           <label>Nº depósito</label>
-          <input type="number" id="depositNumber" class="mono" min="1" step="1" placeholder="auto">
+          <input type="number" id="depositNumber" class="mono" min="1" step="1" inputmode="numeric" pattern="[0-9]*" placeholder="auto">
         </div>
         <div class="field">
           <label>Fecha entrega</label>
@@ -577,6 +577,16 @@ let signatures = [];    // firmas SIN imagen ni snapshot (para listados y estado
 let editingSigs = [];   // firmas completas del depósito abierto (con imagen y snapshot, para el PDF)
 
 function $(id){ return document.getElementById(id); }
+
+// Teclado numérico con decimales: en iPhone escribe coma; se convierte a punto al vuelo
+// (los campos inputmode="decimal" son de texto para que el iPhone acepte la coma)
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (!el || el.tagName !== 'INPUT' || el.inputMode !== 'decimal') return;
+  const v = el.value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+  if (v !== el.value) el.value = v;
+}, true);
+
 function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 function fmtMoney(n){ return new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0) + ' €'; }
 function fmtDate(d){ if(!d) return '—'; const p=String(d).split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : d; }
@@ -787,7 +797,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v30`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v31`;
 }
 
 // ===== LISTA =====
@@ -1258,18 +1268,18 @@ function renderLines(){
       <td class="code">${escapeHtml(l.product_code)}</td>
       <td>${escapeHtml(l.product_name)}</td>`;
     if (editEcon){
-      cells += `<td class="num"><input type="number" min="0" step="1" value="${delivered}" data-i="${i}" data-f="delivered"></td>`;
+      cells += `<td class="num"><input type="number" min="0" step="1" inputmode="numeric" pattern="[0-9]*" value="${delivered}" data-i="${i}" data-f="delivered"></td>`;
     } else {
       cells += `<td class="num price">${delivered}</td>`;
     }
     if (showRecount){
       cells += editCount
-        ? `<td class="num"><input type="number" min="0" step="1" class="recount" value="${remaining!=null?remaining:''}" data-i="${i}" data-f="remaining"></td>`
+        ? `<td class="num"><input type="number" min="0" step="1" inputmode="numeric" pattern="[0-9]*" class="recount" value="${remaining!=null?remaining:''}" data-i="${i}" data-f="remaining"></td>`
         : `<td class="num price">${remaining!=null?remaining:'—'}</td>`;
       cells += `<td class="num sold">${sold!=null?sold:'—'}</td>`;
     }
     if (editEcon){
-      cells += `<td class="num"><input type="number" min="0" step="0.0001" value="${price}" data-i="${i}" data-f="price" style="width:90px;"></td>`;
+      cells += `<td class="num"><input type="text" inputmode="decimal" autocomplete="off" value="${price}" data-i="${i}" data-f="price" style="width:90px;"></td>`;
     } else {
       cells += `<td class="num price">${fmtMoney(price)}</td>`;
     }

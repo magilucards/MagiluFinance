@@ -525,6 +525,30 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
   th:nth-child(5), td:nth-child(5),
   th:nth-child(8), td:nth-child(8) { display: none; }
 }
+/* Móvil: cada contacto es una ficha (antes la tabla se cortaba por la derecha) */
+@media (max-width: 600px) {
+  .table-wrap table, .table-wrap tbody { display: block; }
+  .table-wrap thead { display: none; }
+  .table-wrap tbody tr[data-id] {
+    display: grid;
+    grid-template-columns: 10px auto auto 1fr;
+    grid-template-areas: "dot name name name" ". nif city city" ". type vat iban";
+    gap: 5px 10px; padding: 12px 14px; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-wrap tbody tr[data-id]:last-child { border-bottom: none; }
+  .table-wrap tbody tr[data-id] td { display: block; padding: 0; border: none; white-space: normal; overflow: visible; }
+  .table-wrap tbody tr[data-id] td:nth-child(1) { grid-area: dot; }
+  .table-wrap tbody tr[data-id] td:nth-child(2) { grid-area: nif; font-size: 11px; }
+  .table-wrap tbody tr[data-id] td:nth-child(3) { grid-area: name; }
+  .table-wrap tbody tr[data-id] td:nth-child(4) { grid-area: city; color: var(--text-dim); font-size: 12px; }
+  .table-wrap tbody tr[data-id] td:nth-child(6) { grid-area: type; }
+  .table-wrap tbody tr[data-id] td:nth-child(7) { grid-area: vat; }
+  .table-wrap tbody tr[data-id] td:nth-child(9) { grid-area: iban; justify-self: end; font-size: 12px; }
+  .table-wrap tbody tr[data-id] td:nth-child(5),
+  .table-wrap tbody tr[data-id] td:nth-child(8) { display: none; }
+  .table-wrap .legal, .table-wrap .commercial { max-width: none; }
+}
 </style>
 </head>
 <body>
@@ -646,7 +670,7 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
         </div>
         <div class="form-field">
           <label>Teléfono</label>
-          <input type="text" name="phone" class="mono">
+          <input type="tel" name="phone" class="mono" inputmode="tel">
         </div>
         <div class="form-field full">
           <label>Dirección</label>
@@ -658,7 +682,7 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
         </div>
         <div class="form-field">
           <label>Código postal</label>
-          <input type="text" name="postal_code" class="mono" maxlength="10">
+          <input type="text" name="postal_code" class="mono" maxlength="10" inputmode="numeric" pattern="[0-9]*">
         </div>
         <div class="form-field">
           <label>Provincia</label>
@@ -730,7 +754,7 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
           </div>
           <div class="form-field">
             <label>Código postal</label>
-            <input type="text" id="locPostal" class="mono" maxlength="10">
+            <input type="text" id="locPostal" class="mono" maxlength="10" inputmode="numeric" pattern="[0-9]*">
           </div>
           <div class="form-actions">
             <button type="button" class="btn-secondary" id="btnLocCancel">Cancelar</button>

@@ -167,10 +167,10 @@
   .modal.modal-wide { max-width: 720px; }
   .modal h3 { font-family: 'Fraunces', serif; font-size: 22px; margin-bottom: 12px; }
   .modal p { color: var(--text-dim); margin-bottom: 20px; font-size: 14px; }
-  .modal-field-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px 16px; margin-bottom: 20px; }
+  .modal-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin-bottom: 20px; }
   .modal-field { display: flex; flex-direction: column; gap: 6px; }
   .modal-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); font-weight: 500; }
-  .modal-field input, .modal-field select { background: var(--bg); border: 1px solid var(--border-strong); color: var(--text); padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 13px; border-radius: 6px; }
+  .modal-field input, .modal-field select { min-width: 0; width: 100%; background: var(--bg); border: 1px solid var(--border-strong); color: var(--text); padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 13px; border-radius: 6px; }
   .modal-field input:focus, .modal-field select:focus { outline: none; border-color: var(--primary); }
   .modal-actions { display: flex; gap: 8px; justify-content: flex-end; position: sticky; bottom: 0; background: var(--bg-elev); padding: 16px 0 8px 0; margin: 16px -24px -100px -24px; padding-left: 24px; padding-right: 24px; border-top: 1px solid var(--border); z-index: 10; flex-wrap: wrap; }
   @media (max-width: 600px) {
@@ -197,7 +197,7 @@
     .movement-row { grid-template-columns: 60px 70px 1fr 90px; }
     .movement-account { display: none; }
     .modal { padding: 24px; }
-    .modal-field-grid { grid-template-columns: 1fr; }
+    .modal-field-grid { grid-template-columns: minmax(0, 1fr); }
     .auth-card { padding: 32px 24px; }
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -265,7 +265,7 @@
   /* ============ MODAL DÍA (más ancho que el de movimiento) ============ */
   .modal-section { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; margin-bottom: 14px; }
   .modal-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-dim); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-  .modal-fields-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+  .modal-fields-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 14px; }
   .modal-fields-2 .modal-field { gap: 4px; }
   .modal-fields-2 input { padding: 8px 10px; font-size: 13px; }
   .pending-line { display: grid; grid-template-columns: 130px 100px 1fr 120px 28px; gap: 8px; align-items: end; margin-bottom: 8px; padding: 8px; background: var(--bg-elev); border-radius: 4px; }
@@ -306,8 +306,8 @@
   @media (max-width: 900px) {
     .calendar-metrics { grid-template-columns: repeat(2, 1fr); }
     .pending-metrics { grid-template-columns: repeat(2, 1fr); }
-    .modal-fields-2 { grid-template-columns: 1fr; }
-    .pending-line { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .modal-fields-2 { grid-template-columns: minmax(0, 1fr); }
+    .pending-line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
     .pending-line .line-delete { grid-column: 1 / -1; justify-self: center; padding: 8px 24px; border: 1px solid var(--border-strong); border-radius: 4px; margin-top: 4px; }
     .pending-row { grid-template-columns: 80px 1fr 90px; font-size: 12px; }
     .pending-row.header { display: none; }
@@ -482,6 +482,36 @@
   #tab-pagos .pagos-amt { font-family:'JetBrains Mono',monospace; color:var(--text); font-weight:600; }
   #tab-pagos .pagos-cnt { font-size:11px; color:var(--text-faint); }
   #tab-pagos .pagos-dim { color:var(--text-faint); }
+
+  /* Últimos días registrados (Calendario A/B) */
+  .day-row { grid-template-columns: 120px 1fr 90px 90px 90px 90px; cursor: pointer; }
+  .day-row .dr-num { font-family: 'JetBrains Mono', monospace; text-align: right; font-size: 12px; }
+
+  /* ============ MÓVIL: que nada se salga de la pantalla ============ */
+  @media (max-width: 600px) {
+    /* Pestañas en dos filas, todas visibles */
+    .tabs { flex-wrap: wrap; overflow-x: visible; }
+    .tab { flex: 1 1 45%; padding: 10px 8px; font-size: 13px; text-align: center; }
+    /* Últimos días: fecha + total arriba, A / B / IVA debajo */
+    .day-row { grid-template-columns: 1fr 1fr 1fr; grid-template-areas: "date date total" "a b iva" "notes notes notes"; gap: 4px 10px; }
+    .day-row .dr-date { grid-area: date; }
+    .day-row .dr-notes { grid-area: notes; }
+    .day-row .dr-notes.empty { display: none; }
+    .day-row .dr-a { grid-area: a; text-align: left; }
+    .day-row .dr-b { grid-area: b; text-align: left; }
+    .day-row .dr-total { grid-area: total; }
+    .day-row .dr-iva { grid-area: iva; }
+    /* Tablas de Pagos: una ficha por fila */
+    #tab-pagos table.pagos-table, #tab-pagos .pagos-table tbody, #tab-pagos .pagos-table tr, #tab-pagos .pagos-table td { display: block; width: 100%; }
+    #tab-pagos .pagos-table thead { display: none; }
+    #tab-pagos .pagos-table tr { border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; margin-bottom: 8px; background: var(--bg-card); }
+    #tab-pagos .pagos-table td { border: none; padding: 6px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: right; }
+    #tab-pagos .pagos-table td::before { content: attr(data-label); color: var(--text-faint); font-size: 11px; text-align: left; }
+    #tab-pagos .pagos-table td.pagos-metodo:first-child { border-bottom: 1px solid var(--border); padding-bottom: 8px; font-size: 14px; white-space: normal; }
+    #tab-pagos .pagos-table td.pagos-metodo:first-child::before { content: none; }
+    #tab-pagos .pagos-check { flex-direction: row; gap: 10px; }
+    #tab-pagos .pagos-cellinfo { align-items: flex-end; }
+  }
 </style>
 
 <!-- MODAL: Remesa SEPA (adeudos directos Cuaderno 19 / pain.008.001.02) -->
@@ -552,7 +582,7 @@
       </div>
       <div class="modal-field" id="movOriginField"><label for="movOrigin">Cuenta origen</label><select id="movOrigin"></select></div>
       <div class="modal-field" id="movDestField"><label for="movDest">Cuenta destino</label><select id="movDest"></select></div>
-      <div class="modal-field"><label for="movAmount">Importe (€)</label><input type="number" id="movAmount" step="0.01" min="0.01" max="9999999" placeholder="0,00"></div>
+      <div class="modal-field"><label for="movAmount">Importe (€)</label><input type="text" inputmode="decimal" autocomplete="off" id="movAmount" placeholder="0,00"></div>
       <div class="modal-field"><label for="movConcept">Concepto</label><input type="text" id="movConcept" placeholder="Ej: cobro cliente" maxlength="200"></div>
     </div>
     <div class="modal-actions">
@@ -576,11 +606,11 @@
       <div class="modal-fields-2">
         <div class="modal-field">
           <label for="dayInvA">Facturación A (con IVA y RE)</label>
-          <input type="number" id="dayInvA" step="0.01" min="0" max="9999999" placeholder="0,00" oninput="updateDaySummary()">
+          <input type="text" inputmode="decimal" autocomplete="off" id="dayInvA" placeholder="0,00" oninput="updateDaySummary()">
         </div>
         <div class="modal-field">
           <label for="dayInvB">Facturación B (sin IVA ni RE)</label>
-          <input type="number" id="dayInvB" step="0.01" min="0" max="9999999" placeholder="0,00" oninput="updateDaySummary()">
+          <input type="text" inputmode="decimal" autocomplete="off" id="dayInvB" placeholder="0,00" oninput="updateDaySummary()">
         </div>
       </div>
     </div>
@@ -590,11 +620,11 @@
       <div class="modal-fields-2">
         <div class="modal-field">
           <label for="dayCashA">Efectivo recibido de ventas A</label>
-          <input type="number" id="dayCashA" step="0.01" min="0" max="9999999" placeholder="0,00" oninput="updateDaySummary()">
+          <input type="text" inputmode="decimal" autocomplete="off" id="dayCashA" placeholder="0,00" oninput="updateDaySummary()">
         </div>
         <div class="modal-field">
           <label for="dayCashB">Efectivo recibido de ventas B</label>
-          <input type="number" id="dayCashB" step="0.01" min="0" max="9999999" placeholder="0,00" oninput="updateDaySummary()">
+          <input type="text" inputmode="decimal" autocomplete="off" id="dayCashB" placeholder="0,00" oninput="updateDaySummary()">
         </div>
         <div class="modal-field span-2">
           <label for="dayCashAccount">Cuenta donde entra el efectivo (opcional, se registra movimiento)</label>
@@ -667,6 +697,15 @@
 
 <script>
 'use strict';
+
+// Teclado numérico con decimales: en iPhone escribe coma; se convierte a punto al vuelo
+// (los campos inputmode="decimal" son de texto para que el iPhone acepte la coma)
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (!el || el.tagName !== 'INPUT' || el.inputMode !== 'decimal') return;
+  const v = el.value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+  if (v !== el.value) el.value = v;
+}, true);
 
 const SUPABASE_URL = 'https://bgrsjftxwuduvlglfpky.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_3Uhr0TMJEtq4_9CJc1D19Q_nfrkRq_2';
@@ -937,6 +976,8 @@ function createAccountCard(acc) {
   last4Input.className = 'account-last4-input';
   last4Input.type = 'text';
   last4Input.maxLength = 4;
+  last4Input.inputMode = 'numeric';
+  last4Input.pattern = '[0-9]*';
   last4Input.placeholder = '0000';
   last4Input.value = acc.last4 || '';
   last4Input.onchange = () => updateAccountField(acc.id, 'last4', last4Input.value);
@@ -996,6 +1037,8 @@ function editBalance(id) {
   el.textContent = '';
   const input = document.createElement('input');
   input.className = 'account-balance-input';
+  // Se queda como number (no inputmode decimal): las pólizas tienen saldo negativo
+  // y el teclado decimal del iPhone no tiene la tecla del signo menos.
   input.type = 'number';
   input.step = '0.01';
   input.min = -99999999;
@@ -1323,7 +1366,7 @@ function renderPagos(){
     PAGO_ESTADOS.forEach(e => {
       const cell = pagosAgg[m.code][e.code];
       filaSum += cell.sum;
-      const td = document.createElement('td'); td.className = 'pagos-cell';
+      const td = document.createElement('td'); td.className = 'pagos-cell'; td.dataset.label = e.label;
       if (cell.count === 0){
         const dim = document.createElement('span'); dim.className = 'pagos-dim'; dim.textContent = '—'; td.appendChild(dim);
       } else {
@@ -1341,7 +1384,7 @@ function renderPagos(){
       }
       tr.appendChild(td);
     });
-    const tdTot = document.createElement('td'); tdTot.className = 'pagos-filatot'; tdTot.textContent = formatMoney(filaSum); tr.appendChild(tdTot);
+    const tdTot = document.createElement('td'); tdTot.className = 'pagos-filatot'; tdTot.dataset.label = 'Total fila'; tdTot.textContent = formatMoney(filaSum); tr.appendChild(tdTot);
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
@@ -1399,7 +1442,8 @@ function renderPagosDetalle(){
     const m = pagoMetodoCode(p.payment_method);
     const e = PAGO_ESTADOS.some(x=>x.code===p.status) ? p.status : 'pendiente';
     const cells = [fecha, p.client_name || '—', labelMet(m), labelEst(e), formatMoney(parseFloat(p.amount)||0)];
-    cells.forEach((val,idx)=>{ const td=document.createElement('td'); td.textContent=val; if(idx===1) td.className='pagos-metodo'; if(idx===4) td.style.cssText='font-family:JetBrains Mono,monospace;text-align:right;'; tr.appendChild(td); });
+    const labels = ['Fecha','Cliente','Forma de pago','Estado','Importe'];
+    cells.forEach((val,idx)=>{ const td=document.createElement('td'); td.textContent=val; td.dataset.label=labels[idx]; if(idx===1) td.className='pagos-metodo'; if(idx===4) td.style.cssText='font-family:JetBrains Mono,monospace;text-align:right;'; tr.appendChild(td); });
     tb.appendChild(tr);
   });
   table.appendChild(tb);
@@ -1929,18 +1973,16 @@ function renderRecentDays() {
     const dateObj = new Date(r.record_date + 'T00:00:00');
     const dateStr = dateObj.toLocaleDateString('es-ES', { weekday: 'short', day: '2-digit', month: 'short' });
     
-    const row = document.createElement('div'); row.className = 'movement-row';
-    row.style.gridTemplateColumns = '120px 1fr 90px 90px 90px 90px';
-    row.style.cursor = 'pointer';
+    const row = document.createElement('div'); row.className = 'movement-row day-row';
     row.onclick = () => openDayModal(r.record_date);
     
-    const d = document.createElement('span'); d.className = 'movement-date'; d.textContent = dateStr; row.appendChild(d);
-    const c = document.createElement('div'); c.style.fontSize = '12px'; c.style.color = 'var(--text-dim)';
+    const d = document.createElement('span'); d.className = 'movement-date dr-date'; d.textContent = dateStr; row.appendChild(d);
+    const c = document.createElement('div'); c.className = 'dr-notes' + (r.notes ? '' : ' empty'); c.style.fontSize = '12px'; c.style.color = 'var(--text-dim)';
     c.textContent = (r.notes || '').slice(0, 60) || '—'; row.appendChild(c);
-    const a = document.createElement('span'); a.style.cssText = 'font-family:JetBrains Mono;text-align:right;font-size:12px;'; a.textContent = 'A: ' + formatMoney(r.invoiced_a||0); row.appendChild(a);
-    const b = document.createElement('span'); b.style.cssText = 'font-family:JetBrains Mono;text-align:right;font-size:12px;color:var(--amber-bright);'; b.textContent = 'B: ' + formatMoney(r.invoiced_b||0); row.appendChild(b);
-    const t = document.createElement('span'); t.style.cssText = 'font-family:JetBrains Mono;text-align:right;font-weight:600;color:var(--primary-bright);'; t.textContent = formatMoney(total); row.appendChild(t);
-    const i = document.createElement('span'); i.style.cssText = 'font-family:JetBrains Mono;text-align:right;font-size:11px;color:var(--amber-bright);'; i.textContent = 'IVA: ' + formatMoney(iva); row.appendChild(i);
+    const a = document.createElement('span'); a.className = 'dr-num dr-a'; a.textContent = 'A: ' + formatMoney(r.invoiced_a||0); row.appendChild(a);
+    const b = document.createElement('span'); b.className = 'dr-num dr-b'; b.style.color = 'var(--amber-bright)'; b.textContent = 'B: ' + formatMoney(r.invoiced_b||0); row.appendChild(b);
+    const t = document.createElement('span'); t.className = 'dr-num dr-total'; t.style.cssText = 'font-size:13px;font-weight:600;color:var(--primary-bright);'; t.textContent = formatMoney(total); row.appendChild(t);
+    const i = document.createElement('span'); i.className = 'dr-num dr-iva'; i.style.cssText = 'font-size:11px;color:var(--amber-bright);'; i.textContent = 'IVA: ' + formatMoney(iva); row.appendChild(i);
     list.appendChild(row);
   });
 }
@@ -2028,7 +2070,7 @@ function renderPendingLines() {
     
     const amtDiv = document.createElement('div'); amtDiv.className = 'modal-field';
     const amtL = document.createElement('label'); amtL.textContent = 'Importe €'; amtDiv.appendChild(amtL);
-    const amtIn = document.createElement('input'); amtIn.type = 'number'; amtIn.step = '0.01'; amtIn.min = '0.01'; amtIn.max = '9999999';
+    const amtIn = document.createElement('input'); amtIn.type = 'text'; amtIn.inputMode = 'decimal'; amtIn.autocomplete = 'off';
     amtIn.value = line.amount || '';
     amtIn.oninput = () => { line.amount = parseFloat(amtIn.value) || 0; updateDaySummary(); };
     amtDiv.appendChild(amtIn); row.appendChild(amtDiv);

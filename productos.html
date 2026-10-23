@@ -147,6 +147,23 @@ tbody tr.inactive td { opacity:0.45; }
   .form-grid { grid-template-columns:1fr; }
   th:nth-child(7), td:nth-child(7) { display:none; }
 }
+/* Móvil: cada producto es una ficha (antes la tabla se cortaba y no se veían precio ni margen) */
+@media (max-width:600px) {
+  .table-wrap table, .table-wrap tbody { display:block; }
+  .table-wrap thead { display:none; }
+  .table-wrap tbody tr[data-id] { display:grid; grid-template-columns:10px 1fr auto; grid-template-areas:"dot name margin" ". code price" ". code cost"; gap:4px 10px; padding:12px 14px; border-bottom:1px solid var(--border); align-items:center; }
+  .table-wrap tbody tr[data-id]:last-child { border-bottom:none; }
+  .table-wrap tbody tr[data-id] td { display:block; padding:0; border:none; white-space:normal; }
+  .table-wrap tbody tr[data-id] td:nth-child(1) { grid-area:dot; }
+  .table-wrap tbody tr[data-id] td:nth-child(2) { grid-area:code; align-self:start; font-size:11px; }
+  .table-wrap tbody tr[data-id] td:nth-child(3) { grid-area:name; }
+  .table-wrap tbody tr[data-id] td:nth-child(4) { grid-area:price; }
+  .table-wrap tbody tr[data-id] td:nth-child(5) { grid-area:cost; }
+  .table-wrap tbody tr[data-id] td:nth-child(6) { grid-area:margin; }
+  .table-wrap tbody tr[data-id] td:nth-child(7) { display:none; }
+  .table-wrap tbody tr[data-id] td:nth-child(4)::before { content:'PVP '; color:var(--text-faint); font-size:10px; }
+  .table-wrap tbody tr[data-id] td:nth-child(5)::before { content:'coste '; color:var(--text-faint); font-size:10px; }
+}
 </style>
 </head>
 <body>
@@ -244,15 +261,15 @@ tbody tr.inactive td { opacity:0.45; }
         </div>
         <div class="form-field">
           <label>Precio venta (€)</label>
-          <input type="number" name="current_price" class="mono" step="0.0001" min="0" id="inputPrice">
+          <input type="text" inputmode="decimal" autocomplete="off" name="current_price" class="mono" id="inputPrice">
         </div>
         <div class="form-field">
           <label>Coste (€)</label>
-          <input type="number" name="current_cost" class="mono" step="0.0001" min="0" id="inputCost">
+          <input type="text" inputmode="decimal" autocomplete="off" name="current_cost" class="mono" id="inputCost">
         </div>
         <div class="form-field">
           <label>Coste de referencia (€)</label>
-          <input type="number" name="reference_cost" class="mono" step="0.0001" min="0">
+          <input type="text" inputmode="decimal" autocomplete="off" name="reference_cost" class="mono">
         </div>
         <div class="form-field">
           <label>Producto padre (code)</label>
@@ -332,6 +349,15 @@ const state = {
 let currentEditId = null;
 
 function $(id){ return document.getElementById(id); }
+
+// Teclado numérico con decimales: en iPhone escribe coma; se convierte a punto al vuelo
+// (los campos inputmode="decimal" son de texto para que el iPhone acepte la coma)
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (!el || el.tagName !== 'INPUT' || el.inputMode !== 'decimal') return;
+  const v = el.value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+  if (v !== el.value) el.value = v;
+}, true);
 function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 function fmtPrice(n){ return new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n) + ' €'; }
 function fmtCost(n){ return new Intl.NumberFormat('es-ES',{minimumFractionDigits:4,maximumFractionDigits:4}).format(n) + ' €'; }
