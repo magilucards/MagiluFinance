@@ -538,9 +538,16 @@ const EMISOR = {
 };
 
 // === Pie de privacidad de los PDF firmados ===
-// TOMÁS: rellena estos dos textos (salen en el pie de los PDF que llevan firma).
-const PRIVACIDAD_RESPONSABLE = '[RAZÓN SOCIAL Y NIF]';
-const PRIVACIDAD_EMAIL = '[EMAIL DE CONTACTO]';
+// El NIF NO va en el código (el repositorio es público): se lee de settings.company_cif.
+const PRIVACIDAD_RESPONSABLE = 'Tomás Santofímia Gómez';
+const PRIVACIDAD_EMAIL = 'santofimiagroup@gmail.com';
+let emisorNif = null;   // settings.company_cif
+
+async function loadEmisorNif(){
+  const { data, error } = await sb.from('settings').select('company_cif').eq('user_id', currentUser.id).maybeSingle();
+  if (error){ console.error('loadEmisorNif', error); return; }
+  emisorNif = (data && data.company_cif) ? String(data.company_cif).trim() : null;
+}
 
 if (!window.supabase || typeof window.supabase.createClient !== 'function') {
   document.getElementById('loadingScreen').innerHTML = '<div style="color:#ee8a76;text-align:center;padding:24px;max-width:500px;">No se pudo cargar Supabase SDK. Recarga la página.</div>';
@@ -2146,7 +2153,7 @@ function buildPdfDoc(tipo, model){
   // ---- Pie ----
   const footY = pageH-18;
   if (hasSigs){
-    const priv = `Firma recogida electrónicamente. El nombre y la imagen de la firma se tratan solo para acreditar la entrega y el recuento de este depósito. Responsable: ${PRIVACIDAD_RESPONSABLE} · ${PRIVACIDAD_EMAIL}.`;
+    const priv = `Firma recogida electrónicamente. El nombre y la imagen de la firma se tratan solo para acreditar la entrega y el recuento de este depósito. Responsable: ${PRIVACIDAD_RESPONSABLE}${emisorNif ? ', NIF ' + emisorNif : ''} · ${PRIVACIDAD_EMAIL}.`;
     doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(140,140,140);
     const privLines = doc.splitTextToSize(priv, pageW-2*M);
     doc.text(privLines, pageW/2, footY - 4 - (privLines.length-1)*3, { align:'center' });
@@ -2552,7 +2559,7 @@ function bindEvents(){
   const ok=await checkAuth();
   if (!ok) return;
   bindEvents();
-  await loadAll();
+  await Promise.all([loadAll(), loadEmisorNif()]);
   $('loadingScreen').style.display='none';
   $('app').style.display='block';
   // Abrir un depósito directamente si viene ?dep=ID (enlaces desde Recaudación)
