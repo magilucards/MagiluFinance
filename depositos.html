@@ -92,6 +92,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .search-no-results { padding:14px; text-align:center; color:var(--text-faint); font-size:12px; font-style:italic; }
 
 /* Tabla de líneas */
+.lines-scroll { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .lines-table { width:100%; border-collapse:collapse; margin-top:8px; }
 .lines-table th { text-align:left; padding:9px 10px; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); border-bottom:1px solid var(--border-strong); }
 .lines-table th.num, .lines-table td.num { text-align:right; }
@@ -112,7 +113,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .detail-actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 .detail-actions .right { margin-left:auto; display:flex; gap:12px; }
 
-.toast { position:fixed; bottom:24px; right:24px; background:var(--bg-card); border:1px solid var(--border-strong); border-left:3px solid var(--primary); border-radius:6px; padding:12px 18px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,0.4); z-index:200; opacity:0; transform:translateY(10px); transition:all 0.2s; pointer-events:none; }
+.toast { position:fixed; bottom:24px; right:24px; background:var(--bg-card); border:1px solid var(--border-strong); border-left:3px solid var(--primary); border-radius:6px; padding:12px 18px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,0.4); z-index:400; opacity:0; transform:translateY(10px); transition:all 0.2s; pointer-events:none; }
 .toast.show { opacity:1; transform:translateY(0); }
 .toast.error { border-left-color:var(--red); }
 .toast.error .toast-icon { color:var(--red-bright); }
@@ -156,6 +157,58 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 
 .pager-tag { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); text-align:center; padding:16px; }
 
+/* Tienda, nota para el cliente y estado de firma */
+.btn-primary:disabled, .btn-secondary:disabled { opacity:0.45; cursor:not-allowed; }
+.field textarea { background:var(--bg); border:1px solid var(--border-strong); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:13px; padding:9px 12px; border-radius:5px; outline:none; resize:none; }
+.field textarea:focus { border-color:var(--primary); }
+.field input[readonly], .field textarea[readonly], .field select:disabled { opacity:0.7; }
+.dep-store { color:var(--amber-bright); font-weight:500; }
+.sig-chip { font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 8px; border-radius:20px; white-space:nowrap; margin-left:6px; vertical-align:middle; }
+.sig-ok { background:rgba(110,226,197,0.12); color:var(--primary); }
+.sig-pend { background:rgba(138,155,178,0.12); color:var(--text-dim); }
+.sig-pend.required { background:rgba(224,117,96,0.15); color:var(--red-bright); font-weight:600; }
+.detail-notice { display:none; padding:10px 14px; margin-bottom:14px; border-radius:8px; font-size:12px; border:1px solid var(--amber); background:rgba(212,160,74,0.08); color:var(--amber-bright); }
+.detail-notice.active { display:block; }
+.detail-notice div + div { margin-top:4px; }
+.sig-item { display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+.sig-item:last-child { border-bottom:none; }
+.sig-item img { background:#fff; border-radius:4px; height:48px; max-width:140px; object-fit:contain; }
+.sig-item .sig-info { flex:1; min-width:180px; font-size:12px; color:var(--text-dim); }
+.sig-item .sig-info strong { color:var(--text); }
+.sig-item.voided { opacity:0.55; }
+.sig-item.voided img { filter:grayscale(1); }
+.mono-small { font-family:'JetBrains Mono',monospace; font-size:11px; }
+
+/* Pantalla de firma (pantalla completa) */
+.sign-overlay { position:fixed; inset:0; z-index:300; background:var(--bg); display:none; flex-direction:column; overflow-y:auto; overscroll-behavior:contain; padding:calc(14px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+.sign-overlay.active { display:flex; }
+.sign-inner { width:100%; max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+.sign-head { display:flex; align-items:center; gap:12px; }
+.sign-head .liq-title { flex:1; }
+.sign-summary { background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-size:13px; }
+.sign-summary .ss-row { display:flex; justify-content:space-between; gap:12px; padding:4px 0; }
+.sign-summary .ss-row + .ss-row { border-top:1px solid var(--border); }
+.sign-summary .ss-what { color:var(--text-dim); }
+.sign-summary .ss-val { font-family:'JetBrains Mono',monospace; color:var(--primary); text-align:right; white-space:nowrap; }
+.sign-pad-wrap { position:relative; background:#fff; border-radius:8px; border:2px solid var(--border-strong); height:240px; touch-action:none; }
+.sign-pad-wrap canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:none; border-radius:6px; cursor:crosshair; }
+.sign-pad-hint { position:absolute; left:14px; right:14px; bottom:34px; border-bottom:1px dashed #b8c2d0; color:#9aa6b8; font-size:11px; pointer-events:none; text-align:left; padding-bottom:2px; }
+.sign-actions { display:flex; gap:10px; }
+.sign-actions .btn-primary { flex:1; font-size:15px; padding:13px 16px; }
+.sign-actions .btn-secondary { padding:13px 16px; }
+.sign-error { display:none; padding:10px 14px; border-radius:8px; border:1px solid var(--red); background:rgba(224,117,96,0.1); color:var(--red-bright); font-size:13px; }
+.sign-error.active { display:block; }
+.sign-done { display:none; text-align:center; padding:24px 8px; }
+.sign-done.active { display:block; }
+.sign-done-title { font-family:'Fraunces',serif; font-size:24px; color:var(--primary); margin-bottom:8px; }
+.sign-done .btn-primary, .sign-done .btn-secondary { width:100%; margin-top:10px; padding:13px 16px; font-size:15px; }
+
+/* Modal de confirmación propio (confirm()/prompt() nativos fallan en iPhone en modo app) */
+.ask-modal textarea { width:100%; min-height:70px; background:var(--bg); border:1px solid var(--border-strong); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:13px; padding:9px 12px; border-radius:5px; outline:none; resize:vertical; margin-top:10px; }
+.ask-modal textarea:focus { border-color:var(--primary); }
+.ask-body { font-size:13px; color:var(--text-dim); line-height:1.6; }
+#askModal { z-index:350; }
+
 @media (max-width:768px) {
   .app-header { padding:14px 16px; }
   .header-inner { gap:12px; flex-wrap:wrap; }
@@ -164,6 +217,10 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
   .dep-card { grid-template-columns:auto 1fr; gap:10px; }
   .dep-stat { text-align:left; grid-column:2; }
   .field-row { flex-direction:column; }
+  /* Botones del detalle: en varias filas, sin apretujarse */
+  .detail-actions .right { margin-left:0; width:100%; flex-wrap:wrap; gap:8px; }
+  .detail-actions .right > button { flex:1 1 45%; }
+  .detail-actions #btnSignVisit, .detail-actions #btnSignOne { flex-basis:100%; }
 }
 </style>
 </head>
@@ -178,7 +235,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v29</div>
+      <div class="subtitle" id="headerStats">— · v30</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -214,6 +271,10 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
           <input type="text" id="clientSearch" placeholder="escribe nombre del cliente..." autocomplete="off">
           <input type="hidden" id="clientSelect" value="">
           <div class="search-results" id="clientResults"></div>
+        </div>
+        <div class="field" id="locationWrap" style="display:none;">
+          <label>Tienda *</label>
+          <select id="locationSelect"></select>
         </div>
         <div class="field" style="max-width:120px;">
           <label>Nº depósito</label>
@@ -256,6 +317,9 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
         </div>
       </div>
 
+      <!-- Avisos: depósito firmado (bloqueado), cliente que exige firma -->
+      <div class="detail-notice" id="detailNotice"></div>
+
       <!-- Buscador de productos (solo visible en abierto) -->
       <div class="field product-search" id="productSearchWrap">
         <label>Añadir producto (escribe código o nombre)</label>
@@ -263,6 +327,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
         <div class="search-results" id="searchResults"></div>
       </div>
 
+      <div class="lines-scroll">
       <table class="lines-table">
         <thead>
           <tr id="linesHead">
@@ -278,21 +343,34 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
         </thead>
         <tbody id="linesBody"></tbody>
       </table>
+      </div>
 
       <div class="summary-bar" id="summaryBar"></div>
     </div>
 
     <div class="detail-box">
+      <div class="field" style="margin-bottom:16px;">
+        <label>Nota para el cliente (sale en el PDF)</label>
+        <textarea id="depClientNote" rows="2" maxlength="200" placeholder="opcional · máximo dos líneas"></textarea>
+      </div>
       <div class="field">
-        <label>Notas internas (no salen en el PDF del cliente)</label>
+        <label>Nota interna (no sale en el PDF)</label>
         <input type="text" id="depNotes" placeholder="anotaciones internas...">
       </div>
+    </div>
+
+    <!-- Firmas del depósito (activas y anuladas) -->
+    <div class="detail-box" id="sigBox" style="display:none;">
+      <div class="detail-box-title">Firmas</div>
+      <div id="sigListDetail"></div>
     </div>
 
     <div class="detail-actions">
       <button class="btn-secondary" id="btnBack">← Volver a la lista</button>
       <button class="btn-danger" id="btnDelete" style="display:none;">Eliminar depósito</button>
       <div class="right">
+        <button class="btn-primary" id="btnSignVisit" style="display:none;">✍️ Firma del cliente</button>
+        <button class="btn-secondary" id="btnSignOne" style="display:none;">✍️ Firmar este depósito</button>
         <button class="btn-pdf" id="btnPdfEntrega" style="display:none;">PDF entrega</button>
         <button class="btn-pdf" id="btnPdfFactura" style="display:none;">PDF liquidación</button>
         <button class="btn-secondary" id="btnRecount" style="display:none;">Pasar a recuento</button>
@@ -377,6 +455,59 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
   </div>
 </div>
 
+<!-- PANTALLA DE FIRMA DEL CLIENTE -->
+<div class="sign-overlay" id="signOverlay">
+  <div class="sign-inner">
+    <div class="sign-head">
+      <div class="liq-title">Firma del <em>cliente</em></div>
+      <button class="modal-close" id="signClose" title="Cerrar">×</button>
+    </div>
+    <div class="dep-meta" id="signContext"></div>
+
+    <div id="signForm" style="display:flex;flex-direction:column;gap:14px;">
+      <div class="sign-summary" id="signSummary"></div>
+      <div class="field">
+        <label>Nombre de quien firma *</label>
+        <input type="text" id="signerName" maxlength="80" autocomplete="off" placeholder="nombre y apellidos">
+      </div>
+      <div class="sign-pad-wrap" id="signPadWrap">
+        <canvas id="signPad"></canvas>
+        <div class="sign-pad-hint">firme aquí con el dedo</div>
+      </div>
+      <div class="sign-error" id="signError"></div>
+      <div class="sign-actions">
+        <button type="button" class="btn-secondary" id="signClear">Borrar</button>
+        <button type="button" class="btn-primary" id="signSubmit">Firmar</button>
+      </div>
+    </div>
+
+    <div class="sign-done" id="signDone">
+      <div class="sign-done-title">Firmado ✓</div>
+      <div class="dep-meta" id="signDoneInfo"></div>
+      <button type="button" class="btn-primary" id="signShare">📤 Compartir PDF firmado</button>
+      <button type="button" class="btn-secondary" id="signDoneClose">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE CONFIRMACIÓN PROPIO -->
+<div class="modal-overlay" id="askModal">
+  <div class="liq-modal ask-modal">
+    <div class="liq-header">
+      <div class="liq-title" id="askTitle">¿Seguro?</div>
+      <button class="modal-close" id="askClose">×</button>
+    </div>
+    <div class="liq-body">
+      <div class="ask-body" id="askBody"></div>
+      <textarea id="askInput" style="display:none;"></textarea>
+    </div>
+    <div class="liq-actions">
+      <button class="btn-secondary" id="askCancel">Cancelar</button>
+      <button class="btn-primary" id="askOk">Aceptar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script
@@ -406,6 +537,11 @@ const EMISOR = {
   web: 'magilucards.com'
 };
 
+// === Pie de privacidad de los PDF firmados ===
+// TOMÁS: rellena estos dos textos (salen en el pie de los PDF que llevan firma).
+const PRIVACIDAD_RESPONSABLE = '[RAZÓN SOCIAL Y NIF]';
+const PRIVACIDAD_EMAIL = '[EMAIL DE CONTACTO]';
+
 if (!window.supabase || typeof window.supabase.createClient !== 'function') {
   document.getElementById('loadingScreen').innerHTML = '<div style="color:#ee8a76;text-align:center;padding:24px;max-width:500px;">No se pudo cargar Supabase SDK. Recarga la página.</div>';
   throw new Error('Supabase SDK no disponible');
@@ -427,6 +563,11 @@ let searchTerm = '';
 let editing = null;   // objeto deposit o null
 let lines = [];        // líneas en edición
 let searchHighlight = -1;
+
+// Tiendas y firmas
+let locations = [];     // client_locations (todas, también las inactivas, para mostrar nombres)
+let signatures = [];    // firmas SIN imagen ni snapshot (para listados y estados)
+let editingSigs = [];   // firmas completas del depósito abierto (con imagen y snapshot, para el PDF)
 
 function $(id){ return document.getElementById(id); }
 function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
@@ -453,18 +594,25 @@ async function checkAuth(){
 
 async function loadAll(){
   // Cargar clientes (solo los que son clientes), productos y depósitos
-  const [cRes, pRes, dRes] = await Promise.all([
-    sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,email,phone,vat_regime,is_client').eq('is_client',true).order('legal_name'),
+  const [cRes, pRes, dRes, lRes, sRes] = await Promise.all([
+    sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,email,phone,vat_regime,is_client,requires_signature').eq('is_client',true).order('legal_name'),
     sb.from('products').select('id,code,name,current_price,current_cost,vat_rate,is_active').order('code'),
-    sb.from('deposits').select('*').order('delivery_date',{ascending:false})
+    sb.from('deposits').select('*').order('delivery_date',{ascending:false}),
+    sb.from('client_locations').select('id,client_id,name,address,city,postal_code,is_active').order('name'),
+    // Sin signature_png ni content_snapshot: solo se traen al abrir un depósito (para el PDF)
+    sb.from('deposit_signatures').select('id,deposit_id,moment,signer_name,signed_at,content_hash,voided_at').order('signed_at',{ascending:false})
   ]);
   if (cRes.error){ showToast('Error cargando clientes: '+cRes.error.message,true); return; }
   if (pRes.error){ showToast('Error cargando productos: '+pRes.error.message,true); return; }
   if (dRes.error){ showToast('Error cargando depósitos: '+dRes.error.message,true); return; }
+  if (lRes.error){ showToast('Error cargando tiendas: '+lRes.error.message,true); return; }
+  if (sRes.error){ showToast('Error cargando firmas: '+sRes.error.message,true); return; }
 
   clients = cRes.data||[];
   products = pRes.data||[];
   allDeposits = dRes.data||[];
+  locations = lRes.data||[];
+  signatures = sRes.data||[];
 
   // Calcular siguiente número correlativo: el mayor deposit_number existente + 1
   const numeros = allDeposits.map(d=>d.deposit_number).filter(n=>n!=null);
@@ -491,12 +639,98 @@ function clientDisplayName(c){
   return c.commercial_name && c.commercial_name!==c.legal_name ? `${c.legal_name} (${c.commercial_name})` : c.legal_name;
 }
 
+// ===== TIENDAS Y FIRMAS: utilidades =====
+function locById(id){ return id ? locations.find(l=>l.id===id) : null; }
+function locName(id){ const l = locById(id); return l ? l.name : ''; }
+// Tiendas que se pueden elegir para un cliente: las activas + la que ya tenga el depósito (aunque esté desactivada)
+function clientLocations(clientId, includeId){
+  return locations.filter(l => l.client_id===clientId && (l.is_active || l.id===includeId))
+    .sort((a,b)=>a.name.localeCompare(b.name,'es'));
+}
+function renderLocationSelect(clientId, selectedId){
+  const locs = clientId ? clientLocations(clientId, selectedId) : [];
+  const wrap = $('locationWrap'), sel = $('locationSelect');
+  if (!locs.length){ wrap.style.display = 'none'; sel.innerHTML = ''; return; }
+  sel.innerHTML = '<option value="">— elige la tienda —</option>' +
+    locs.map(l=>`<option value="${l.id}">${escapeHtml(l.name)}${l.is_active?'':' (inactiva)'}</option>`).join('');
+  // Si el cliente solo tiene una tienda activa, se preselecciona
+  if (!selectedId && locs.length===1) selectedId = locs[0].id;
+  sel.value = selectedId || '';
+  wrap.style.display = 'flex';
+}
+function currentLocationId(){
+  return $('locationWrap').style.display !== 'none' ? ($('locationSelect').value || null) : null;
+}
+// Firma activa (no anulada) de un depósito en un momento ('entrega' | 'recuento')
+function activeSig(depId, moment){ return signatures.find(s=>s.deposit_id===depId && s.moment===moment && !s.voided_at) || null; }
+function depHasAnySig(depId){ return signatures.some(s=>s.deposit_id===depId); }
+function depHasActiveSig(depId){ return signatures.some(s=>s.deposit_id===depId && !s.voided_at); }
+// Momento que se firmaría suelto: recuento si está recontado sin esa firma; si no, entrega
+function pendingMoment(d){
+  if (!d) return null;
+  if (d.recount_date) return activeSig(d.id,'recuento') ? null : 'recuento';
+  return activeSig(d.id,'entrega') ? null : 'entrega';
+}
+// Momento que "toca" firmar según el estado (para mostrar Firmado / Pendiente de firma)
+function relevantMoment(d){ return d.status==='abierto' ? 'entrega' : 'recuento'; }
+function clientRequiresSig(clientId){ const c = clients.find(x=>x.id===clientId); return !!(c && c.requires_signature); }
+// Falta el recuento firmado en un cliente que lo exige → no se puede emitir la factura
+function invoiceBlockedBySig(d){ return clientRequiresSig(d.client_id) && !activeSig(d.id,'recuento'); }
+function sigChipHtml(d){
+  const ok = !!activeSig(d.id, relevantMoment(d));
+  const req = clientRequiresSig(d.client_id);
+  if (ok) return '<span class="sig-chip sig-ok">✓ Firmado</span>';
+  if (d.status==='facturado' && !req) return '';  // histórico: no ensuciar la lista
+  return `<span class="sig-chip sig-pend ${req?'required':''}">Pendiente de firma</span>`;
+}
+// Nota para el cliente: como mucho dos líneas
+function normalizeClientNote(s){
+  const t = String(s||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,2).join('\n');
+  return t || null;
+}
+function fmtDateTimeMadrid(iso){
+  try {
+    return new Intl.DateTimeFormat('es-ES',{ timeZone:'Europe/Madrid', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(new Date(iso));
+  } catch(e){ return iso; }
+}
+
+// Modal propio de confirmación (los confirm()/prompt() nativos fallan en iPhone en modo app).
+// Devuelve una promesa: { ok, value }.
+function askDialog({ title, body, input=null, okLabel='Aceptar', danger=false }){
+  return new Promise(resolve=>{
+    $('askTitle').textContent = title || '¿Seguro?';
+    $('askBody').innerHTML = body || '';
+    const inp = $('askInput');
+    inp.style.display = input ? 'block' : 'none';
+    inp.value = '';
+    inp.placeholder = input && input.placeholder ? input.placeholder : '';
+    const ok = $('askOk');
+    ok.textContent = okLabel;
+    ok.className = danger ? 'btn-danger' : 'btn-primary';
+    $('askModal').classList.add('active');
+    if (input) setTimeout(()=>inp.focus(), 50);
+    const done = (res)=>{
+      $('askModal').classList.remove('active');
+      ok.onclick = $('askCancel').onclick = $('askClose').onclick = null;
+      resolve(res);
+    };
+    ok.onclick = ()=>{
+      const value = inp.value.trim();
+      if (input && input.required && !value){ showToast(input.requiredMsg || 'Este campo es obligatorio', true); inp.focus(); return; }
+      done({ ok:true, value });
+    };
+    $('askCancel').onclick = ()=>done({ ok:false, value:null });
+    $('askClose').onclick = ()=>done({ ok:false, value:null });
+  });
+}
+
 // Fija el cliente elegido: guarda id en el hidden y muestra el nombre en el input visible
-function setClient(clientId){
+function setClient(clientId, locationId=null){
   $('clientSelect').value = clientId || '';
   const c = clients.find(x=>x.id===clientId);
   $('clientSearch').value = c ? clientDisplayName(c) : '';
   $('clientResults').classList.remove('active');
+  renderLocationSelect(c ? c.id : null, locationId);
   // Rellenar tira de info
   const bar = $('clientInfoBar');
   if (!c){ bar.style.display = 'none'; return; }
@@ -546,7 +780,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v29`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v30`;
 }
 
 // ===== LISTA =====
@@ -571,7 +805,7 @@ function renderList(){
     result = result.filter(d=>{
       const c = clients.find(x=>x.id===d.client_id);
       const name = c ? (c.legal_name+' '+(c.commercial_name||'')) : '';
-      return name.toLowerCase().includes(q);
+      return (name+' '+locName(d.location_id)).toLowerCase().includes(q);
     });
   }
   const cont=$('depList');
@@ -613,7 +847,7 @@ function renderList(){
       <div class="dep-card" data-id="${d.id}">
         <span class="status-pill status-${d.status}">${d.status}</span>
         <div>
-          <div class="dep-client">${d.deposit_number!=null?`<span style="color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:12px;">#${d.deposit_number}</span> `:''}${escapeHtml(clientName)}</div>
+          <div class="dep-client">${d.deposit_number!=null?`<span style="color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:12px;">#${d.deposit_number}</span> `:''}${escapeHtml(clientName)}${d.location_id?` <span class="dep-store">· ${escapeHtml(locName(d.location_id))}</span>`:''}${sigChipHtml(d)}</div>
           <div class="dep-meta">${escapeHtml(nif)}${city?' · '+escapeHtml(city):''} · ${dateLabel} ${fmtDate(dateVal)}${payChip}</div>
           ${taxLine}
         </div>
@@ -650,20 +884,21 @@ function renderFacturacion(){
     const name = c ? (c.commercial_name||c.legal_name) : '(cliente)';
     const tx = depTaxTotals(d);
     const esB = tx.regime==='B';
+    const sinFirma = !esB && invoiceBlockedBySig(d);
     const dia = d.recount_date || d.delivery_date;
     const taxStr = esB
       ? `Rég. B (sin impuestos) · Total ${fmtMoney(tx.total)}`
       : `Base ${fmtMoney(tx.base)} · IVA ${fmtMoney(tx.iva)}${tx.tieneRE?` · RE ${fmtMoney(tx.re)}`:''} · Total ${fmtMoney(tx.total)}`;
     return `
       <div class="fact-row" data-id="${d.id}">
-        <input type="checkbox" class="fact-cb" data-id="${d.id}" ${esB?'disabled':'checked'}>
+        <input type="checkbox" class="fact-cb" data-id="${d.id}" ${(esB||sinFirma)?'disabled':'checked'}>
         <div class="fact-info">
-          <div class="dep-client">${d.deposit_number!=null?`#${d.deposit_number} `:''}${escapeHtml(name)}${esB?' <span class="fact-warn">rég. B · no va a Holded</span>':''}</div>
+          <div class="dep-client">${d.deposit_number!=null?`#${d.deposit_number} `:''}${escapeHtml(name)}${d.location_id?` <span class="dep-store">· ${escapeHtml(locName(d.location_id))}</span>`:''}${esB?' <span class="fact-warn">rég. B · no va a Holded</span>':''}${sinFirma?' <span class="fact-warn">exige el recuento firmado</span>':''}</div>
           <div class="dep-meta">${escapeHtml(c?(c.nif||''):'')}${c&&c.city?' · '+escapeHtml(c.city):''} · recuento ${fmtDate(dia)} · ${taxStr}</div>
         </div>
         ${esB
           ? `<button class="btn-secondary fact-mark" data-id="${d.id}">✓ Marcar facturado</button>`
-          : `<button class="btn-primary fact-emit-one" data-id="${d.id}">🧾 Facturar en Holded</button>`}
+          : `<button class="btn-primary fact-emit-one" data-id="${d.id}" ${sinFirma?'disabled title="Este cliente exige el recuento firmado antes de facturar."':''}>🧾 Facturar en Holded</button>`}
       </div>`;
   }).join('');
   cont.querySelectorAll('.fact-mark').forEach(b=>b.addEventListener('click',()=>markFacturado(b.dataset.id)));
@@ -696,7 +931,7 @@ async function emitSelectedHolded(){
   const fechaDe = id => { const d = allDeposits.find(x=>x.id===id); return (d && depDayKey(d)) ? depDayKey(d) : '9999-12-31'; };
   ids.sort((a,b)=> fechaDe(a).localeCompare(fechaDe(b)));
   const minSel = fechaDe(ids[0]);
-  const olderUnsel = allDeposits.filter(d => d.status==='recontado' && !d.holded_invoice_id && (d.regime||'A')!=='B' && !ids.includes(d.id) && String(depDayKey(d)||'') < minSel);
+  const olderUnsel = allDeposits.filter(d => d.status==='recontado' && !d.holded_invoice_id && (d.regime||'A')!=='B' && !invoiceBlockedBySig(d) && !ids.includes(d.id) && String(depDayKey(d)||'') < minSel);
   if (olderUnsel.length && !confirm(`⚠ Hay ${olderUnsel.length} depósito(s) MÁS ANTIGUO(s) sin seleccionar. Las facturas se emiten por orden de fecha; si emites estos primero, la numeración quedará descuadrada respecto a la fecha. ¿Continuar igualmente?`)) return;
   if (!confirm(`Vas a EMITIR ${ids.length} factura(s) REAL(es) en Holded, en ORDEN DE FECHA (de la más antigua a la más nueva). Es irreversible salvo anulación en Holded. ¿Continuar?`)) return;
   busyHolded = true;
@@ -734,6 +969,7 @@ async function facturarUnoHolded(id){
     return;
   }
   if (dep.holded_invoice_id){ showToast('Este depósito ya tiene factura en Holded',true); return; }
+  if (invoiceBlockedBySig(dep)){ showToast('Este cliente exige el recuento firmado antes de facturar.',true); return; }
   const dia = String(depDayKey(dep)||'9999-12-31');
   const older = allDeposits.filter(d=> d.status==='recontado' && !d.holded_invoice_id && (d.regime||'A')!=='B' && d.id!==id && (depDayKey(d)||'9999-12-31') < dia);
   if (older.length && !confirm(`⚠ Hay ${older.length} depósito(s) MÁS ANTIGUO(s) sin facturar. Las facturas deben ir en orden de fecha; si facturas este antes, la numeración quedará descuadrada. ¿Continuar igualmente?`)) return;
@@ -795,6 +1031,14 @@ function openNew(){
   $('recountDate').value = '';
   $('statusDisplay').value = 'abierto';
   $('depNotes').value = '';
+  $('depClientNote').value = '';
+  editingSigs = [];
+  renderLocationSelect(null, null);
+  $('locationSelect').disabled = false;
+  $('deliveryDate').readOnly = false;
+  $('recountDate').readOnly = false;
+  $('depClientNote').readOnly = false;
+  renderSigBox();
   // Numeración
   const numInput = $('depositNumber');
   if (nextDepositNumber === null){
@@ -816,31 +1060,52 @@ function openNew(){
 // Crear el SIGUIENTE depósito de la misma tienda, en blanco.
 // Pensado para encadenar: liquidas/archivas un depósito y arrancas el nuevo
 // de esa tienda sin tener que buscar el cliente otra vez.
-function openNewForClient(clientId){
+function openNewForClient(clientId, locationId=null){
   openNew();
   if (clientId){
-    setClient(clientId);
+    // Preselecciona la misma tienda del depósito anterior (si sigue activa)
+    const loc = locById(locationId);
+    setClient(clientId, (loc && loc.is_active) ? loc.id : null);
     showToast('Nuevo depósito para esta tienda · añade los productos');
   }
+}
+
+// Qué está congelado por firmas activas en el depósito abierto
+function lockState(){
+  if (!editing) return { any:false, entrega:false, recuento:false, econ:false };
+  const entrega = !!activeSig(editing.id,'entrega');
+  const recuento = !!activeSig(editing.id,'recuento');
+  return { any: entrega||recuento, entrega, recuento, econ: entrega||recuento };
 }
 
 async function openDeposit(id){
   const d = allDeposits.find(x=>x.id===id);
   if (!d) return;
   editing = d;
-  // cargar líneas frescas
-  const { data, error } = await sb.from('deposit_lines').select('*').eq('deposit_id',id).order('sort_order');
-  if (error){ showToast('Error cargando líneas: '+error.message,true); return; }
-  lines = (data||[]).map(l=>({...l}));
+  // cargar líneas frescas y las firmas completas de este depósito (imagen + snapshot, para el PDF)
+  const [lRes, sRes] = await Promise.all([
+    sb.from('deposit_lines').select('*').eq('deposit_id',id).order('sort_order'),
+    sb.from('deposit_signatures').select('*').eq('deposit_id',id).order('signed_at',{ascending:true})
+  ]);
+  if (lRes.error){ showToast('Error cargando líneas: '+lRes.error.message,true); return; }
+  if (sRes.error){ showToast('Error cargando firmas: '+sRes.error.message,true); return; }
+  lines = (lRes.data||[]).map(l=>({...l}));
+  editingSigs = sRes.data||[];
   $('detailTitle').textContent = 'Depósito · ' + d.status.toUpperCase();
-  setClient(d.client_id);
-  $('clientSearch').readOnly = (d.status!=='abierto');
+  setClient(d.client_id, d.location_id);
+  const lk = lockState();
+  $('clientSearch').readOnly = (d.status!=='abierto') || lk.any;
+  $('locationSelect').disabled = lk.any;
   $('deliveryDate').value = d.delivery_date;
+  $('deliveryDate').readOnly = lk.any;
   $('recountDate').value = d.recount_date || '';
+  $('recountDate').readOnly = lk.recuento;
   $('depositNumber').value = d.deposit_number != null ? d.deposit_number : '';
   $('depositNumber').readOnly = false;
   $('statusDisplay').value = d.status;
   $('depNotes').value = d.notes||'';
+  $('depClientNote').value = d.client_note||'';
+  $('depClientNote').readOnly = lk.any;
   // Si el depósito tiene guardado su propio "has_re" (por haberlo marcado en una liquidación previa),
   // ese valor manda sobre lo que diga la ficha del cliente
   if (d.client_has_re !== undefined && d.client_has_re !== null){
@@ -848,7 +1113,75 @@ async function openDeposit(id){
   }
   configureForStatus(d.status);
   renderLines();
+  renderSigBox();
   showDetailView();
+}
+
+// Panel de firmas del depósito abierto (activas y anuladas) + botón Anular
+function renderSigBox(){
+  const box = $('sigBox'), list = $('sigListDetail');
+  if (!editing || !editingSigs.length){ box.style.display='none'; list.innerHTML=''; return; }
+  box.style.display = 'block';
+  const label = { entrega:'Entrega · «Recibí la mercancía en depósito»', recuento:'Recuento · «Conforme con el recuento»' };
+  list.innerHTML = editingSigs.map(s=>`
+    <div class="sig-item ${s.voided_at?'voided':''}">
+      <img src="${escapeHtml(s.signature_png)}" alt="firma">
+      <div class="sig-info">
+        <div><strong>${escapeHtml(label[s.moment]||s.moment)}</strong></div>
+        <div>${escapeHtml(s.signer_name)} · ${escapeHtml(fmtDateTimeMadrid(s.signed_at))}</div>
+        <div class="mono-small">Huella: ${escapeHtml(String(s.content_hash||'').slice(0,16))}</div>
+        ${s.voided_at?`<div style="color:var(--red-bright);">ANULADA el ${escapeHtml(fmtDateTimeMadrid(s.voided_at))} · ${escapeHtml(s.void_reason||'')}</div>`:''}
+      </div>
+      ${s.voided_at?'':`<button class="btn-danger" data-void="${s.id}">Anular firma</button>`}
+    </div>`).join('');
+  list.querySelectorAll('button[data-void]').forEach(b=>b.addEventListener('click',()=>voidSignatureFlow(b.dataset.void)));
+}
+
+async function voidSignatureFlow(sigId){
+  const s = editingSigs.find(x=>x.id===sigId);
+  if (!s) return;
+  const res = await askDialog({
+    title: 'Anular firma',
+    body: `Vas a anular la firma de <strong>${escapeHtml(s.moment)}</strong> de ${escapeHtml(s.signer_name)}.<br>La firma anulada se conserva como histórico. Después podrás corregir el depósito y volver a firmarlo.<br><br>Motivo de la anulación (obligatorio):`,
+    input: { placeholder:'ej: error en las unidades recontadas', required:true, requiredMsg:'Indica el motivo de la anulación' },
+    okLabel: 'Anular firma',
+    danger: true
+  });
+  if (!res.ok) return;
+  const { error } = await sb.rpc('void_signature', { p_signature_id: sigId, p_reason: res.value });
+  if (error){ showToast(error.message, true); return; }
+  showToast('Firma anulada');
+  const depId = editing.id;
+  await loadAll();
+  await openDeposit(depId);
+}
+
+// Avisos del detalle: bloqueos por firma y clientes que exigen firma
+function renderDetailNotice(){
+  const box = $('detailNotice');
+  const msgs = [];
+  if (editing){
+    const lk = lockState();
+    if (lk.recuento) msgs.push('Recuento firmado: el depósito está bloqueado. Para corregirlo, anula la firma (abajo, en «Firmas»), edita y vuelve a firmar.');
+    else if (lk.entrega) msgs.push('Entrega firmada: no se pueden cambiar productos, cantidades entregadas, precios, tienda, fecha ni la nota para el cliente. Sí se puede registrar el recuento.');
+    if (invoiceBlockedBySig(editing) && editing.status==='recontado' && (editing.regime||'A')!=='B')
+      msgs.push('Este cliente exige el recuento firmado antes de facturar.');
+    else if (clientRequiresSig(editing.client_id) && pendingMoment(editing))
+      msgs.push('Este cliente exige firma: pídele que firme antes de irte.');
+  }
+  box.innerHTML = msgs.map(m=>`<div>${escapeHtml(m)}</div>`).join('');
+  box.classList.toggle('active', msgs.length>0);
+}
+
+// ¿Qué hay pendiente de firmar hoy en este cliente + tienda? (la "visita")
+function visitItems(d){
+  if (!d) return [];
+  const hoy = todayISO();
+  const same = allDeposits.filter(x => x.client_id===d.client_id && (x.location_id||null)===(d.location_id||null));
+  const items = [];
+  same.forEach(x=>{ if (x.recount_date===hoy && !activeSig(x.id,'recuento')) items.push({ deposit_id:x.id, moment:'recuento' }); });
+  same.forEach(x=>{ if (x.delivery_date===hoy && !activeSig(x.id,'entrega')) items.push({ deposit_id:x.id, moment:'entrega' }); });
+  return items;
 }
 
 function configureForStatus(status){
@@ -857,8 +1190,9 @@ function configureForStatus(status){
   const isRecontado = status==='recontado';
   const isFacturado = status==='facturado';
 
-  // buscador de productos: solo en abierto
-  $('productSearchWrap').style.display = isAbierto ? 'block' : 'none';
+  const lk = lockState();
+  // buscador de productos: solo en abierto y sin entrega firmada
+  $('productSearchWrap').style.display = (isAbierto && !lk.econ) ? 'block' : 'none';
   // columnas resto/vendido: en recontado y facturado
   document.querySelectorAll('.recount-col').forEach(el=>el.style.display = (isRecontado||isFacturado)?'table-cell':'none');
   document.querySelectorAll('.import-col').forEach(el=>el.style.display = (isRecontado||isFacturado)?'table-cell':'none');
@@ -878,11 +1212,29 @@ function configureForStatus(status){
   $('btnNextDeposit').style.display = (editing && (isRecontado||isFacturado)) ? 'inline-flex' : 'none';
   $('btnPdfEntrega').style.display = editing ? 'inline-flex' : 'none';
   $('btnPdfFactura').style.display = (editing && (isRecontado||isFacturado)) ? 'inline-flex' : 'none';
+
+  // Cliente que exige firma y sin recuento firmado → no se puede emitir la factura
+  const blocked = !!(editing && editing.regime!=='B' && invoiceBlockedBySig(editing));
+  $('btnInvoice').disabled = blocked;
+  $('btnInvoice').title = blocked ? 'Este cliente exige el recuento firmado antes de facturar.' : '';
+
+  // Firma: de la visita (todo lo pendiente hoy en este cliente + tienda) o de este depósito suelto
+  const visit = editing ? visitItems(editing) : [];
+  const single = editing ? pendingMoment(editing) : null;
+  const visitIsJustThis = visit.length===1 && single && visit[0].deposit_id===editing.id && visit[0].moment===single;
+  $('btnSignVisit').style.display = visit.length ? 'inline-flex' : 'none';
+  $('btnSignVisit').textContent = visit.length>1 ? `✍️ Firma del cliente (${visit.length})` : '✍️ Firma del cliente';
+  $('btnSignOne').style.display = (single && !visitIsJustThis) ? 'inline-flex' : 'none';
+  $('btnSignOne').textContent = single==='recuento' ? '✍️ Firmar recuento de este depósito' : '✍️ Firmar entrega de este depósito';
+  renderDetailNotice();
 }
 
 function renderLines(){
   const status = $('statusDisplay').value;
   const showRecount = (status==='recontado'||status==='facturado');
+  const lk = lockState();
+  const editEcon = status==='abierto' && !lk.econ;   // entregado / precio / borrar línea
+  const editCount = !lk.recuento;                      // lo recontado
   const body=$('linesBody');
   if (lines.length===0){
     body.innerHTML = `<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--text-faint);font-style:italic;">Sin productos. ${status==='abierto'?'Usa el buscador de arriba para añadir.':''}</td></tr>`;
@@ -898,16 +1250,18 @@ function renderLines(){
     let cells = `
       <td class="code">${escapeHtml(l.product_code)}</td>
       <td>${escapeHtml(l.product_name)}</td>`;
-    if (status==='abierto'){
+    if (editEcon){
       cells += `<td class="num"><input type="number" min="0" step="1" value="${delivered}" data-i="${i}" data-f="delivered"></td>`;
     } else {
       cells += `<td class="num price">${delivered}</td>`;
     }
     if (showRecount){
-      cells += `<td class="num"><input type="number" min="0" step="1" class="recount" value="${remaining!=null?remaining:''}" data-i="${i}" data-f="remaining" ${status==='facturado'?'':''}></td>`;
+      cells += editCount
+        ? `<td class="num"><input type="number" min="0" step="1" class="recount" value="${remaining!=null?remaining:''}" data-i="${i}" data-f="remaining"></td>`
+        : `<td class="num price">${remaining!=null?remaining:'—'}</td>`;
       cells += `<td class="num sold">${sold!=null?sold:'—'}</td>`;
     }
-    if (status==='abierto'){
+    if (editEcon){
       cells += `<td class="num"><input type="number" min="0" step="0.0001" value="${price}" data-i="${i}" data-f="price" style="width:90px;"></td>`;
     } else {
       cells += `<td class="num price">${fmtMoney(price)}</td>`;
@@ -915,7 +1269,7 @@ function renderLines(){
     if (showRecount){
       cells += `<td class="num sold">${importe!=null?fmtMoney(importe):'—'}</td>`;
     }
-    cells += `<td>${status==='abierto'?`<button class="del-line" data-del="${i}">×</button>`:''}</td>`;
+    cells += `<td>${editEcon?`<button class="del-line" data-del="${i}">×</button>`:''}</td>`;
     return `<tr>${cells}</tr>`;
   }).join('');
 
@@ -1041,6 +1395,8 @@ function addLine(productId){
 async function saveDeposit(silent=false){
   const clientId = $('clientSelect').value;
   if (!clientId){ showToast('Elige un cliente',true); return false; }
+  // Si el cliente tiene tiendas, la tienda es obligatoria
+  if ($('locationWrap').style.display !== 'none' && !$('locationSelect').value){ showToast('Elige la tienda',true); $('locationSelect').focus(); return false; }
   if (lines.length===0){ showToast('Añade al menos un producto',true); return false; }
 
   const status = $('statusDisplay').value;
@@ -1058,6 +1414,8 @@ async function saveDeposit(silent=false){
     status: status,
     deposit_number: depNum,
     notes: $('depNotes').value.trim()||null,
+    location_id: currentLocationId(),
+    client_note: normalizeClientNote($('depClientNote').value),
     client_has_re: clientHasRE,
     updated_at: new Date().toISOString()
   };
@@ -1066,7 +1424,8 @@ async function saveDeposit(silent=false){
   if (editing){
     depId = editing.id;
     const { error } = await sb.from('deposits').update(depPayload).eq('id',depId);
-    if (error){ showToast('Error guardando: '+error.message,true); return false; }
+    // Los errores de la BD ya vienen redactados («Depósito firmado: …»): se muestran tal cual
+    if (error){ showToast(error.message,true); return false; }
   } else {
     const { data, error } = await sb.from('deposits').insert(depPayload).select().single();
     if (error){ showToast('Error creando: '+error.message,true); return false; }
@@ -1074,12 +1433,12 @@ async function saveDeposit(silent=false){
     editing = data;
   }
 
-  // Reescribir líneas: borrar las que ya no están y upsert del resto
-  // Estrategia simple: borrar todas las del depósito y reinsertar
-  await sb.from('deposit_lines').delete().eq('deposit_id',depId);
-  const linesPayload = lines.map((l,idx)=>({
-    user_id: currentUser.id,
-    deposit_id: depId,
+  // Líneas: SIN borrar y reinsertar (los bloqueos por firma lo impedirían).
+  // Se actualizan solo las que han cambiado, se insertan las nuevas y se borran las quitadas.
+  const { data: dbLines, error: dbErr } = await sb.from('deposit_lines').select('*').eq('deposit_id',depId);
+  if (dbErr){ showToast('Error leyendo líneas: '+dbErr.message,true); return false; }
+  const num = v => (v===null || v===undefined || v==='') ? null : Number(v);
+  const linePayload = (l, idx) => ({
     product_id: l.product_id,
     product_code: l.product_code,
     product_name: l.product_name,
@@ -1089,9 +1448,37 @@ async function saveDeposit(silent=false){
     unit_cost: parseFloat(l.unit_cost)||0,
     vat_rate: l.vat_rate||21,
     sort_order: idx
-  }));
-  const { error: linesErr } = await sb.from('deposit_lines').insert(linesPayload);
-  if (linesErr){ showToast('Error guardando líneas: '+linesErr.message,true); return false; }
+  });
+  const NUM_FIELDS = ['qty_delivered','qty_remaining','unit_price','unit_cost','vat_rate','sort_order'];
+  const keepIds = new Set(lines.filter(l=>l.id).map(l=>l.id));
+  const toDelete = (dbLines||[]).filter(r=>!keepIds.has(r.id)).map(r=>r.id);
+  const toInsert = [];
+  const toUpdate = [];
+  lines.forEach((l,idx)=>{
+    const p = linePayload(l, idx);
+    const row = l.id ? (dbLines||[]).find(r=>r.id===l.id) : null;
+    if (!row){ toInsert.push({ ...p, user_id: currentUser.id, deposit_id: depId }); return; }
+    const patch = {};
+    Object.keys(p).forEach(k=>{
+      const same = NUM_FIELDS.includes(k) ? num(row[k])===num(p[k]) : (row[k]??null)===(p[k]??null);
+      if (!same) patch[k] = p[k];
+    });
+    if (Object.keys(patch).length) toUpdate.push({ id: l.id, patch });
+  });
+  if (toDelete.length){
+    const { error } = await sb.from('deposit_lines').delete().in('id', toDelete);
+    if (error){ showToast(error.message,true); return false; }
+  }
+  for (const u of toUpdate){
+    const { error } = await sb.from('deposit_lines').update({ ...u.patch, updated_at: new Date().toISOString() }).eq('id', u.id);
+    if (error){ showToast(error.message,true); return false; }
+  }
+  if (toInsert.length){
+    const { data: ins, error } = await sb.from('deposit_lines').insert(toInsert).select('id,sort_order');
+    if (error){ showToast(error.message,true); return false; }
+    // Guardar los id en las líneas locales: así un segundo guardado no las duplica
+    (ins||[]).forEach(r=>{ const l = lines[r.sort_order]; if (l && !l.id) l.id = r.id; });
+  }
 
   // Actualizar el contador global si se usó un número correlativo
   if (depNum != null){
@@ -1378,6 +1765,7 @@ async function syncAllCalendarDays(){
 
 async function deleteDeposit(){
   if (!editing) return;
+  if (depHasAnySig(editing.id)){ showToast('Este depósito tiene firmas (aunque estén anuladas) y no se puede eliminar.', true); return; }
   const { data: cobros } = await sb.from('pending_collections').select('id,amount,status').eq('deposit_id', editing.id);
   let msg = '¿Eliminar este depósito y todas sus líneas?\n\nEsta acción no se puede deshacer.';
   if (cobros && cobros.length){
@@ -1402,13 +1790,92 @@ async function deleteDeposit(){
 // ===== GENERACIÓN PDF =====
 function getClient(){ return clients.find(c=>c.id===$('clientSelect').value); }
 
+// Datos del PDF a partir del formulario abierto (lo que hay en pantalla, como hasta ahora)
+function pdfModelFromEditor(){
+  const c = getClient();
+  const loc = locById(currentLocationId());
+  let hasRE = false;
+  if ($('clientInfoBar').style.display !== 'none') hasRE = $('cibHasRE').checked;
+  else if (c) hasRE = c.vat_regime === 'recargo_equivalencia';
+  return {
+    depNumber: editing && editing.deposit_number != null ? editing.deposit_number : ($('depositNumber').value || '—'),
+    cliente: c ? { legal_name:c.legal_name, commercial_name:c.commercial_name, nif:c.nif, address:c.address, city:c.city } : null,
+    tienda: loc ? { nombre:loc.name, direccion:loc.address, poblacion:loc.city, cp:loc.postal_code } : null,
+    nota: normalizeClientNote($('depClientNote').value),
+    deliveryDate: $('deliveryDate').value,
+    recountDate: (editing && editing.recount_date) ? editing.recount_date : ($('recountDate').value || todayISO()),
+    lines: lines.map(l=>({ codigo:l.product_code, producto:l.product_name, entregadas:parseFloat(l.qty_delivered)||0,
+      quedan: l.qty_remaining!=null ? (parseFloat(l.qty_remaining)||0) : null, precio:parseFloat(l.unit_price)||0 })),
+    hasRE,
+    sigs: (editing ? editingSigs : []).filter(s=>!s.voided_at)
+  };
+}
+
+// Datos del PDF de un depósito guardado (para los PDF que se comparten tras firmar una visita)
+function pdfModelFromDeposit(d, fullSigs){
+  const c = clients.find(x=>x.id===d.client_id);
+  const loc = locById(d.location_id);
+  const hasRE = (d.client_has_re !== null && d.client_has_re !== undefined) ? !!d.client_has_re : !!(c && c.vat_regime === 'recargo_equivalencia');
+  const ls = (d._lines||[]).slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  return {
+    depNumber: d.deposit_number != null ? d.deposit_number : '—',
+    cliente: c ? { legal_name:c.legal_name, commercial_name:c.commercial_name, nif:c.nif, address:c.address, city:c.city } : null,
+    tienda: loc ? { nombre:loc.name, direccion:loc.address, poblacion:loc.city, cp:loc.postal_code } : null,
+    nota: normalizeClientNote(d.client_note),
+    deliveryDate: d.delivery_date,
+    recountDate: d.recount_date || todayISO(),
+    lines: ls.map(l=>({ codigo:l.product_code, producto:l.product_name, entregadas:parseFloat(l.qty_delivered)||0,
+      quedan: l.qty_remaining!=null ? (parseFloat(l.qty_remaining)||0) : null, precio:parseFloat(l.unit_price)||0 })),
+    hasRE,
+    sigs: (fullSigs||[]).filter(s=>s.deposit_id===d.id && !s.voided_at)
+  };
+}
+
+// Depósito firmado: cabecera y líneas salen del content_snapshot más reciente
+// (el de recuento si existe; si no, el de entrega). El PDF es exactamente lo que se firmó.
+function applySignedSnapshot(m){
+  if (!m.sigs.length) return m;
+  const sig = m.sigs.find(s=>s.moment==='recuento') || m.sigs.find(s=>s.moment==='entrega');
+  const snap = sig && sig.content_snapshot;
+  if (!snap) return m;
+  const live = m.lines;
+  const out = { ...m, signedFrom: sig.moment };
+  out.depNumber = snap.deposito != null ? snap.deposito : m.depNumber;
+  out.cliente = snap.cliente ? { legal_name:snap.cliente.razon_social, commercial_name:snap.cliente.nombre_comercial, nif:snap.cliente.nif, address:null, city:null } : m.cliente;
+  out.tienda = snap.tienda || null;
+  out.nota = snap.nota_cliente || null;
+  out.deliveryDate = snap.fecha_entrega || m.deliveryDate;
+  out.recountDate = snap.fecha_recuento || m.recountDate;
+  out.lines = (snap.lineas||[]).map(l=>{
+    let quedan = l.quedan;
+    // Solo está firmada la entrega: lo recontado (aún sin firmar) se toma de los datos actuales
+    if (quedan == null && sig.moment === 'entrega'){
+      const lv = live.find(x=>x.codigo===l.codigo);
+      quedan = lv ? lv.quedan : null;
+    }
+    return { codigo:l.codigo, producto:l.producto, entregadas:Number(l.entregadas)||0,
+      quedan: quedan!=null ? Number(quedan) : null, precio:Number(l.precio)||0 };
+  });
+  return out;
+}
+
 function generatePDF(tipo){
   // tipo: 'entrega' | 'liquidacion'
+  const { doc, fname } = buildPdfDoc(tipo, pdfModelFromEditor());
+  doc.save(fname);
+}
+
+function buildPdfDoc(tipo, model){
+  const m = applySignedSnapshot(model);
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'mm', format:'a4' });
-  const c = getClient();
+  const doc = new jsPDF({ unit:'mm', format:'a4', compress:true });
+  const c = m.cliente;
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
   const M = 16; // margen
+  const hasSigs = m.sigs.length > 0;
+  // Límite inferior del contenido: deja sitio al pie (y al texto de privacidad si hay firma)
+  const contentBottom = pageH - (hasSigs ? 34 : 24);
 
   // ---- Logo + Cabecera emisor ----
   let textX = M;
@@ -1431,8 +1898,7 @@ function generatePDF(tipo){
   doc.text('DEPÓSITO', pageW-M, 22, {align:'right'});
   doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(90,90,90);
   doc.text(tipo==='entrega'?'albarán de entrega':'liquidación de venta', pageW-M, 27, {align:'right'});
-  const depNumShow = editing && editing.deposit_number != null ? editing.deposit_number : ($('depositNumber').value || '—');
-  const numDep = 'Nº ' + depNumShow;
+  const numDep = 'Nº ' + m.depNumber;
   doc.setFontSize(9); doc.setTextColor(40,40,40);
   doc.text(numDep, pageW-M, 33, {align:'right'});
 
@@ -1449,9 +1915,8 @@ function generatePDF(tipo){
   doc.text(clientName, M, y+5);
 
   // Fechas (a la derecha). En liquidación, dos fechas en dos líneas. En entrega, solo una.
-  const fEntrega = fmtDate($('deliveryDate').value);
-  const recISO = (editing && editing.recount_date) ? editing.recount_date : ($('recountDate').value || todayISO());
-  const fRecuento = fmtDate(recISO);
+  const fEntrega = fmtDate(m.deliveryDate);
+  const fRecuento = fmtDate(m.recountDate);
 
   if (tipo === 'liquidacion'){
     // Fila 1: ENTREGA
@@ -1481,17 +1946,20 @@ function generatePDF(tipo){
   const niflineY = (tipo === 'liquidacion') ? y+22 : y+11;
   doc.text(cliLine2.join('  ·  '), M, niflineY);
 
+  // ---- Tienda (clientes con varias tiendas) ----
+  let tiendaH = 0;
+  if (m.tienda && m.tienda.nombre){
+    const dir = [m.tienda.direccion, m.tienda.poblacion].filter(x=>x && String(x).trim()).join(', ');
+    doc.setFont('helvetica','bold'); doc.setTextColor(40,40,40);
+    doc.text('Tienda: ' + m.tienda.nombre + (dir ? ' — ' + dir : ''), M, niflineY+5, { maxWidth: pageW-2*M });
+    doc.setFont('helvetica','normal');
+    tiendaH = 5;
+  }
+
   // ---- Tabla ----
   const showRecount = (tipo==='liquidacion');
-  // Para liquidación: ¿cliente con RE? usar toggle del depósito, no la ficha
-  let liqClienteRE = false;
-  if (showRecount){
-    if ($('clientInfoBar').style.display !== 'none'){
-      liqClienteRE = $('cibHasRE').checked;
-    } else if (c){
-      liqClienteRE = c.vat_regime === 'recargo_equivalencia';
-    }
-  }
+  // Para liquidación: ¿cliente con RE? usar el dato del depósito, no la ficha
+  const liqClienteRE = showRecount ? !!m.hasRE : false;
   const IVA_RATE = 0.21, RE_RATE = 0.052;
 
   let head, rows;
@@ -1501,23 +1969,23 @@ function generatePDF(tipo){
       ? ['Cód.','Producto','Entreg.','Resto','Vend.','Precio','Base','IVA','RE','Total']
       : ['Cód.','Producto','Entreg.','Resto','Vend.','Precio','Base','IVA','Total'];
     head = [headCols];
-    rows = lines.map(l=>{
-      const delivered=parseFloat(l.qty_delivered)||0;
-      const remaining=l.qty_remaining!=null?(parseFloat(l.qty_remaining)||0):0;
+    rows = m.lines.map(l=>{
+      const delivered=l.entregadas;
+      const remaining=l.quedan!=null?l.quedan:0;
       const sold=delivered-remaining;
-      const price=parseFloat(l.unit_price)||0;
+      const price=l.precio;
       const base = sold*price;
       const iva = base*IVA_RATE;
       const re = liqClienteRE ? base*RE_RATE : 0;
       const total = base + iva + re;
-      const row = [l.product_code, l.product_name, String(delivered), String(remaining), String(sold), fmtMoney(price), fmtMoney(base), fmtMoney(iva)];
+      const row = [l.codigo, l.producto, String(delivered), String(remaining), String(sold), fmtMoney(price), fmtMoney(base), fmtMoney(iva)];
       if (liqClienteRE) row.push(fmtMoney(re));
       row.push(fmtMoney(total));
       return row;
     });
   } else {
     head = [['Cód.','Producto','Entregado','Precio ud.']];
-    rows = lines.map(l=>[l.product_code, l.product_name, String(parseFloat(l.qty_delivered)||0), fmtMoney(parseFloat(l.unit_price)||0)]);
+    rows = m.lines.map(l=>[l.codigo, l.producto, String(l.entregadas), fmtMoney(l.precio)]);
   }
 
   // Estilos de columnas para liquidación: nº centrado, importes a la derecha
@@ -1533,31 +2001,34 @@ function generatePDF(tipo){
   }
 
   doc.autoTable({
-    startY: (tipo === 'liquidacion') ? y+30 : y+18,
+    startY: ((tipo === 'liquidacion') ? y+30 : y+18) + tiendaH,
     head: head,
     body: rows,
     theme:'striped',
     headStyles:{ fillColor:[26,77,110], textColor:[255,255,255], fontSize:7.5, fontStyle:'bold' },
     bodyStyles:{ fontSize: showRecount?7.5:9, textColor:[40,40,40] },
     alternateRowStyles:{ fillColor:[250,251,252] },
-    margin:{ left:M, right:M },
+    margin:{ left:M, right:M, bottom: pageH-contentBottom },
     columnStyles: colStyles
   });
 
   let endY = doc.lastAutoTable.finalY + 8;
+  // Salto de página si el siguiente bloque (de alto h) no cabe
+  const ensureSpace = (h)=>{ if (endY + h > contentBottom){ doc.addPage(); endY = 20; } };
 
   // ---- Cuadro de totales (solo liquidación) ----
   if (showRecount){
     let vendido=0, baseTotal=0;
-    lines.forEach(l=>{
-      const v=(parseFloat(l.qty_delivered)||0)-(l.qty_remaining!=null?(parseFloat(l.qty_remaining)||0):0);
+    m.lines.forEach(l=>{
+      const v=l.entregadas-(l.quedan!=null?l.quedan:0);
       vendido+=v;
-      baseTotal+=v*(parseFloat(l.unit_price)||0);
+      baseTotal+=v*l.precio;
     });
     const ivaTotal = baseTotal*IVA_RATE;
     const reTotal = liqClienteRE ? baseTotal*RE_RATE : 0;
     const totalFinal = baseTotal + ivaTotal + reTotal;
 
+    ensureSpace(liqClienteRE ? 40 : 32);
     // Cuadro a la derecha con base / IVA / (RE) / TOTAL
     const boxX = pageW - M - 75;
     const boxW = 75;
@@ -1608,23 +2079,78 @@ function generatePDF(tipo){
     endY = by + 4;
 
     // ---- AVISO informativo (no es factura) ----
-    doc.setFillColor(252,247,237); // amarillo muy suave
-    doc.setDrawColor(217,168,77);
-    doc.setLineWidth(0.4);
     const avisoX = M, avisoW = pageW - 2*M;
     const aviso = 'Esto NO es una factura. Es un documento informativo de las unidades vendidas en el periodo comprendido entre la fecha de entrega y la fecha de recuento. Recibirá la factura oficial en breve en su correo electrónico.';
     // Calcular altura necesaria
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
     const avisoLines = doc.splitTextToSize(aviso, avisoW - 8);
     const avisoH = 6 + avisoLines.length*4;
+    ensureSpace(avisoH);
+    doc.setFillColor(252,247,237); // amarillo muy suave
+    doc.setDrawColor(217,168,77);
+    doc.setLineWidth(0.4);
     doc.rect(avisoX, endY, avisoW, avisoH, 'FD');
     doc.setTextColor(140,90,20);
     doc.text(avisoLines, avisoX+4, endY+5);
     endY += avisoH + 4;
   }
 
+  // ---- Observaciones (nota para el cliente) ----
+  if (m.nota){
+    const obsW = pageW - 2*M;
+    doc.setFont('helvetica','normal'); doc.setFontSize(9);
+    const obsLines = doc.splitTextToSize(m.nota, obsW - 8);
+    const obsH = 10 + obsLines.length*4.2;
+    ensureSpace(obsH);
+    doc.setDrawColor(190,190,190); doc.setLineWidth(0.3);
+    doc.rect(M, endY, obsW, obsH, 'S');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(130,130,130);
+    doc.text('OBSERVACIONES', M+4, endY+5);
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(40,40,40);
+    doc.text(obsLines, M+4, endY+10);
+    endY += obsH + 4;
+  }
+
+  // ---- Firmas: un bloque por firma activa (entrega primero, luego recuento) ----
+  if (hasSigs){
+    const ordered = m.sigs.slice().sort((a,b)=> (a.moment==='entrega'?0:1) - (b.moment==='entrega'?0:1));
+    const gap = 6, colW = (pageW - 2*M - gap) / 2, blockH = 44;
+    ensureSpace(blockH);
+    ordered.forEach((s, i)=>{
+      const col = i % 2;
+      if (i > 0 && col === 0){ endY += blockH + 4; ensureSpace(blockH); }
+      const bx = M + col*(colW+gap), by = endY;
+      doc.setDrawColor(200,200,200); doc.setLineWidth(0.3);
+      doc.rect(bx, by, colW, blockH, 'S');
+      doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(26,77,110);
+      doc.text(s.moment==='entrega' ? 'Recibí la mercancía en depósito' : 'Conforme con el recuento', bx+3, by+5);
+      // Imagen de la firma, encajada sin deformar en 22 mm de alto
+      try {
+        const props = doc.getImageProperties(s.signature_png);
+        const maxW = colW - 6, maxH = 22;
+        let w = maxW, h = maxW * props.height / props.width;
+        if (h > maxH){ h = maxH; w = maxH * props.width / props.height; }
+        doc.addImage(s.signature_png, 'PNG', bx+3, by+8, w, h);
+      } catch(e){ console.warn('No se pudo añadir la firma:', e); }
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(40,40,40);
+      doc.text(String(s.signer_name||''), bx+3, by+34, { maxWidth: colW-6 });
+      doc.setTextColor(90,90,90);
+      doc.text(fmtDateTimeMadrid(s.signed_at) + ' (hora de Madrid)', bx+3, by+38);
+      doc.setFont('courier','normal'); doc.setFontSize(7.5);
+      doc.text('Huella: ' + String(s.content_hash||'').slice(0,16), bx+3, by+42);
+      doc.setFont('helvetica','normal');
+    });
+    endY += blockH + 4;
+  }
+
   // ---- Pie ----
-  const footY = doc.internal.pageSize.getHeight()-18;
+  const footY = pageH-18;
+  if (hasSigs){
+    const priv = `Firma recogida electrónicamente. El nombre y la imagen de la firma se tratan solo para acreditar la entrega y el recuento de este depósito. Responsable: ${PRIVACIDAD_RESPONSABLE} · ${PRIVACIDAD_EMAIL}.`;
+    doc.setFont('helvetica','normal'); doc.setFontSize(6.8); doc.setTextColor(140,140,140);
+    const privLines = doc.splitTextToSize(priv, pageW-2*M);
+    doc.text(privLines, pageW/2, footY - 4 - (privLines.length-1)*3, { align:'center' });
+  }
   doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(150,150,150);
   if (tipo==='entrega'){
     doc.text('Albarán de depósito. La mercancía sigue siendo propiedad de Magilu hasta su venta. Solo se factura la cantidad vendida tras el recuento.', pageW/2, footY, {align:'center', maxWidth:pageW-2*M});
@@ -1635,12 +2161,258 @@ function generatePDF(tipo){
 
   // Nombre del archivo
   const cliShort = (c ? (c.commercial_name||c.legal_name) : 'cliente').replace(/[^a-zA-Z0-9]/g,'_').slice(0,20);
-  const fname = `deposito_${tipo}_${cliShort}_${todayISO()}.pdf`;
-  doc.save(fname);
+  const tiendaShort = (m.tienda && m.tienda.nombre) ? '_' + String(m.tienda.nombre).replace(/[^a-zA-Z0-9]/g,'_').slice(0,16) : '';
+  const fname = `deposito_${tipo}_${cliShort}${tiendaShort}_${todayISO()}${hasSigs?'_firmado':''}.pdf`;
+  return { doc, fname };
+}
+
+// ===== FIRMA DEL CLIENTE =====
+// Lienzo de firma con el dedo. Los trazos se guardan normalizados (0..1) para poder
+// repintarlos si cambia el tamaño (giro del móvil) sin perder el dibujo.
+const pad = { strokes:[], current:null, w:0, h:0, dpr:1 };
+let signState = { items:[], busy:false, done:false, attempts:0, startedAt:0, pdfs:[] };
+
+function padCtx(){ return $('signPad').getContext('2d'); }
+function padResize(){
+  const wrap = $('signPadWrap'), cv = $('signPad');
+  const r = wrap.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  pad.dpr = window.devicePixelRatio || 1;
+  pad.w = r.width; pad.h = r.height;
+  cv.width = Math.round(r.width * pad.dpr);
+  cv.height = Math.round(r.height * pad.dpr);
+  padRedraw();
+}
+function padDrawStrokes(ctx, w, h, lineW){
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#10204a'; ctx.lineWidth = lineW;
+  pad.strokes.forEach(st=>{
+    if (!st.length) return;
+    ctx.beginPath();
+    ctx.moveTo(st[0][0]*w, st[0][1]*h);
+    if (st.length===1) ctx.lineTo(st[0][0]*w+0.1, st[0][1]*h+0.1);
+    for (let i=1;i<st.length;i++){
+      // curva suave por los puntos medios
+      const mx = (st[i-1][0]+st[i][0])/2*w, my = (st[i-1][1]+st[i][1])/2*h;
+      ctx.quadraticCurveTo(st[i-1][0]*w, st[i-1][1]*h, mx, my);
+    }
+    const last = st[st.length-1];
+    ctx.lineTo(last[0]*w, last[1]*h);
+    ctx.stroke();
+  });
+}
+function padRedraw(){
+  const ctx = padCtx();
+  ctx.setTransform(pad.dpr,0,0,pad.dpr,0,0);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,pad.w,pad.h);
+  padDrawStrokes(ctx, pad.w, pad.h, 2.6);
+}
+function padClear(){ pad.strokes = []; pad.current = null; padRedraw(); }
+function padPoint(e){
+  const r = $('signPad').getBoundingClientRect();
+  return [ Math.min(1,Math.max(0,(e.clientX-r.left)/r.width)), Math.min(1,Math.max(0,(e.clientY-r.top)/r.height)) ];
+}
+// PNG en data URL: fondo blanco y 600 px de ancho como mucho
+function padExportPng(){
+  const outW = Math.min(600, Math.round(pad.w * pad.dpr));
+  const outH = Math.round(outW * pad.h / pad.w);
+  const off = document.createElement('canvas');
+  off.width = outW; off.height = outH;
+  const ctx = off.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,outW,outH);
+  padDrawStrokes(ctx, outW, outH, Math.max(2, 2.6 * outW / pad.w));
+  return off.toDataURL('image/png');
+}
+function bindSignPad(){
+  const cv = $('signPad');
+  cv.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    try { cv.setPointerCapture(e.pointerId); } catch(_){}
+    pad.current = [padPoint(e)];
+    pad.strokes.push(pad.current);
+    padRedraw();
+  });
+  cv.addEventListener('pointermove', e=>{
+    if (!pad.current) return;
+    e.preventDefault();
+    const evs = (typeof e.getCoalescedEvents === 'function') ? e.getCoalescedEvents() : [e];
+    (evs.length ? evs : [e]).forEach(ev=>pad.current.push(padPoint(ev)));
+    padRedraw();
+  });
+  const end = ()=>{ pad.current = null; };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+  cv.addEventListener('pointerleave', end);
+  // iOS: que la página no se desplace al firmar
+  cv.addEventListener('touchstart', e=>e.preventDefault(), { passive:false });
+  cv.addEventListener('touchmove', e=>e.preventDefault(), { passive:false });
+  window.addEventListener('resize', ()=>{ if ($('signOverlay').classList.contains('active')) padResize(); });
+}
+
+function depShortLabel(d){ return `#${d.deposit_number!=null?d.deposit_number:'?'}`; }
+
+// Abre la pantalla de firma. mode: 'visit' (todo lo pendiente hoy en este cliente + tienda) | 'one' (este depósito)
+async function startSigning(mode){
+  if (!editing) return;
+  const id = editing.id;
+  // Guardar antes lo que haya en pantalla: lo que se firma es lo que está en la BD
+  if (editing.status==='abierto' || editing.status==='recontado'){
+    const ok = await saveDeposit(true);
+    if (!ok) return;
+    editing = allDeposits.find(x=>x.id===id) || editing;
+  }
+  const d = allDeposits.find(x=>x.id===id);
+  let items;
+  if (mode==='visit') items = visitItems(d);
+  else { const mo = pendingMoment(d); items = mo ? [{ deposit_id:d.id, moment:mo }] : []; }
+  if (!items.length){ showToast('No hay nada pendiente de firmar', true); configureForStatus(d.status); return; }
+  openSignOverlay(d, items);
+}
+
+function openSignOverlay(d, items){
+  signState = { items, busy:false, done:false, attempts:0, startedAt:Date.now(), pdfs:[] };
+  const c = clients.find(x=>x.id===d.client_id);
+  $('signContext').textContent = (c ? (c.commercial_name||c.legal_name) : '') + (d.location_id ? ' · Tienda ' + locName(d.location_id) : '') + ' · ' + fmtDate(todayISO());
+  // Resumen de lo que se firma
+  $('signSummary').innerHTML = items.map(it=>{
+    const x = allDeposits.find(y=>y.id===it.deposit_id);
+    if (!x) return '';
+    if (it.moment==='recuento'){
+      const t = depTotals(x), tx = depTaxTotals(x);
+      return `<div class="ss-row"><span class="ss-what">Depósito ${escapeHtml(depShortLabel(x))} · <strong>Recuento</strong></span><span class="ss-val">${t.vendido} uds vendidas · ${fmtMoney(tx.total)}</span></div>`;
+    }
+    const t = depTotals(x);
+    return `<div class="ss-row"><span class="ss-what">Depósito ${escapeHtml(depShortLabel(x))} · <strong>Entrega</strong></span><span class="ss-val">${t.entregado} uds entregadas</span></div>`;
+  }).join('');
+  // Nombre: el último que firmó en esta tienda (o en este cliente si no tiene tiendas)
+  const last = signatures.find(s=>{
+    const x = allDeposits.find(y=>y.id===s.deposit_id);
+    return x && x.client_id===d.client_id && (x.location_id||null)===(d.location_id||null);
+  });
+  $('signerName').value = last ? last.signer_name : '';
+  $('signError').classList.remove('active');
+  $('signForm').style.display = 'flex';
+  $('signDone').classList.remove('active');
+  const btn = $('signSubmit');
+  btn.disabled = false; btn.textContent = 'Firmar';
+  pad.strokes = []; pad.current = null;
+  $('signOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  requestAnimationFrame(padResize);
+}
+
+function showSignError(msg){
+  const box = $('signError');
+  box.textContent = msg;
+  box.classList.add('active');
+}
+
+// ¿Quedaron firmados todos los elementos? (por si se perdió la respuesta del servidor)
+async function signItemsSavedOnServer(){
+  const ids = [...new Set(signState.items.map(i=>i.deposit_id))];
+  const { data, error } = await sb.from('deposit_signatures').select('deposit_id,moment,signed_at').in('deposit_id', ids).is('voided_at', null);
+  if (error) return false;
+  const since = signState.startedAt - 60000;
+  return signState.items.every(it=>(data||[]).some(s=>s.deposit_id===it.deposit_id && s.moment===it.moment && new Date(s.signed_at).getTime() >= since));
+}
+
+async function submitSignature(){
+  if (signState.busy || signState.done) return;   // anti doble pulsación
+  const name = $('signerName').value.trim();
+  if (!name){ showSignError('Falta el nombre de quien firma'); $('signerName').focus(); return; }
+  if (!pad.strokes.length){ showSignError('Falta la firma: firme en el recuadro blanco'); return; }
+  signState.busy = true;
+  signState.attempts++;
+  const btn = $('signSubmit');
+  btn.disabled = true; btn.textContent = 'Firmando…';
+  $('signError').classList.remove('active');
+  try {
+    const png = padExportPng();
+    const { data, error } = await sb.rpc('sign_visit', {
+      p_items: signState.items,
+      p_signer_name: name,
+      p_signature_png: png,
+      p_device_info: navigator.userAgent
+    });
+    if (error) throw error;
+    await onVisitSigned(data);
+  } catch(err){
+    const msg = String((err && err.message) || err || 'Error');
+    const isNet = !navigator.onLine || /failed to fetch|networkerror|load failed|network request failed|fetch failed/i.test(msg);
+    // Si se cortó la red después de guardar, al reintentar el servidor dice "ya tiene firma"
+    if (isNet || (signState.attempts>1 && /ya tiene firma/i.test(msg))){
+      try { if (await signItemsSavedOnServer()){ await onVisitSigned(null); return; } } catch(_){}
+    }
+    showSignError(isNet
+      ? 'Sin conexión: la firma NO se ha guardado. El dibujo se conserva. Comprueba la cobertura y pulsa Reintentar.'
+      : msg);
+    btn.textContent = 'Reintentar';
+  } finally {
+    signState.busy = false;
+    if (!signState.done) btn.disabled = false;
+  }
+}
+
+async function onVisitSigned(data){
+  signState.done = true;
+  await loadAll();
+  const ids = [...new Set(signState.items.map(i=>i.deposit_id))];
+  const { data: full, error } = await sb.from('deposit_signatures').select('*').in('deposit_id', ids).is('voided_at', null);
+  if (error) showToast('Firmado, pero no se pudieron cargar las firmas para el PDF: '+error.message, true);
+  // Los PDF se preparan ya: en iPhone, compartir tiene que ir pegado al toque del botón
+  signState.pdfs = ids.map(id=>{
+    const d = allDeposits.find(x=>x.id===id);
+    if (!d) return null;
+    const tipo = signState.items.some(i=>i.deposit_id===id && i.moment==='recuento') ? 'liquidacion' : 'entrega';
+    return buildPdfDoc(tipo, pdfModelFromDeposit(d, full||[]));
+  }).filter(Boolean);
+  const hashes = (data && data.firmas) ? data.firmas.map(f=>`${f.moment}: ${String(f.hash).slice(0,16)}`) : [];
+  $('signDoneInfo').innerHTML = `${signState.items.length} firma(s) registrada(s)` + (hashes.length ? '<br><span class="mono-small">Huella ' + hashes.map(escapeHtml).join(' · ') + '</span>' : '');
+  $('signShare').textContent = signState.pdfs.length>1 ? `📤 Compartir los ${signState.pdfs.length} PDF firmados` : '📤 Compartir PDF firmado';
+  $('signForm').style.display = 'none';
+  $('signDone').classList.add('active');
+}
+
+async function shareSignedPdfs(){
+  if (!signState.pdfs.length) return;
+  // Sin await antes de share(): Safari exige que vaya pegado al toque
+  const files = signState.pdfs.map(p=>new File([p.doc.output('blob')], p.fname, { type:'application/pdf' }));
+  if (navigator.canShare && navigator.share && navigator.canShare({ files })){
+    try { await navigator.share({ files, title:'Depósito firmado' }); return; }
+    catch(e){ if (e && e.name==='AbortError') return; console.warn('share', e); }
+  }
+  signState.pdfs.forEach(p=>p.doc.save(p.fname));
+}
+
+async function closeSignOverlay(force=false){
+  if (!force && !signState.done && pad.strokes.length){
+    const r = await askDialog({ title:'¿Salir sin firmar?', body:'La firma dibujada no se ha guardado y se perderá.', okLabel:'Salir sin guardar', danger:true });
+    if (!r.ok) return;
+  }
+  $('signOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+  if (signState.done && editing) await openDeposit(editing.id);
 }
 
 // ===== EVENTOS =====
 function bindEvents(){
+  // Firma
+  bindSignPad();
+  $('btnSignVisit').addEventListener('click', ()=>startSigning('visit'));
+  $('btnSignOne').addEventListener('click', ()=>startSigning('one'));
+  $('signClear').addEventListener('click', padClear);
+  $('signSubmit').addEventListener('click', submitSignature);
+  $('signShare').addEventListener('click', shareSignedPdfs);
+  $('signClose').addEventListener('click', ()=>closeSignOverlay(false));
+  $('signDoneClose').addEventListener('click', ()=>closeSignOverlay(true));
+  // Nota para el cliente: dos líneas como máximo
+  $('depClientNote').addEventListener('keydown', e=>{
+    if (e.key==='Enter' && ($('depClientNote').value.match(/\n/g)||[]).length >= 1) e.preventDefault();
+  });
+  $('depClientNote').addEventListener('input', ()=>{
+    const ta = $('depClientNote'), parts = ta.value.split('\n');
+    if (parts.length > 2) ta.value = parts.slice(0,2).join('\n');
+  });
+
   $('btnNew').addEventListener('click', openNew);
   $('btnBack').addEventListener('click', showListView);
   $('btnSave').addEventListener('click', ()=>saveDeposit(false));
@@ -1649,7 +2421,7 @@ function bindEvents(){
   $('btnLiquidar').addEventListener('click', ()=>openLiqModal());
   $('btnInvoice').addEventListener('click', ()=>{ if (editing) facturarUnoHolded(editing.id); });
   $('btnSendEmail').addEventListener('click', enviarFacturaEmail);
-  $('btnNextDeposit').addEventListener('click', ()=>{ const cid = editing ? editing.client_id : null; openNewForClient(cid); });
+  $('btnNextDeposit').addEventListener('click', ()=>{ const cid = editing ? editing.client_id : null; openNewForClient(cid, editing ? editing.location_id : null); });
   $('btnSyncCal').addEventListener('click', syncAllCalendarDays);
   $('btnFacturar').addEventListener('click', openFacturacionView);
   $('factBack').addEventListener('click', showListView);
@@ -1705,6 +2477,7 @@ function bindEvents(){
   $('clientSearch').addEventListener('input',(e)=>{
     // si el usuario edita el texto, se invalida la selección previa hasta que elija de la lista
     $('clientSelect').value = '';
+    renderLocationSelect(null, null);
     clearTimeout(cliTimer);
     cliTimer=setTimeout(()=>renderClientResults(e.target.value.trim()),120);
   });

@@ -353,7 +353,7 @@ $('authPassword').addEventListener('keydown', e=>{ if (e.key==='Enter') $('authL
 async function loadData(){
   // Depósitos con cliente
   const { data: deps, error: depErr } = await sb.from('deposits')
-    .select('id, client_id, status, recount_date, invoice_date, delivery_date, regime, payment_method, client_has_re, deposit_number')
+    .select('id, client_id, location_id, status, recount_date, invoice_date, delivery_date, regime, payment_method, client_has_re, deposit_number')
     .in('status', ['recontado','facturado']);
   if (depErr){ showToast('Error cargando depósitos: '+depErr.message, true); return; }
 
@@ -362,6 +362,10 @@ async function loadData(){
     .select('id, legal_name, commercial_name, vat_regime');
   if (cliErr){ showToast('Error cargando clientes: '+cliErr.message, true); return; }
   const clientMap = new Map(clients.map(c=>[c.id, c]));
+
+  // Tiendas (clientes con varias tiendas)
+  const { data: locs } = await sb.from('client_locations').select('id, name');
+  const locMap = new Map((locs||[]).map(l=>[l.id, l.name]));
 
   // Líneas (solo de esos depósitos)
   const depIds = deps.map(d=>d.id);
@@ -423,6 +427,7 @@ async function loadData(){
       dia,
       delivery_date: d.delivery_date,
       cliente: c ? (c.commercial_name || c.legal_name || '—') : '—',
+      tienda: d.location_id ? (locMap.get(d.location_id) || '') : '',
       regime,
       tieneRE,
       payment_method: ['efectivo','tarjeta','transferencia','bizum','pagare','remesa'].includes(d.payment_method) ? d.payment_method : 'otro',
@@ -536,7 +541,7 @@ function renderTiendas(){
     const metodoLabel = METODOS.find(m=>m.code===l.payment_method)?.label || l.payment_method;
     return `<a class="tienda-row" href="./depositos.html?dep=${encodeURIComponent(l.id)}" title="Abrir este depósito" style="text-decoration:none;color:inherit;">
       <div>
-        <div class="tienda-name">${escapeHtml(l.cliente)}</div>
+        <div class="tienda-name">${escapeHtml(l.cliente)}${l.tienda?' · '+escapeHtml(l.tienda):''}</div>
         <div class="tienda-meta">${metodoLabel}${fechaEntregaDiff}${l.deposit_number?' · nº '+l.deposit_number:''}</div>
       </div>
       <span class="pill ${l.regime==='A'?'pill-a':'pill-b'}">${l.regime}</span>

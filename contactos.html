@@ -461,6 +461,27 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
   font-size: 13px;
 }
 .checkbox-row input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; }
+.checkbox-row { flex-wrap: wrap; }
+
+/* Tiendas del cliente + estado de firmas */
+.sub-section { margin-bottom: 20px; padding: 14px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+.sub-section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+.sub-section-title .btn-secondary { margin-left: auto; padding: 5px 10px; font-size: 12px; }
+.loc-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.loc-row:last-child { border-bottom: none; }
+.loc-row.inactive { opacity: 0.55; }
+.loc-name { font-weight: 600; font-size: 13px; }
+.loc-meta { font-size: 11px; color: var(--text-dim); }
+.loc-actions { margin-left: auto; display: flex; gap: 6px; }
+.loc-actions button { padding: 5px 10px; font-size: 12px; }
+.loc-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-strong); }
+.loc-form .form-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+.sub-empty { font-size: 12px; color: var(--text-faint); font-style: italic; }
+.sig-chip { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+.sig-ok { background: rgba(110, 226, 197, 0.12); color: var(--primary); }
+.sig-pend { background: rgba(138, 155, 178, 0.12); color: var(--text-dim); }
+.sig-pend.required { background: rgba(224, 117, 96, 0.15); color: var(--red-bright); font-weight: 600; }
+@media (max-width: 600px) { .loc-form { grid-template-columns: 1fr; } }
 
 .modal-actions {
   display: flex;
@@ -684,6 +705,44 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
         <label><input type="checkbox" name="is_client" id="cbIsClient"> Es cliente (le vendes)</label>
         <label><input type="checkbox" name="is_supplier" id="cbIsSupplier"> Es proveedor (te factura)</label>
         <label><input type="checkbox" name="is_active" id="cbIsActive"> Activo</label>
+        <label title="Si está activo, la app pide la firma y no deja emitir la factura sin el recuento firmado"><input type="checkbox" name="requires_signature" id="cbRequiresSig"> Exige firma del cliente</label>
+      </div>
+
+      <!-- Tiendas del cliente -->
+      <div class="sub-section" id="locSection">
+        <div class="sub-section-title">
+          Tiendas
+          <button type="button" class="btn-secondary" id="btnAddLoc">+ Añadir tienda</button>
+        </div>
+        <div id="locList"></div>
+        <div class="loc-form" id="locForm" style="display:none;">
+          <div class="form-field">
+            <label>Nombre de la tienda *</label>
+            <input type="text" id="locName" maxlength="80" placeholder="ej: Albir">
+          </div>
+          <div class="form-field">
+            <label>Dirección</label>
+            <input type="text" id="locAddress">
+          </div>
+          <div class="form-field">
+            <label>Población</label>
+            <input type="text" id="locCity">
+          </div>
+          <div class="form-field">
+            <label>Código postal</label>
+            <input type="text" id="locPostal" class="mono" maxlength="10">
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="btnLocCancel">Cancelar</button>
+            <button type="button" class="btn-primary" id="btnLocSave">Guardar tienda</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado de firma de los depósitos en curso -->
+      <div class="sub-section" id="sigSection">
+        <div class="sub-section-title">Firma de depósitos en curso</div>
+        <div id="sigList"><div class="sub-empty">—</div></div>
       </div>
 
       <div class="modal-actions">
@@ -741,6 +800,8 @@ const state = {
   pageSize: 50
 };
 let currentEditId = null;
+let allLocations = [];     // tiendas de todos los clientes (client_locations)
+let editingLocId = null;   // tienda en edición (null = nueva)
 
 // ====== HELPERS ======
 function $(id) { return document.getElementById(id); }
@@ -813,6 +874,17 @@ async function loadContacts() {
   }
 
   allContacts = data || [];
+
+  const { data: locs, error: locErr } = await sb
+    .from('client_locations')
+    .select('*')
+    .order('name', { ascending: true });
+  if (locErr) {
+    showToast('Error cargando tiendas: ' + locErr.message, true);
+    console.error(locErr);
+  }
+  allLocations = locs || [];
+
   populateProvinceFilter();
   applyFilters();
   updateHeaderStats();
@@ -833,7 +905,7 @@ function updateHeaderStats() {
   const total = allContacts.length;
   const active = allContacts.filter(c => c.is_active).length;
   const iban = allContacts.filter(c => c.iban && c.iban.trim()).length;
-  $('headerStats').textContent = `${total} contactos · ${active} activos · ${iban} con iban · v11`;
+  $('headerStats').textContent = `${total} contactos · ${active} activos · ${iban} con iban · v12`;
 }
 
 // ====== FILTROS ======
@@ -1044,9 +1116,144 @@ function openModal(id) {
   $('cbIsClient').checked = !!c.is_client;
   $('cbIsSupplier').checked = !!c.is_supplier;
   $('cbIsActive').checked = !!c.is_active;
+  $('cbRequiresSig').checked = !!c.requires_signature;
   $('btnDelete').style.display = 'inline-flex';
 
+  closeLocForm();
+  renderLocations();
+  $('btnAddLoc').style.display = 'inline-flex';
+  $('sigSection').style.display = 'block';
+  loadSignatureStatus(c);
+
   $('modal').classList.add('active');
+}
+
+// ====== TIENDAS DEL CLIENTE ======
+function renderLocations() {
+  const list = $('locList');
+  if (!currentEditId) {
+    list.innerHTML = '<div class="sub-empty">Guarda el contacto primero para añadirle tiendas.</div>';
+    return;
+  }
+  const locs = allLocations.filter(l => l.client_id === currentEditId)
+    .sort((a, b) => (b.is_active - a.is_active) || a.name.localeCompare(b.name, 'es'));
+  if (!locs.length) {
+    list.innerHTML = '<div class="sub-empty">Sin tiendas. Si el cliente solo tiene una, no hace falta crear ninguna.</div>';
+    return;
+  }
+  list.innerHTML = locs.map(l => {
+    const meta = [l.address, l.city, l.postal_code].filter(x => x && x.trim()).join(' · ');
+    return `
+      <div class="loc-row ${l.is_active ? '' : 'inactive'}" data-id="${l.id}">
+        <div>
+          <div class="loc-name">${escapeHtml(l.name)}${l.is_active ? '' : ' <span class="badge badge-pend">inactiva</span>'}</div>
+          <div class="loc-meta">${meta ? escapeHtml(meta) : 'sin dirección'}</div>
+        </div>
+        <div class="loc-actions">
+          <button type="button" class="btn-secondary" data-loc-edit="${l.id}">Editar</button>
+          <button type="button" class="${l.is_active ? 'btn-danger' : 'btn-secondary'}" data-loc-toggle="${l.id}">${l.is_active ? 'Desactivar' : 'Reactivar'}</button>
+        </div>
+      </div>`;
+  }).join('');
+  list.querySelectorAll('[data-loc-edit]').forEach(b => b.addEventListener('click', () => openLocForm(b.dataset.locEdit)));
+  list.querySelectorAll('[data-loc-toggle]').forEach(b => b.addEventListener('click', () => toggleLocation(b.dataset.locToggle)));
+}
+
+function openLocForm(locId) {
+  editingLocId = locId || null;
+  const l = locId ? allLocations.find(x => x.id === locId) : null;
+  $('locName').value = l ? l.name : '';
+  $('locAddress').value = l ? (l.address || '') : '';
+  $('locCity').value = l ? (l.city || '') : '';
+  $('locPostal').value = l ? (l.postal_code || '') : '';
+  $('btnLocSave').textContent = l ? 'Guardar cambios' : 'Crear tienda';
+  $('locForm').style.display = 'grid';
+  $('locName').focus();
+}
+
+function closeLocForm() {
+  editingLocId = null;
+  $('locForm').style.display = 'none';
+}
+
+async function saveLocation() {
+  if (!currentEditId) return;
+  const payload = {
+    name: $('locName').value.trim(),
+    address: $('locAddress').value.trim() || null,
+    city: $('locCity').value.trim() || null,
+    postal_code: $('locPostal').value.trim() || null
+  };
+  if (!payload.name) { showToast('El nombre de la tienda es obligatorio', true); return; }
+  const btn = $('btnLocSave');
+  btn.disabled = true;
+  try {
+    let res;
+    if (editingLocId) {
+      res = await sb.from('client_locations').update(payload).eq('id', editingLocId).select().single();
+    } else {
+      res = await sb.from('client_locations').insert({ ...payload, client_id: currentEditId, user_id: currentUser.id }).select().single();
+    }
+    if (res.error) {
+      if (res.error.code === '23505') showToast('Este cliente ya tiene una tienda con ese nombre', true);
+      else showToast('Error guardando la tienda: ' + res.error.message, true);
+      console.error(res.error);
+      return;
+    }
+    const i = allLocations.findIndex(x => x.id === res.data.id);
+    if (i >= 0) allLocations[i] = res.data; else allLocations.push(res.data);
+    showToast(editingLocId ? 'Tienda actualizada' : 'Tienda creada');
+    closeLocForm();
+    renderLocations();
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Las tiendas no se borran (pueden tener depósitos): se desactivan.
+async function toggleLocation(locId) {
+  const l = allLocations.find(x => x.id === locId);
+  if (!l) return;
+  const { data, error } = await sb.from('client_locations').update({ is_active: !l.is_active }).eq('id', locId).select().single();
+  if (error) { showToast('Error: ' + error.message, true); console.error(error); return; }
+  Object.assign(l, data);
+  showToast(l.is_active ? 'Tienda reactivada' : 'Tienda desactivada (ya no sale al crear depósitos)');
+  renderLocations();
+}
+
+// ====== ESTADO DE FIRMA (depósitos en curso del cliente) ======
+async function loadSignatureStatus(c) {
+  const box = $('sigList');
+  box.innerHTML = '<div class="sub-empty">cargando…</div>';
+  const { data: deps, error } = await sb.from('deposits')
+    .select('id, deposit_number, status, location_id, delivery_date, recount_date')
+    .eq('client_id', c.id)
+    .in('status', ['abierto', 'recontado'])
+    .order('delivery_date', { ascending: false });
+  if (error) { box.innerHTML = '<div class="sub-empty">No se pudo cargar</div>'; return; }
+  if (currentEditId !== c.id) return;
+  if (!deps || !deps.length) { box.innerHTML = '<div class="sub-empty">Sin depósitos abiertos ni recontados.</div>'; return; }
+  const { data: sigs } = await sb.from('deposit_signatures')
+    .select('deposit_id, moment')
+    .in('deposit_id', deps.map(d => d.id))
+    .is('voided_at', null);
+  const signed = new Set((sigs || []).map(s => s.deposit_id + '|' + s.moment));
+  box.innerHTML = deps.map(d => {
+    const moment = d.status === 'abierto' ? 'entrega' : 'recuento';
+    const ok = signed.has(d.id + '|' + moment);
+    const loc = d.location_id ? allLocations.find(l => l.id === d.location_id) : null;
+    const chip = ok
+      ? '<span class="sig-chip sig-ok">Firmado</span>'
+      : `<span class="sig-chip sig-pend ${c.requires_signature ? 'required' : ''}">Pendiente de firma</span>`;
+    return `
+      <a class="loc-row" href="./depositos.html?dep=${encodeURIComponent(d.id)}" style="text-decoration:none;color:inherit;">
+        <div>
+          <div class="loc-name">#${escapeHtml(d.deposit_number ?? '?')}${loc ? ' · ' + escapeHtml(loc.name) : ''}</div>
+          <div class="loc-meta">${escapeHtml(d.status)} · ${moment}</div>
+        </div>
+        <div class="loc-actions">${chip}</div>
+      </a>`;
+  }).join('');
 }
 
 function openNewModal() {
@@ -1062,7 +1269,13 @@ function openNewModal() {
   $('cbIsClient').checked = true;
   $('cbIsSupplier').checked = false;
   $('cbIsActive').checked = true;
+  $('cbRequiresSig').checked = false;
   $('btnDelete').style.display = 'none';
+
+  closeLocForm();
+  renderLocations();
+  $('btnAddLoc').style.display = 'none';
+  $('sigSection').style.display = 'none';
 
   $('modal').classList.add('active');
 }
@@ -1097,7 +1310,8 @@ async function saveContact(e) {
     internal_notes: form.internal_notes.value.trim() || null,
     is_client: $('cbIsClient').checked,
     is_supplier: $('cbIsSupplier').checked,
-    is_active: $('cbIsActive').checked
+    is_active: $('cbIsActive').checked,
+    requires_signature: $('cbRequiresSig').checked
   };
 
   if (!payload.legal_name) {
@@ -1216,6 +1430,15 @@ function bindEvents() {
   $('btnCancel').addEventListener('click', closeModal);
   $('btnDelete').addEventListener('click', deleteContact);
   $('contactForm').addEventListener('submit', saveContact);
+
+  // tiendas
+  $('btnAddLoc').addEventListener('click', () => openLocForm(null));
+  $('btnLocCancel').addEventListener('click', closeLocForm);
+  $('btnLocSave').addEventListener('click', saveLocation);
+  // Enter dentro del formulario de tienda guarda la tienda, no el contacto
+  $('locForm').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); saveLocation(); }
+  });
   $('modal').addEventListener('click', (e) => { if (e.target === $('modal')) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('modal').classList.contains('active')) closeModal(); });
 }
