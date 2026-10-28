@@ -170,7 +170,6 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
       <div class="tile"><div class="tile-label">Coste de lo vendido</div><div class="tile-value" id="tCoste">—</div><div class="tile-sub">coste de fábrica</div></div>
       <div class="tile"><div class="tile-label">Gastos</div><div class="tile-value" id="tGastos">—</div><div class="tile-sub">gasoil y otros</div></div>
     </div>
-    <div class="warn" id="warnCoste" style="display:none;"></div>
   </section>
 
   <!-- 2. Gastos -->
@@ -191,7 +190,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
   <section class="card half" id="secTarjetas">
     <h2>Tarjetas vendidas <span class="when">del mes</span></h2>
     <div class="hero" id="hTarjetas" style="font-size:36px;">—</div>
-    <div class="sub">Solo referencias MGE… y NAVI…</div>
+    <div class="sub">Solo referencias MGE…, MGI… y NAVI…</div>
     <div class="donut-wrap" id="tarjetasDonut" style="margin-top:10px;"></div>
     <h2 style="margin-top:12px;">Otros productos vendidos</h2>
     <div class="hbars" id="otrosBars"></div>
@@ -217,12 +216,11 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
   <section class="card full" id="secCalle">
     <h2>Stock en la calle <span class="when">hoy · depósitos abiertos</span></h2>
     <div class="tiles" style="margin-top:0;">
-      <div class="tile"><div class="tile-label">Tarjetas (MGE + NAVI)</div><div class="tile-value" id="kTarjetas">—</div><div class="tile-sub" id="kUds">—</div></div>
+      <div class="tile"><div class="tile-label">Tarjetas (MGE, MGI, NAVI)</div><div class="tile-value" id="kTarjetas">—</div><div class="tile-sub" id="kUds">—</div></div>
       <div class="tile"><div class="tile-label">Depósitos abiertos</div><div class="tile-value" id="kDep">—</div><div class="tile-sub" id="kViejos">—</div></div>
       <div class="tile"><div class="tile-label">Valor a coste</div><div class="tile-value" id="kCoste">—</div><div class="tile-sub">lo que te costó</div></div>
       <div class="tile"><div class="tile-label">Venta potencial</div><div class="tile-value" id="kVenta">—</div><div class="tile-sub">a precio de tienda, sin IVA</div></div>
     </div>
-    <div class="warn" id="warnCalle" style="display:none;"></div>
     <h2 style="margin-top:14px;">Unidades por familia</h2>
     <div class="donut-wrap" id="calleDonut"></div>
     <h2 style="margin-top:14px;">Unidades por referencia</h2>
@@ -441,9 +439,6 @@ function render(){
     });
     split.style.display = ''; lg.style.display = '';
   } else { split.style.display = 'none'; lg.style.display = 'none'; }
-  const sinCoste = +d.uds_vendidas_sin_coste || 0;
-  $('warnCoste').style.display = sinCoste ? '' : 'none';
-  $('warnCoste').textContent = sinCoste ? `⚠ ${num(sinCoste)} uds vendidas este mes no tienen coste en Productos: el coste real es mayor y la ganancia, menor.` : '';
 
   // 2. Gastos (donut por concepto + lista)
   renderDonut($('gastosDonutWrap'), (d.gastos_por_concepto||[]).map(g=>({ label:g.concepto, value:+g.importe })),
@@ -490,8 +485,6 @@ function render(){
   $('kViejos').textContent = viejos ? viejos.depositos + ' con más de 90 días' : '—';
   $('kCoste').textContent = money0(k.coste);
   $('kVenta').textContent = money0(k.venta);
-  $('warnCalle').style.display = k.uds_sin_coste ? '' : 'none';
-  $('warnCalle').textContent = k.uds_sin_coste ? `⚠ ${num(k.uds_sin_coste)} uds en la calle no tienen coste en Productos (MPT, ETIQ, MAXI…): el valor a coste real es mayor.` : '';
   // Familia = la referencia sin el sufijo (-STD, -NEW…): MGE-NEW se queda aparte por ser su propia serie
   const familias = {};
   (k.por_ref||[]).forEach(r=>{ const f = familiaDe(r.ref); familias[f] = (familias[f]||0) + (+r.uds); });

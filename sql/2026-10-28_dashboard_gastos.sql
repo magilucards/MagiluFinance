@@ -16,8 +16,8 @@
 --     Sale de v_deposit_totals (2026-10-28_totales_deposito.sql).
 --   · Coste de lo vendido = vendido × unit_cost congelado en la línea.
 --   · Ganancia = neto − coste de lo vendido − gastos del mes.
---   · Tarjetas = referencias que empiezan por MGE o NAVI (y nada más:
---     MAXI, MINI, CU, MGI… cuentan como "otros productos"). Ver v_prefijos.
+--   · Tarjetas = referencias que empiezan por MGE, MGI o NAVI (y nada más:
+--     MAXI, MINI, CU, MPT, ETIQ… cuentan como "otros productos"). Ver v_prefijos.
 --   · Stock en la calle = lo entregado en depósitos ABIERTOS (sin recontar).
 --   · Clientes activos = clients.is_client y is_active. Visitado en el año
 --     = tiene algún depósito entregado o recontado ese año.
@@ -73,7 +73,7 @@ declare
   v_anio_desde date;
   v_anio_hasta date;
   -- Qué cuenta como "tarjeta" (referencias que empiezan por…)
-  v_prefijos text[] := array['MGE', 'NAVI'];
+  v_prefijos text[] := array['MGE', 'MGI', 'NAVI'];
   r jsonb := '{}'::jsonb;
 begin
   if v_uid is null then raise exception 'No autenticado'; end if;
@@ -111,7 +111,6 @@ begin
            (dl.qty_delivered - coalesce(dl.qty_remaining, 0))                 as uds,
            (dl.qty_delivered - coalesce(dl.qty_remaining, 0)) * dl.unit_cost  as coste,
            (dl.qty_delivered - coalesce(dl.qty_remaining, 0)) * dl.unit_price as base,
-           dl.unit_cost = 0                                                     as sin_coste,
            exists (select 1 from unnest(v_prefijos) pr where upper(dl.product_code) like pr || '%') as es_tarjeta
     from deposits d
     join deposit_lines dl on dl.deposit_id = d.id
@@ -122,7 +121,6 @@ begin
   )
   select r || jsonb_build_object(
     'coste_vendido',        round(coalesce(sum(coste), 0), 2),
-    'uds_vendidas_sin_coste', coalesce(sum(uds) filter (where sin_coste and uds > 0), 0),
     'tarjetas_vendidas',    coalesce(sum(uds) filter (where es_tarjeta), 0),
     'tarjetas_por_ref', coalesce((
         select jsonb_agg(jsonb_build_object('ref', product_code, 'uds', u) order by u desc)
@@ -188,7 +186,6 @@ begin
     'tarjetas',  coalesce(sum(uds) filter (where es_tarjeta), 0),
     'coste',     round(coalesce(sum(coste), 0), 2),
     'venta',     round(coalesce(sum(venta), 0), 2),
-    'uds_sin_coste', coalesce(sum(uds) filter (where coste = 0), 0),
     'por_ref', coalesce((
         select jsonb_agg(jsonb_build_object('ref', product_code, 'uds', u, 'coste', co, 'venta', ve) order by u desc)
         from (select product_code, sum(uds) u, round(sum(coste), 2) co, round(sum(venta), 2) ve
