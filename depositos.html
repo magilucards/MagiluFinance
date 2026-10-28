@@ -235,7 +235,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v31</div>
+      <div class="subtitle" id="headerStats">— · v32</div>
     </div>
     <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
   </div>
@@ -250,7 +250,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
       <button class="filter-btn" data-status="abierto">Abiertos</button>
       <button class="filter-btn" data-status="recontado">Recontados</button>
       <button class="filter-btn" data-status="facturado">Facturados</button>
-      <button class="btn-secondary" id="btnSyncCal" title="Crea los cobros pendientes que falten y vuelca la facturación al calendario A/B de Tesorería" style="margin-left:8px;">↻ Sincronizar todo</button>
+      <button class="btn-secondary" id="btnSyncCal" title="Crea los cobros pendientes que falten (el calendario A/B lo recalcula el servidor al facturar)" style="margin-left:8px;">↻ Sincronizar cobros</button>
       <button class="btn-secondary" id="btnFacturar" title="Depósitos recontados pendientes de crear factura" style="margin-left:8px;">📑 Facturar a Holded</button>
       <div class="search-box">
         <span style="color:var(--text-faint)">⌕</span>
@@ -578,6 +578,38 @@ let editingSigs = [];   // firmas completas del depósito abierto (con imagen y 
 
 function $(id){ return document.getElementById(id); }
 
+// Descarga paginada: PostgREST corta en "Max rows", así que se pide por bloques con .range()
+// hasta agotar. makeQuery() devuelve una consulta NUEVA con orden estable y { count:'exact' }.
+async function fetchAllPages(makeQuery, pageSize=500){
+  const rows = [];
+  for (let from = 0; ; from += pageSize){
+    const { data, error, count } = await makeQuery().range(from, from + pageSize - 1);
+    if (error) return { data:null, error };
+    rows.push(...(data||[]));
+    if (!data || !data.length) break;
+    if (count != null ? rows.length >= count : data.length < pageSize) break;
+  }
+  return { data:rows, error:null };
+}
+
+// Una pulsación, una acción: mientras dura una escritura el botón queda deshabilitado
+// y cualquier otro botón que escribe se ignora (evita depósitos y cobros duplicados).
+let writeBusy = false;
+function guarded(fn){
+  return async function(ev){
+    const btn = (ev && ev.currentTarget instanceof HTMLElement) ? ev.currentTarget : null;  // antes del primer await
+    if (writeBusy) return;
+    writeBusy = true;
+    if (btn) btn.disabled = true;
+    try { await fn.apply(this, arguments); }
+    catch(e){ console.error(e); showToast('Error: '+((e && e.message) || e), true); }
+    finally { writeBusy = false; if (btn) btn.disabled = false; }
+  };
+}
+
+// Postgres 23505 / HTTP 409: el cobro de este depósito ya existe (lo impide la BD)
+function isDuplicateCobro(error){ return !!error && (error.code === '23505' || error.status === 409); }
+
 // Teclado numérico con decimales: en iPhone escribe coma; se convierte a punto al vuelo
 // (los campos inputmode="decimal" son de texto para que el iPhone acepte la coma)
 document.addEventListener('input', (e) => {
@@ -611,13 +643,15 @@ async function checkAuth(){
 
 async function loadAll(){
   // Cargar clientes (solo los que son clientes), productos y depósitos
+  // Todo paginado. Los depósitos vienen de v_deposit_totals con los totales ya calculados en SQL:
+  // las líneas solo se piden al abrir un depósito.
   const [cRes, pRes, dRes, lRes, sRes] = await Promise.all([
-    sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,email,phone,vat_regime,is_client,requires_signature').eq('is_client',true).order('legal_name'),
-    sb.from('products').select('id,code,name,current_price,current_cost,vat_rate,is_active').order('code'),
-    sb.from('deposits').select('*').order('delivery_date',{ascending:false}),
-    sb.from('client_locations').select('id,client_id,name,address,city,postal_code,is_active').order('name'),
+    fetchAllPages(()=>sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,email,phone,vat_regime,is_client,requires_signature',{count:'exact'}).eq('is_client',true).order('legal_name').order('id')),
+    fetchAllPages(()=>sb.from('products').select('id,code,name,current_price,current_cost,vat_rate,is_active',{count:'exact'}).order('code').order('id')),
+    fetchAllPages(()=>sb.from('v_deposit_totals').select('*',{count:'exact'}).order('delivery_date',{ascending:false}).order('id')),
+    fetchAllPages(()=>sb.from('client_locations').select('id,client_id,name,address,city,postal_code,is_active',{count:'exact'}).order('name').order('id')),
     // Sin signature_png ni content_snapshot: solo se traen al abrir un depósito (para el PDF)
-    sb.from('deposit_signatures').select('id,deposit_id,moment,signer_name,signed_at,content_hash,voided_at').order('signed_at',{ascending:false})
+    fetchAllPages(()=>sb.from('deposit_signatures').select('id,deposit_id,moment,signer_name,signed_at,content_hash,voided_at',{count:'exact'}).order('signed_at',{ascending:false}).order('id'))
   ]);
   if (cRes.error){ showToast('Error cargando clientes: '+cRes.error.message,true); return; }
   if (pRes.error){ showToast('Error cargando productos: '+pRes.error.message,true); return; }
@@ -634,12 +668,6 @@ async function loadAll(){
   // Calcular siguiente número correlativo: el mayor deposit_number existente + 1
   const numeros = allDeposits.map(d=>d.deposit_number).filter(n=>n!=null);
   nextDepositNumber = numeros.length ? (Math.max(...numeros) + 1) : null; // null = aún no se ha fijado el primero
-
-  // Cargar líneas de todos los depósitos para los totales de la lista
-  const { data: allLines } = await sb.from('deposit_lines').select('*');
-  const linesByDep = {};
-  (allLines||[]).forEach(l => { (linesByDep[l.deposit_id] = linesByDep[l.deposit_id]||[]).push(l); });
-  allDeposits.forEach(d => { d._lines = linesByDep[d.id]||[]; });
 
   populateClientSelect();
   updateHeaderStats();
@@ -797,21 +825,19 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v31`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v32`;
 }
 
 // ===== LISTA =====
+// Totales calculados en SQL (v_deposit_totals); aquí solo se leen.
 function depTotals(d){
-  const entregado = d._lines.reduce((s,l)=>s+(parseFloat(l.qty_delivered)||0),0);
-  let vendido=0, importe=0;
-  d._lines.forEach(l=>{
-    if (l.qty_remaining!=null){
-      const v=(parseFloat(l.qty_delivered)||0)-(parseFloat(l.qty_remaining)||0);
-      vendido+=v; importe+=v*(parseFloat(l.unit_price)||0);
-    }
-  });
-  const valorDeposito = d._lines.reduce((s,l)=>s+(parseFloat(l.qty_delivered)||0)*(parseFloat(l.unit_price)||0),0);
-  return { entregado, vendido, importe, valorDeposito, nProductos:d._lines.length };
+  return {
+    entregado: parseFloat(d.units_delivered)||0,
+    vendido: parseFloat(d.units_sold)||0,          // solo líneas ya recontadas
+    importe: parseFloat(d.importe_counted)||0,
+    valorDeposito: parseFloat(d.valor_deposito)||0,
+    nProductos: d.n_lines||0
+  };
 }
 
 function renderList(){
@@ -918,8 +944,8 @@ function renderFacturacion(){
           : `<button class="btn-primary fact-emit-one" data-id="${d.id}" ${sinFirma?'disabled title="Este cliente exige el recuento firmado antes de facturar."':''}>🧾 Facturar en Holded</button>`}
       </div>`;
   }).join('');
-  cont.querySelectorAll('.fact-mark').forEach(b=>b.addEventListener('click',()=>markFacturado(b.dataset.id)));
-  cont.querySelectorAll('.fact-emit-one').forEach(b=>b.addEventListener('click',()=>facturarUnoHolded(b.dataset.id)));
+  cont.querySelectorAll('.fact-mark').forEach(b=>b.addEventListener('click',guarded(()=>markFacturado(b.dataset.id))));
+  cont.querySelectorAll('.fact-emit-one').forEach(b=>b.addEventListener('click',guarded(()=>facturarUnoHolded(b.dataset.id))));
   cont.querySelectorAll('.fact-cb').forEach(cb=>cb.addEventListener('change',updateFactCount));
   updateFactCount();
 }
@@ -931,10 +957,15 @@ function updateFactCount(){
 
 async function markFacturado(id){
   if (!confirm('¿Marcar este depósito como FACTURADO? (cambia el estado, NO envía nada a Holded)')) return;
-  const { error } = await sb.from('deposits').update({ status:'facturado', invoice_date: todayISO(), updated_at: new Date().toISOString() }).eq('id', id);
+  const before = depSnapshot(id);
+  const patch = { status:'facturado', updated_at: new Date().toISOString() };
+  // La fecha de factura se fija solo la primera vez; si ya la tiene, no se toca
+  if (!before || !before.invoice_date) patch.invoice_date = depInvoiceDate(before);
+  const { error } = await sb.from('deposits').update(patch).eq('id', id);
   if (error){ showToast('Error: '+error.message, true); return; }
   showToast('Depósito marcado como facturado');
   await loadAll();
+  await afterDepositWrite(id, before);
   if ($('factView').style.display !== 'none') renderFacturacion();
   if ($('detailView').classList.contains('active')) await openDeposit(id);
 }
@@ -954,6 +985,7 @@ async function emitSelectedHolded(){
   busyHolded = true;
   const log = $('factLog'); log.innerHTML = '';
   let ok=0, fail=0;
+  const befores = ids.map(depSnapshot);
   for (const id of ids){
     const dep = allDeposits.find(d=>d.id===id);
     const c = dep ? clients.find(x=>x.id===dep.client_id) : null;
@@ -970,6 +1002,8 @@ async function emitSelectedHolded(){
   busyHolded = false;
   showToast(`Holded: ${ok} emitida(s)${fail?`, ${fail} con error`:''}`);
   await loadAll();
+  // holded_emit_invoice pasa a facturado y fija la fecha de factura → recalcular esos días
+  for (let i = 0; i < ids.length; i++) await afterDepositWrite(ids[i], befores[i]);
   renderFacturacion();
 }
 
@@ -996,10 +1030,12 @@ async function facturarUnoHolded(id){
   busyHolded = true;
   try {
     showToast('Emitiendo factura en Holded…');
+    const before = depSnapshot(id);
     const { data, error } = await sb.rpc('holded_emit_invoice', { p_deposit_id: id, p_draft: false });
     if (error || !(data && data.ok)){ showToast('Error al emitir: '+(error?error.message:'no se pudo'),true); return; }
     showToast('Factura emitida: '+(data.invoiceNum||'(emitida)'));
     await loadAll();
+    await afterDepositWrite(id, before);
     if ($('factView').style.display !== 'none') renderFacturacion();
     if ($('detailView').classList.contains('active')) await openDeposit(id);
   } finally { busyHolded = false; }
@@ -1416,6 +1452,7 @@ async function saveDeposit(silent=false){
   if ($('locationWrap').style.display !== 'none' && !$('locationSelect').value){ showToast('Elige la tienda',true); $('locationSelect').focus(); return false; }
   if (lines.length===0){ showToast('Añade al menos un producto',true); return false; }
 
+  const before = editing ? depSnapshot(editing.id) : null;
   const status = $('statusDisplay').value;
   const depNumRaw = $('depositNumber').value.trim();
   const depNum = depNumRaw === '' ? null : parseInt(depNumRaw);
@@ -1505,7 +1542,9 @@ async function saveDeposit(silent=false){
   await loadAll();
   // Refrescar la vista para que aparezcan los botones correctos (PDF, liquidar, etc.)
   // Sin esto, tras crear un depósito nuevo no salían los botones hasta salir y volver a entrar.
+  // (En modo silent quien llama hace sus escrituras y luego afterDepositWrite.)
   if (!silent){
+    await afterDepositWrite(depId, before);
     showToast('Depósito guardado');
     await openDeposit(depId);
   }
@@ -1518,19 +1557,17 @@ async function transitionTo(newStatus){
     $('recountDate').value = todayISO();
   }
   // Guardar primero el estado actual (con la fecha de recuento ya puesta)
+  const before = editing ? depSnapshot(editing.id) : null;
   const depId = await saveDeposit(true);
   if (!depId) return;
   const patch = { status:newStatus, updated_at:new Date().toISOString() };
-  if (newStatus==='facturado') patch.invoice_date = todayISO();
+  // La fecha de factura se fija solo la primera vez que pasa a facturado
+  if (newStatus==='facturado' && !(before && before.invoice_date)) patch.invoice_date = depInvoiceDate(depSnapshot(depId));
   const { error } = await sb.from('deposits').update(patch).eq('id',depId);
   if (error){ showToast('Error: '+error.message,true); return; }
   showToast(newStatus==='recontado'?'Pasado a recuento':'Marcado como facturado');
   await loadAll();
-  // Al facturar (ya está contado) refrescamos el calendario de Tesorería de ese día
-  if (newStatus==='facturado'){
-    const d = allDeposits.find(x=>x.id===depId);
-    if (d) await syncCalendarDay(depDayKey(d));
-  }
+  await afterDepositWrite(depId, before);
   await openDeposit(depId);
 }
 
@@ -1606,15 +1643,18 @@ function openLiqModal(){
 function closeLiqModal(){ $('liqModal').classList.remove('active'); }
 
 async function confirmLiquidacion(){
+  const before = editing ? depSnapshot(editing.id) : null;
   // 1) Guardar el depósito con sus recuentos
   const depId = await saveDeposit(true);
   if (!depId) return;
 
   const { total } = calcLiquidacion();
   const c = getClient();
+  const dep = depSnapshot(depId);   // recién recargado por saveDeposit
 
   // 2) ¿Ya existe un cobro vinculado a este depósito?
-  const { data: existentes } = await sb.from('pending_collections').select('*').eq('deposit_id', depId);
+  const { data: existentes, error: exErr } = await sb.from('pending_collections').select('*').eq('deposit_id', depId);
+  if (exErr){ showToast('Error leyendo el cobro: '+exErr.message,true); return; }
   const cobroPrevio = (existentes && existentes.length) ? existentes[0] : null;
 
   // AVISO si el cobro previo ya está marcado como cobrado (opción 3)
@@ -1629,10 +1669,11 @@ async function confirmLiquidacion(){
     if (!ok){ closeLiqModal(); return; }
   }
 
-  // 3) Pasar el depósito a recontado y guardar pago/régimen elegidos
+  // 3) Guardar pago/régimen elegidos. Un depósito ya facturado sigue facturado
+  //    (re-liquidar no lo devuelve a recontado) y su fecha de factura NO se toca.
   const patch = {
-    status:'recontado',
-    recount_date: editing && editing.recount_date ? editing.recount_date : todayISO(),
+    status: (dep && dep.status==='facturado') ? 'facturado' : 'recontado',
+    recount_date: (dep && dep.recount_date) ? dep.recount_date : todayISO(),
     payment_method: liqState.payment,
     regime: liqState.regime,
     updated_at:new Date().toISOString()
@@ -1653,12 +1694,13 @@ async function confirmLiquidacion(){
     const cobroData = {
       user_id: currentUser.id,
       deposit_id: depId,
-      invoice_date: todayISO(),
+      // Siempre la fecha de factura del depósito (o la que tendrá al facturarse)
+      invoice_date: depInvoiceDate({ ...dep, ...patch }),
       amount,
       regime: liqState.regime,
       payment_method: liqState.payment,
       client_name: c ? clientDisplayName(c) : null,
-      notes: `Depósito #${$('depositNumber').value||'?'} · recuento ${fmtDate(todayISO())}`
+      notes: `Depósito #${$('depositNumber').value||'?'} · recuento ${fmtDate(patch.recount_date)}`
     };
     if (cobroPrevio){
       // Actualizar el existente (conserva su status salvo que recalculemos)
@@ -1669,90 +1711,88 @@ async function confirmLiquidacion(){
       // Crear nuevo (pendiente)
       cobroData.status = 'pendiente';
       const { error } = await sb.from('pending_collections').insert(cobroData);
-      if (error){ showToast('Recuento guardado, pero error creando el cobro: '+error.message,true); console.error(error); }
+      if (isDuplicateCobro(error)){
+        // La BD ya tiene el cobro de este depósito (otra pulsación llegó antes): se recarga y se sigue
+        const { data: ya } = await sb.from('pending_collections').select('id,amount,status').eq('deposit_id', depId).maybeSingle();
+        showToast(ya ? `Cobro ya registrado · ${fmtMoney(ya.amount)}` : 'Cobro ya registrado');
+      }
+      else if (error){ showToast('Recuento guardado, pero error creando el cobro: '+error.message,true); console.error(error); }
       else showToast(`Cobro pendiente de ${fmtMoney(total)} creado`);
     }
   }
 
   closeLiqModal();
   await loadAll();
-  // Volcar la facturación de ese día al calendario A/B de Tesorería
-  await syncCalendarDay(patch.recount_date);
+  await afterDepositWrite(depId, before);
   await openDeposit(depId);
 }
 
-// ===== SINCRONIZACIÓN CON EL CALENDARIO A/B DE TESORERÍA =====
-// La "facturación del día" del calendario se rellena sola a partir de los
-// depósitos liquidados (recontado/facturado) de ese día. Ya no hace falta
-// meterlo a mano en Tesorería.
+// ===== FECHA DE FACTURA, COBRO Y CALENDARIO A/B DE TESORERÍA =====
+// Día de la liquidación (orden de facturación, lista y Recaudación)
 function depDayKey(d){ return d.recount_date || d.invoice_date || d.delivery_date; }
 
+// Copia del depósito tal como está ahora en allDeposits (para comparar antes/después)
+function depSnapshot(id){ const d = allDeposits.find(x=>x.id===id); return d ? { ...d } : null; }
+
+// La fecha de factura se fija la primera vez que el depósito pasa a facturado y ya no se mueve.
+// Mismo criterio que holded_emit_invoice: coalesce(invoice_date, recount_date, hoy).
+function depInvoiceDate(d){ return (d && (d.invoice_date || d.recount_date)) || todayISO(); }
+
+// Totales fiscales de un depósito liquidado, calculados en SQL (v_deposit_totals).
+// (Distinto de depTotals(), que es para las tarjetas de la lista.)
 function depTaxTotals(d){
-  // Totales fiscales de un depósito liquidado: régimen, base vendida y total con impuestos.
-  // (Distinto de depTotals(), que es para las tarjetas de la lista.)
-  const ls = d._lines || [];
-  let base = 0;
-  ls.forEach(l=>{
-    const sold = (parseFloat(l.qty_delivered)||0) - (l.qty_remaining!=null ? (parseFloat(l.qty_remaining)||0) : 0);
-    base += sold * (parseFloat(l.unit_price)||0);
-  });
-  const c = clients.find(x=>x.id===d.client_id);
-  const tieneRE = (d.client_has_re !== null && d.client_has_re !== undefined)
-    ? !!d.client_has_re
-    : (c && c.vat_regime === 'recargo_equivalencia');
-  const regime = (d.regime === 'B') ? 'B' : 'A';
-  const iva = regime === 'A' ? base * 0.21 : 0;
-  const re  = (regime === 'A' && tieneRE) ? base * 0.052 : 0;
-  return { regime, base, iva, re, tieneRE, total: base + iva + re };
+  return {
+    regime: (d.regime === 'B') ? 'B' : 'A',
+    base: parseFloat(d.base)||0,
+    iva: parseFloat(d.iva)||0,
+    re: parseFloat(d.re)||0,
+    tieneRE: !!d.has_re,
+    total: parseFloat(d.total)||0
+  };
 }
 
-// Recalcula invoiced_a / invoiced_b del calendario para UN día, sumando todos
-// los depósitos liquidados de ese día. Conserva el efectivo ya cobrado.
-async function syncCalendarDay(dia){
-  if (!dia) return;
-  const delDia = allDeposits.filter(d => (d.status==='recontado' || d.status==='facturado') && depDayKey(d)===dia);
-  let invA = 0, invB = 0;
-  delDia.forEach(d=>{
-    const t = depTaxTotals(d);
-    if (t.regime === 'B') invB += t.base; else invA += t.total;
-  });
-  invA = Math.round(invA*100)/100;
-  invB = Math.round(invB*100)/100;
-  const { data: ex, error: exErr } = await sb.from('daily_records')
-    .select('id').eq('user_id', currentUser.id).eq('record_date', dia).maybeSingle();
-  if (exErr){ console.error('syncCalendarDay select', exErr); return; }
-  if (ex){
-    const { error } = await sb.from('daily_records').update({ invoiced_a: invA, invoiced_b: invB }).eq('id', ex.id);
-    if (error) console.error('syncCalendarDay update', error);
-  } else {
-    if (invA===0 && invB===0) return; // no crear días vacíos
-    const { error } = await sb.from('daily_records').insert({
-      user_id: currentUser.id, record_date: dia,
-      invoiced_a: invA, invoiced_b: invB, collected_a: 0, collected_b: 0
-    });
-    if (error) console.error('syncCalendarDay insert', error);
+// El calendario lo calcula el servidor (recalc_daily_record): solo facturados, por fecha de factura.
+async function recalcCalendarDays(dias){
+  for (const dia of new Set(dias.filter(Boolean))){
+    const { error } = await sb.rpc('recalc_daily_record', { p_date: dia });
+    if (error){ console.error('recalc_daily_record', dia, error); showToast('Guardado, pero no se pudo actualizar el calendario del '+fmtDate(dia), true); }
   }
+}
+
+// El cobro lleva siempre la misma fecha de factura que su depósito
+async function alignCobroDate(d){
+  if (!d || (d.status!=='recontado' && d.status!=='facturado')) return;
+  const fecha = depInvoiceDate(d);
+  const { error } = await sb.from('pending_collections').update({ invoice_date: fecha }).eq('deposit_id', d.id).neq('invoice_date', fecha);
+  if (error) console.error('alignCobroDate', error);
+}
+
+// Tras cualquier escritura en un depósito (con allDeposits ya recargado): alinea la fecha
+// del cobro y recalcula los días afectados, el de antes y el de después si la fecha cambió.
+async function afterDepositWrite(depId, before){
+  const after = depSnapshot(depId);
+  await alignCobroDate(after);
+  const dias = [before, after].filter(d=>d && d.status==='facturado' && d.invoice_date).map(d=>d.invoice_date);
+  await recalcCalendarDays(dias);
 }
 
 // Crea cobros PENDIENTES para los depósitos liquidados que aún no tengan uno.
 // Idempotente: si ya existe cobro para ese depósito, no hace nada.
 async function createMissingCobros(){
+  // collection_status viene de v_deposit_totals: null = sin cobro vinculado
+  const sinCobro = allDeposits.filter(d => (d.status==='recontado' || d.status==='facturado') && !d.collection_status);
+  // pending_collections.payment_method tiene lista cerrada; deposits.payment_method es texto libre.
+  const PM_OK = ['efectivo','tarjeta','transferencia','bizum','pagare','remesa','pendiente','otro'];
   let creados = 0;
-  for (const d of allDeposits){
-    if (d.status!=='recontado' && d.status!=='facturado') continue;
-    const { data: ex } = await sb.from('pending_collections').select('id').eq('deposit_id', d.id).limit(1);
-    if (ex && ex.length) continue;
-    const t = depTaxTotals(d);
-    const amount = Math.round(t.total*100)/100;
+  for (const d of sinCobro){
+    const amount = Math.round(depTaxTotals(d).total*100)/100;
     if (amount <= 0) continue; // la BD exige amount > 0
     const c = clients.find(x=>x.id===d.client_id);
-    // pending_collections.payment_method tiene lista cerrada; deposits.payment_method es texto libre.
-    const PM_OK = ['efectivo','tarjeta','transferencia','bizum','pagare','remesa','pendiente','otro'];
     const metodo = PM_OK.includes(d.payment_method) ? d.payment_method : (d.payment_method ? 'otro' : 'efectivo');
     const { error } = await sb.from('pending_collections').insert({
       user_id: d.user_id || currentUser.id,
       deposit_id: d.id,
-      invoice_date: depDayKey(d),
+      invoice_date: depInvoiceDate(d),
       amount,
       regime: (d.regime==='B') ? 'B' : 'A',
       payment_method: metodo,
@@ -1760,24 +1800,19 @@ async function createMissingCobros(){
       status: 'pendiente',
       notes: 'Sincronizado · cobro pendiente generado desde el depósito'
     });
-    if (!error) creados++; else console.error('createMissingCobros', error);
+    if (!error) creados++;
+    else if (!isDuplicateCobro(error)) console.error('createMissingCobros', error);  // duplicado = ya existía
   }
   return creados;
 }
 
-// Sincroniza TODO: crea cobros que falten y vuelca el calendario A/B de Tesorería.
+// Crea los cobros que falten. El calendario ya no se vuelca desde aquí: lo recalcula el
+// servidor en cada escritura (un recálculo masivo reescribiría días históricos).
 async function syncAllCalendarDays(){
-  showToast('Sincronizando con Tesorería…');
+  showToast('Sincronizando cobros con Tesorería…');
   const creados = await createMissingCobros();
   if (creados>0) await loadAll();
-  const dias = [...new Set(
-    allDeposits
-      .filter(d => d.status==='recontado' || d.status==='facturado')
-      .map(depDayKey)
-      .filter(Boolean)
-  )];
-  for (const dia of dias){ await syncCalendarDay(dia); }
-  showToast(`Sincronizado · ${creados} cobro(s) nuevo(s) · ${dias.length} día(s) en el calendario`);
+  showToast(`Sincronizado · ${creados} cobro(s) nuevo(s)`);
 }
 
 async function deleteDeposit(){
@@ -1789,9 +1824,8 @@ async function deleteDeposit(){
     msg += `\n\n⚠ Tiene un cobro asociado en Tesorería (${fmtMoney(cobros[0].amount)}, ${cobros[0].status}). También se eliminará.`;
   }
   if (!confirm(msg)) return;
-  // Día afectado (para refrescar el calendario tras borrar)
-  const diaAfectado = depDayKey(editing);
-  const eraLiquidado = (editing.status==='recontado' || editing.status==='facturado');
+  // Estado antes de borrar (para recalcular el día de factura en el calendario)
+  const before = depSnapshot(editing.id);
   if (cobros && cobros.length){
     await sb.from('pending_collections').delete().eq('deposit_id', editing.id);
   }
@@ -1800,7 +1834,7 @@ async function deleteDeposit(){
   showToast('Depósito eliminado');
   await loadAll();
   // Recalcular el calendario de ese día (ya sin este depósito)
-  if (eraLiquidado) await syncCalendarDay(diaAfectado);
+  if (before) await afterDepositWrite(before.id, before);
   showListView();
 }
 
@@ -2373,8 +2407,14 @@ async function onVisitSigned(data){
   signState.done = true;
   await loadAll();
   const ids = [...new Set(signState.items.map(i=>i.deposit_id))];
-  const { data: full, error } = await sb.from('deposit_signatures').select('*').in('deposit_id', ids).is('voided_at', null);
+  const [{ data: full, error }, { data: visitLines, error: lnErr }] = await Promise.all([
+    sb.from('deposit_signatures').select('*').in('deposit_id', ids).is('voided_at', null),
+    // Líneas solo de los depósitos de esta visita (la lista ya no las trae)
+    sb.from('deposit_lines').select('*').in('deposit_id', ids).order('sort_order')
+  ]);
   if (error) showToast('Firmado, pero no se pudieron cargar las firmas para el PDF: '+error.message, true);
+  if (lnErr) showToast('Firmado, pero no se pudieron cargar las líneas para el PDF: '+lnErr.message, true);
+  ids.forEach(id=>{ const d = allDeposits.find(x=>x.id===id); if (d) d._lines = (visitLines||[]).filter(l=>l.deposit_id===id); });
   // Los PDF se preparan ya: en iPhone, compartir tiene que ir pegado al toque del botón
   signState.pdfs = ids.map(id=>{
     const d = allDeposits.find(x=>x.id===id);
@@ -2432,17 +2472,18 @@ function bindEvents(){
 
   $('btnNew').addEventListener('click', openNew);
   $('btnBack').addEventListener('click', showListView);
-  $('btnSave').addEventListener('click', ()=>saveDeposit(false));
-  $('btnDelete').addEventListener('click', deleteDeposit);
-  $('btnRecount').addEventListener('click', ()=>transitionTo('recontado'));
+  // Botones que escriben: guarded() = una pulsación, una acción
+  $('btnSave').addEventListener('click', guarded(()=>saveDeposit(false)));
+  $('btnDelete').addEventListener('click', guarded(deleteDeposit));
+  $('btnRecount').addEventListener('click', guarded(()=>transitionTo('recontado')));
   $('btnLiquidar').addEventListener('click', ()=>openLiqModal());
-  $('btnInvoice').addEventListener('click', ()=>{ if (editing) facturarUnoHolded(editing.id); });
-  $('btnSendEmail').addEventListener('click', enviarFacturaEmail);
+  $('btnInvoice').addEventListener('click', guarded(async ()=>{ if (editing) await facturarUnoHolded(editing.id); }));
+  $('btnSendEmail').addEventListener('click', guarded(enviarFacturaEmail));
   $('btnNextDeposit').addEventListener('click', ()=>{ const cid = editing ? editing.client_id : null; openNewForClient(cid, editing ? editing.location_id : null); });
-  $('btnSyncCal').addEventListener('click', syncAllCalendarDays);
+  $('btnSyncCal').addEventListener('click', guarded(syncAllCalendarDays));
   $('btnFacturar').addEventListener('click', openFacturacionView);
   $('factBack').addEventListener('click', showListView);
-  $('factEmit').addEventListener('click', emitSelectedHolded);
+  $('factEmit').addEventListener('click', guarded(emitSelectedHolded));
   $('factSelAll').addEventListener('click', ()=>{
     const cbs = [...document.querySelectorAll('#factList .fact-cb:not([disabled])')];
     const allOn = cbs.every(cb=>cb.checked);
@@ -2453,7 +2494,7 @@ function bindEvents(){
   // Modal de liquidación
   $('liqClose').addEventListener('click', closeLiqModal);
   $('liqCancel').addEventListener('click', closeLiqModal);
-  $('liqConfirm').addEventListener('click', confirmLiquidacion);
+  $('liqConfirm').addEventListener('click', guarded(confirmLiquidacion));
   $('liqModal').addEventListener('click', (e)=>{ if (e.target===$('liqModal')) closeLiqModal(); });
   document.querySelectorAll('#liqPayment .liq-opt').forEach(btn=>{
     btn.addEventListener('click', ()=>{

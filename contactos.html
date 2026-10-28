@@ -885,11 +885,26 @@ function redirectToLogin() {
 }
 
 // ====== DATOS ======
+// Descarga paginada: PostgREST corta en "Max rows", así que se pide por bloques con .range()
+// hasta agotar. makeQuery() devuelve una consulta NUEVA con orden estable y { count: 'exact' }.
+async function fetchAllPages(makeQuery, pageSize = 500) {
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error, count } = await makeQuery().range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    rows.push(...(data || []));
+    if (!data || !data.length) break;
+    if (count != null ? rows.length >= count : data.length < pageSize) break;
+  }
+  return { data: rows, error: null };
+}
+
 async function loadContacts() {
-  const { data, error } = await sb
+  const { data, error } = await fetchAllPages(() => sb
     .from('clients')
-    .select('*')
-    .order('legal_name', { ascending: true });
+    .select('*', { count: 'exact' })
+    .order('legal_name', { ascending: true })
+    .order('id'));
 
   if (error) {
     showToast('Error cargando contactos: ' + error.message, true);

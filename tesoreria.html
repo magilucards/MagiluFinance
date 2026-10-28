@@ -1817,8 +1817,23 @@ async function loadDailyRecords() {
   dailyRecords = data || [];
 }
 
+// Descarga paginada: PostgREST corta en "Max rows", así que se pide por bloques con .range()
+// hasta agotar. makeQuery() devuelve una consulta NUEVA con orden estable y { count: 'exact' }.
+async function fetchAllPages(makeQuery, pageSize = 500) {
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error, count } = await makeQuery().range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    rows.push(...(data || []));
+    if (!data || !data.length) break;
+    if (count != null ? rows.length >= count : data.length < pageSize) break;
+  }
+  return { data: rows, error: null };
+}
+
 async function loadPendingCollections() {
-  const { data, error } = await supabaseClient.from('pending_collections').select('*').order('invoice_date', { ascending: false });
+  const { data, error } = await fetchAllPages(() => supabaseClient.from('pending_collections')
+    .select('*', { count: 'exact' }).order('invoice_date', { ascending: false }).order('id'));
   if (error) { showToast(friendlyErrorMessage(error), true); return; }
   pendingCollections = data || [];
 }
@@ -2425,6 +2440,7 @@ async function confirmCollect() {
   
   const p = pendingCollections.find(x => x.id === id);
   if (!p) return;
+  if (p.status !== 'pendiente') { showToast('Este cobro ya no está pendiente', true); closeModal('collectModal'); return; }
   
   // Crear movimiento
   const { data: mov, error: movErr } = await supabaseClient.from('movements').insert({
@@ -2509,6 +2525,30 @@ loadAllData = async function() {
     console.error(err);
   }
 };
+
+// ============================================
+// Una pulsación, una acción
+// ============================================
+// Mientras dura la petición la acción queda bloqueada y su botón deshabilitado.
+// Los onclick="..." resuelven el nombre al pulsar, así que basta con envolver la función.
+function withLock(fn, btnSelector) {
+  let busy = false;
+  return async function(...args) {
+    if (busy) return;
+    busy = true;
+    const btn = btnSelector ? document.querySelector(btnSelector) : null;
+    if (btn) btn.disabled = true;
+    try { return await fn.apply(this, args); }
+    finally { busy = false; if (btn) btn.disabled = false; }
+  };
+}
+confirmCollect = withLock(confirmCollect, '[onclick="confirmCollect()"]');
+saveDayRecord = withLock(saveDayRecord, '[onclick="saveDayRecord()"]');
+deleteDayRecord = withLock(deleteDayRecord, '#dayDeleteBtn');
+saveMovement = withLock(saveMovement, '[onclick="saveMovement()"]');
+downloadRemesaXML = withLock(downloadRemesaXML, '[onclick="downloadRemesaXML()"]');
+markIncidencia = withLock(markIncidencia);
+undoStatus = withLock(undoStatus);
 
 checkSession();
 

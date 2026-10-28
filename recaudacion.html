@@ -277,8 +277,6 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 let currentUser = null;
 let allLiquidaciones = []; // todas las liquidaciones cargadas (toda la historia)
 let currentDay = todayISO();
-const IVA_RATE = 0.21;
-const RE_RATE = 0.052;
 
 // ============ UTILIDADES ============
 function $(id){ return document.getElementById(id); }
@@ -363,92 +361,63 @@ $('authLoginBtn').addEventListener('click', async ()=>{
 });
 $('authPassword').addEventListener('keydown', e=>{ if (e.key==='Enter') $('authLoginBtn').click(); });
 
-// ============ CARGA DE DATOS ============
-// Pull único: todos los depósitos liquidados (recontado/facturado) con sus líneas y su cobro
-async function loadData(){
-  // Depósitos con cliente
-  const { data: deps, error: depErr } = await sb.from('deposits')
-    .select('id, client_id, location_id, status, recount_date, invoice_date, delivery_date, regime, payment_method, client_has_re, deposit_number')
-    .in('status', ['recontado','facturado']);
-  if (depErr){ showToast('Error cargando depósitos: '+depErr.message, true); return; }
-
-  // Clientes
-  const { data: clients, error: cliErr } = await sb.from('clients')
-    .select('id, legal_name, commercial_name, vat_regime');
-  if (cliErr){ showToast('Error cargando clientes: '+cliErr.message, true); return; }
-  const clientMap = new Map(clients.map(c=>[c.id, c]));
-
-  // Tiendas (clientes con varias tiendas)
-  const { data: locs } = await sb.from('client_locations').select('id, name');
-  const locMap = new Map((locs||[]).map(l=>[l.id, l.name]));
-
-  // Líneas (solo de esos depósitos)
-  const depIds = deps.map(d=>d.id);
-  let lines = [];
-  if (depIds.length){
-    // Por seguridad parto en bloques si fuera muy grande (no crítico ahora)
-    const { data: lns, error: lnErr } = await sb.from('deposit_lines')
-      .select('deposit_id, qty_delivered, qty_remaining, unit_price')
-      .in('deposit_id', depIds);
-    if (lnErr){ showToast('Error cargando líneas: '+lnErr.message, true); return; }
-    lines = lns||[];
+// Descarga paginada: PostgREST corta en "Max rows", así que se pide por bloques con .range()
+// hasta agotar. makeQuery() devuelve una consulta NUEVA con orden estable y { count:'exact' }.
+async function fetchAllPages(makeQuery, pageSize=500){
+  const rows = [];
+  for (let from = 0; ; from += pageSize){
+    const { data, error, count } = await makeQuery().range(from, from + pageSize - 1);
+    if (error) return { data:null, error };
+    rows.push(...(data||[]));
+    if (!data || !data.length) break;
+    if (count != null ? rows.length >= count : data.length < pageSize) break;
   }
-  // Agrupar líneas por depósito
-  const linesByDep = new Map();
-  lines.forEach(l=>{
-    if (!linesByDep.has(l.deposit_id)) linesByDep.set(l.deposit_id, []);
-    linesByDep.get(l.deposit_id).push(l);
-  });
+  return { data:rows, error:null };
+}
 
-  // Cobros pendientes vinculados a depósitos (solo para saber si está cobrado o pendiente)
-  const { data: cobros, error: cobErr } = await sb.from('pending_collections')
-    .select('deposit_id, status');
-  if (cobErr){ showToast('Error cargando cobros: '+cobErr.message, true); return; }
-  const cobroByDep = new Map();
-  (cobros||[]).forEach(c=>{ if (c.deposit_id) cobroByDep.set(c.deposit_id, c); });
+// ============ CARGA DE DATOS ============
+// Depósitos liquidados (recontado/facturado) con sus totales y el estado de su cobro,
+// ya calculados en SQL (v_deposit_totals). No se descargan líneas ni cobros.
+async function loadData(){
+  const [depRes, cliRes, locRes] = await Promise.all([
+    fetchAllPages(()=>sb.from('v_deposit_totals')
+      .select('id, client_id, location_id, status, delivery_date, dia, regime, payment_method, has_re, deposit_number, base, iva, re, total, collection_status', { count:'exact' })
+      .in('status', ['recontado','facturado'])
+      .order('dia', { ascending:false }).order('id')),
+    fetchAllPages(()=>sb.from('clients').select('id, legal_name, commercial_name', { count:'exact' }).order('id')),
+    // Tiendas (clientes con varias tiendas)
+    fetchAllPages(()=>sb.from('client_locations').select('id, name', { count:'exact' }).order('id'))
+  ]);
+  if (depRes.error){ showToast('Error cargando depósitos: '+depRes.error.message, true); return; }
+  if (cliRes.error){ showToast('Error cargando clientes: '+cliRes.error.message, true); return; }
+  const clientMap = new Map(cliRes.data.map(c=>[c.id, c]));
+  const locMap = new Map((locRes.data||[]).map(l=>[l.id, l.name]));
 
   // Construir el array maestro
-  allLiquidaciones = deps.map(d=>{
+  allLiquidaciones = depRes.data.map(d=>{
     const c = clientMap.get(d.client_id);
-    const cobro = cobroByDep.get(d.id);
-    // Base vendida del depósito (la realidad)
-    const ls = linesByDep.get(d.id) || [];
-    let base = 0;
-    ls.forEach(l=>{
-      const sold = (parseFloat(l.qty_delivered)||0) - (l.qty_remaining!=null ? parseFloat(l.qty_remaining)||0 : 0);
-      base += sold * (parseFloat(l.unit_price)||0);
-    });
-    // ¿Tiene RE? Manda el dato del depósito, si null cae a la ficha
-    const tieneRE = (d.client_has_re !== null && d.client_has_re !== undefined)
-      ? !!d.client_has_re
-      : (c && c.vat_regime === 'recargo_equivalencia');
-    // Día de liquidación
-    const dia = d.recount_date || d.invoice_date || d.delivery_date;
-    // Régimen A o B (si no está marcado, asumimos A)
-    const regime = (d.regime === 'B') ? 'B' : 'A';
-    // Cálculo
-    const iva = regime === 'A' ? base * IVA_RATE : 0;
-    const re  = (regime === 'A' && tieneRE) ? base * RE_RATE : 0;
-    const total = base + iva + re;
     // Estado cobrado/pendiente
     // - Si hay cobro y su status='cobrado' → cobrado
     // - Si hay cobro y su status='pendiente' → pendiente (también el efectivo: ya no se da por pagado)
     // - Si NO hay cobro vinculado → liquidaciones antiguas previas a este cambio; se asumen cobradas
     let estado;
-    if (!cobro) estado = 'cobrado';
-    else estado = (cobro.status === 'cobrado') ? 'cobrado' : 'pendiente';
+    if (!d.collection_status) estado = 'cobrado';
+    else estado = (d.collection_status === 'cobrado') ? 'cobrado' : 'pendiente';
     return {
       id: d.id,
-      dia,
+      dia: d.dia,   // día de liquidación: recount_date → invoice_date → delivery_date
       delivery_date: d.delivery_date,
       cliente: c ? (c.commercial_name || c.legal_name || '—') : '—',
       tienda: d.location_id ? (locMap.get(d.location_id) || '') : '',
-      regime,
-      tieneRE,
+      regime: (d.regime === 'B') ? 'B' : 'A',   // si no está marcado, asumimos A
+      tieneRE: !!d.has_re,
       payment_method: ['efectivo','tarjeta','transferencia','bizum','pagare','remesa'].includes(d.payment_method) ? d.payment_method : 'otro',
       estado,
       deposit_number: d.deposit_number,
-      base, iva, re, total
+      base: parseFloat(d.base)||0,
+      iva: parseFloat(d.iva)||0,
+      re: parseFloat(d.re)||0,
+      total: parseFloat(d.total)||0
     };
   });
 
