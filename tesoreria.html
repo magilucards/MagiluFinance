@@ -22,6 +22,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 
 <link rel="manifest" href="manifest.json">
+<script src="./privacy.js"></script>
 <meta name="theme-color" content="#081023">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -92,7 +93,7 @@
   .user-info { color: var(--primary); margin-bottom: 4px; text-transform: lowercase; }
   .logout-btn { background: none; border: 1px solid var(--border-strong); color: var(--text-dim); padding: 6px 12px; font-family: 'JetBrains Mono', monospace; font-size: 10px; cursor: pointer; margin-top: 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.1em; }
   .logout-btn:hover { border-color: var(--red); color: var(--red); }
-  .topnav { display: flex; align-items: center; margin-bottom: 20px; }
+  .topnav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
   .home-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 7px 14px; border: 1px solid var(--border-strong); border-radius: 6px; letter-spacing: 0.04em; transition: all 0.15s; }
   .home-link:hover { border-color: var(--primary); color: var(--primary); }
   .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 32px; border-radius: 4px; overflow: hidden; }
@@ -317,6 +318,49 @@
     .day-amount { font-size: 11px; }
     .day-b-badge { font-size: 8px; padding: 1px 3px; }
   }
+
+  /* Móvil (iPhone): todo más compacto para deslizar menos */
+  @media (max-width: 600px) {
+    html, body { font-size: 14px; }
+    .container { padding: 8px 12px 70px; }
+    .topnav { margin-bottom: 8px; }
+    /* La cabecera (logo, email, cerrar sesión) ya está en Inicio: en el móvil se ahorra */
+    header { display: none; }
+    .section-subtitle { display: none; }
+    .tabs { margin-bottom: 12px; }
+    .tab { padding: 9px 11px; font-size: 13px; white-space: nowrap; }
+    h2.main-title { font-size: 20px; margin-bottom: 10px; padding-bottom: 8px; }
+    .kpi-grid { margin-bottom: 14px; }
+    .kpi { padding: 10px 12px; }
+    .kpi-label { margin-bottom: 4px; }
+    .kpi-value { font-size: 17px; }
+    .kpi-sub { margin-top: 2px; }
+    .toolbar { margin-bottom: 12px; gap: 6px; }
+    .btn { padding: 8px 12px; font-size: 12.5px; }
+    .section { margin-bottom: 20px; }
+    .section-title { font-size: 19px; margin-bottom: 4px; }
+    .section-subtitle { font-size: 12px; margin-bottom: 10px; }
+    .accounts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+    .account-card { padding: 10px 12px; }
+    .account-header { margin-bottom: 4px; }
+    .account-name-input { font-size: 15px; }
+    .account-bank-row { margin-bottom: 6px; font-size: 11px; }
+    .account-balance { font-size: 17px; }
+    .add-account-card { padding: 12px; min-height: 0; }
+    .calendar-header { margin-bottom: 10px; gap: 8px; }
+    .calendar-month { font-size: 18px; min-width: 140px; }
+    .calendar-metrics { margin-bottom: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cal-metric { padding: 7px 8px; }
+    .cal-metric-label { font-size: 9px; letter-spacing: 0.06em; margin-bottom: 2px; }
+    .cal-metric-value { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-metric-sub { font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .day-amount.empty { display: none; }
+    .calendar-grid { margin-bottom: 12px; }
+    .day-cell, .day-cell.empty { min-height: 54px; }
+    .pending-metrics { margin-bottom: 12px; }
+    .pending-row { padding: 9px 10px; }
+    .filter-bar { margin-bottom: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -353,7 +397,7 @@
 
 <div class="app" id="app">
   <div class="container">
-    <nav class="topnav">
+    <nav class="topnav" data-privacy-slot>
       <a href="./index.html" class="home-link" title="Volver al inicio">← Inicio</a>
     </nav>
     <header>
@@ -911,10 +955,18 @@ function updateSyncTime() {
 function renderAll() { renderAccounts(); renderKPIs(); renderAlerts(); renderMovements(); }
 
 function formatMoney(amount) {
+  if (MF_PRIVACY) return '**** €';   // modo oculto
   if (amount == null || isNaN(amount)) return '0,00 €';
   const num = parseFloat(amount);
   const sign = num < 0 ? '-' : '';
   return sign + Math.abs(num).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+// En modo oculto no se abren los campos que enseñarían las cifras al editarlos
+function blockedByPrivacy() {
+  if (!MF_PRIVACY) return false;
+  showToast('Modo oculto activo: pulsa 🙈 arriba para ver y editar cifras', true);
+  return true;
 }
 
 const ACCOUNT_KINDS = [
@@ -1031,6 +1083,7 @@ async function updateAccountField(id, field, value) {
 }
 
 function editBalance(id) {
+  if (blockedByPrivacy()) return;
   const acc = accounts.find(a => a.id === id);
   if (!acc) return;
   const el = document.getElementById('balance-' + id);
@@ -1953,7 +2006,7 @@ function renderCalendar() {
     
     if (total > 0) {
       const amt = document.createElement('div'); amt.className = 'day-amount';
-      amt.textContent = total >= 1000 ? (total/1000).toFixed(2) + 'k' : Math.round(total) + '€';
+      amt.textContent = MF_PRIVACY ? '***' : (total >= 1000 ? (total/1000).toFixed(2) + 'k' : Math.round(total) + '€');
       cell.appendChild(amt);
       if (hasB) {
         const badge = document.createElement('div'); badge.className = 'day-b-badge'; badge.textContent = 'B'; cell.appendChild(badge);
@@ -2008,6 +2061,7 @@ function renderRecentDays() {
 let dayPendingLines = [];
 
 function openDayModal(dateStr) {
+  if (blockedByPrivacy()) return;
   if (!dateStr) {
     dateStr = new Date().toISOString().split('T')[0];
   }

@@ -549,6 +549,29 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
   .table-wrap tbody tr[data-id] td:nth-child(8) { display: none; }
   .table-wrap .legal, .table-wrap .commercial { max-width: none; }
 }
+
+/* Móvil (iPhone): cabecera en una fila y filtros compactos, para deslizar menos */
+@media (max-width:600px) {
+  .app-header { padding:calc(8px + env(safe-area-inset-top)) 12px 8px; }
+  .header-inner { flex-wrap:nowrap; gap:8px; }
+  .header-inner > div { flex:1; min-width:0; }
+  .back-link { padding:6px 10px; white-space:nowrap; }
+  h1 { font-size:20px; }
+  .subtitle { font-size:9.5px; letter-spacing:0.05em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .header-inner .btn-primary { padding:8px 12px; white-space:nowrap; }
+  .filters { padding:8px 12px; }
+  .filters-inner { gap:6px; }
+  .search-box { padding:6px 10px; }
+  .search-box input { font-size:16px; }   /* 16px: el iPhone no hace zoom */
+  .filter-group { flex-wrap:nowrap; overflow-x:auto; gap:5px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .filter-group::-webkit-scrollbar { display:none; }
+  .filter-label { font-size:9px; min-width:52px; }
+  .filter-btn { padding:5px 10px; font-size:12px; white-space:nowrap; }
+  .main-content { padding:8px 12px; }
+  .table-wrap tbody tr[data-id] { padding:8px 12px; }
+  .toggle-bar { padding:4px 12px; }
+  .toggle-bar .inner { gap:4px 14px; font-size:12px; }
+}
 </style>
 </head>
 <body>
@@ -566,7 +589,7 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
       <h1>Cont<em>actos</em></h1>
       <div class="subtitle" id="headerStats" data-version="ok">— · —</div>
     </div>
-    <button class="btn-primary" id="btnNewContact">+ Nuevo contacto</button>
+    <button class="btn-primary" id="btnNewContact" title="Nuevo contacto">+ Nuevo</button>
   </div>
 </header>
 

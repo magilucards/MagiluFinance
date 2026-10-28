@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="./privacy.js"></script>
 <style>
 :root {
   --bg:#050912; --bg-elev:#0b1326; --bg-card:#11192e; --border:#1f2a44; --border-strong:#2c3a5c;
@@ -222,6 +223,67 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
   .detail-actions .right > button { flex:1 1 45%; }
   .detail-actions #btnSignVisit, .detail-actions #btnSignOne { flex-basis:100%; }
 }
+
+/* Acciones arriba, eliminar abajo; columnas cortas solo en móvil */
+.ml-auto { margin-left:auto; }
+.detail-actions { margin-bottom:16px; }
+.detail-danger { display:flex; justify-content:flex-end; }
+.lines-table .sm, .lines-table .pname-sm { display:none; }
+
+/* Móvil (iPhone): todo más compacto para deslizar menos */
+@media (max-width:600px) {
+  .app-header { padding:calc(8px + env(safe-area-inset-top)) 12px 8px; }
+  .header-inner { gap:8px; flex-wrap:nowrap; }
+  .back-link { padding:6px 10px; }
+  h1 { font-size:20px; }
+  .subtitle { font-size:9.5px; letter-spacing:0.05em; }
+  #btnNew { padding:8px 12px; }
+  .main-content { padding:10px 12px; }
+  /* Lista */
+  .filters { gap:6px; margin-bottom:10px; }
+  .filter-btn { padding:6px 10px; }
+  #btnSyncCal, #btnFacturar { margin-left:0 !important; padding:6px 10px; font-size:12px; }
+  .search-box { margin-left:0; min-width:0; flex:1 1 100%; padding:6px 10px; }
+  .search-box input { font-size:16px; }
+  .dep-card { position:relative; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px 8px; padding:10px 12px; margin-bottom:8px; }
+  .dep-card > div:nth-child(2) { grid-column:1 / -1; padding-right:86px; }
+  .dep-card .status-pill { position:absolute; top:10px; right:10px; }
+  .dep-stat { text-align:left; grid-column:auto; }
+  .dep-stat-num { font-size:13px; }
+  .dep-stat-label { font-size:9px; }
+  .dep-client { font-size:14px; }
+  /* Detalle */
+  /* Todos los botones (también «← Lista») fluyen de 3 en 3 */
+  .detail-actions { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .detail-actions .right { display:contents; }
+  .detail-actions > button, .detail-actions .right > button { flex:1 1 calc(33.33% - 6px); min-width:0; padding:8px 4px; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center; }
+  .detail-actions .right > #btnSignVisit, .detail-actions .right > #btnSignOne { flex-basis:100%; order:-1; }
+  .detail-box { padding:12px; margin-bottom:10px; }
+  .detail-box-title { font-size:16px; margin-bottom:8px; }
+  .field-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .field-row .field { min-width:0; max-width:none !important; }
+  #clientSearchWrap { grid-column:1 / -1; }
+  .field { min-width:0; gap:3px; }
+  .field label { font-size:9.5px; letter-spacing:0.08em; }
+  .field input, .field select, .field textarea { font-size:16px; padding:7px 9px; }  /* 16px: el iPhone no hace zoom */
+  .client-info-bar { gap:6px 12px; padding:8px 10px; margin-bottom:10px; }
+  .cii-re-toggle { margin-left:0; }
+  .detail-box .field[style*="margin-bottom:16px"] { margin-bottom:8px !important; }
+  /* Tabla de líneas: referencia con el nombre debajo y cabeceras cortas */
+  .lines-table .lg, .lines-table .name-col { display:none; }
+  .lines-table .sm { display:inline; }
+  .lines-table .pname-sm { display:block; font-family:'Inter Tight',sans-serif; font-size:10.5px; color:var(--text-dim); line-height:1.2; white-space:normal; }
+  .lines-table { margin-top:4px; }
+  .lines-table th, .lines-table td { padding:6px 3px; }
+  .lines-table th { font-size:9px; letter-spacing:0.04em; }
+  .lines-table td.code { max-width:130px; }
+  .lines-table input { width:50px; font-size:16px; padding:4px 5px; }
+  .lines-table input[data-f="price"] { width:64px !important; }
+  .lines-table .price, .lines-table .sold { font-size:11.5px; white-space:nowrap; }
+  .summary-bar { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px 10px; padding:10px 2px 0; }
+  .summary-label { font-size:9px; }
+  .summary-val { font-size:14px; }
+}
 </style>
 </head>
 <body>
@@ -235,9 +297,10 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v32</div>
+      <div class="subtitle" id="headerStats">— · v33</div>
     </div>
-    <button class="btn-primary ml-auto" id="btnNew">+ Nuevo depósito</button>
+    <div class="ml-auto" data-privacy-slot></div>
+    <button class="btn-primary" id="btnNew">+ Nuevo</button>
   </div>
 </header>
 
@@ -262,6 +325,23 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 
   <!-- ===== VISTA DETALLE / CREAR / RECONTAR ===== -->
   <div class="detail-view" id="detailView">
+    <!-- Acciones ARRIBA: volver, PDF, firmar, guardar… sin tener que bajar -->
+    <div class="detail-actions">
+      <button class="btn-secondary" id="btnBack">← Lista</button>
+      <div class="right">
+        <button class="btn-primary" id="btnSignVisit" style="display:none;">✍️ Firma del cliente</button>
+        <button class="btn-secondary" id="btnSignOne" style="display:none;">✍️ Firmar este depósito</button>
+        <button class="btn-pdf" id="btnPdfEntrega" style="display:none;">PDF entrega</button>
+        <button class="btn-pdf" id="btnPdfFactura" style="display:none;">PDF liquidación</button>
+        <button class="btn-secondary" id="btnRecount" style="display:none;">Pasar a recuento</button>
+        <button class="btn-primary" id="btnLiquidar" style="display:none;" title="Liquidar: forma de pago + régimen">Liquidar</button>
+        <button class="btn-primary" id="btnInvoice" style="display:none;">🧾 Facturar en Holded</button>
+        <button class="btn-secondary" id="btnSendEmail" style="display:none;">✉️ Enviar factura</button>
+        <button class="btn-primary" id="btnNextDeposit" style="display:none;" title="Nuevo depósito para la misma tienda">+ Siguiente</button>
+        <button class="btn-primary" id="btnSave">Guardar</button>
+      </div>
+    </div>
+
     <div class="detail-box">
       <div class="detail-box-title" id="detailTitle">Nuevo depósito</div>
 
@@ -331,14 +411,14 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
       <table class="lines-table">
         <thead>
           <tr id="linesHead">
-            <th>Cód.</th>
-            <th>Producto</th>
-            <th class="num">Entregado</th>
+            <th>Ref.</th>
+            <th class="name-col">Producto</th>
+            <th class="num"><span class="lg">Entregado</span><span class="sm">Ent.</span></th>
             <th class="num recount-col" style="display:none;">Resto</th>
-            <th class="num recount-col" style="display:none;">Vendido</th>
-            <th class="num">Precio ud.</th>
-            <th class="num import-col" style="display:none;">Importe</th>
-            <th style="width:30px;"></th>
+            <th class="num recount-col" style="display:none;"><span class="lg">Vendido</span><span class="sm">Vta.</span></th>
+            <th class="num"><span class="lg">Precio ud.</span><span class="sm">Precio</span></th>
+            <th class="num import-col" style="display:none;"><span class="lg">Importe</span><span class="sm">Subt.</span></th>
+            <th class="del-col" style="width:30px;"></th>
           </tr>
         </thead>
         <tbody id="linesBody"></tbody>
@@ -365,21 +445,9 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
       <div id="sigListDetail"></div>
     </div>
 
-    <div class="detail-actions">
-      <button class="btn-secondary" id="btnBack">← Volver a la lista</button>
+    <!-- Eliminar: abajo, lejos del resto, para no pulsarlo sin querer -->
+    <div class="detail-danger">
       <button class="btn-danger" id="btnDelete" style="display:none;">Eliminar depósito</button>
-      <div class="right">
-        <button class="btn-primary" id="btnSignVisit" style="display:none;">✍️ Firma del cliente</button>
-        <button class="btn-secondary" id="btnSignOne" style="display:none;">✍️ Firmar este depósito</button>
-        <button class="btn-pdf" id="btnPdfEntrega" style="display:none;">PDF entrega</button>
-        <button class="btn-pdf" id="btnPdfFactura" style="display:none;">PDF liquidación</button>
-        <button class="btn-secondary" id="btnRecount" style="display:none;">Pasar a recuento</button>
-        <button class="btn-primary" id="btnLiquidar" style="display:none;">Liquidar (pago + factura)</button>
-        <button class="btn-primary" id="btnInvoice" style="display:none;">🧾 Facturar en Holded</button>
-        <button class="btn-secondary" id="btnSendEmail" style="display:none;">✉️ Enviar por email</button>
-        <button class="btn-primary" id="btnNextDeposit" style="display:none;">+ Siguiente depósito (misma tienda)</button>
-        <button class="btn-primary" id="btnSave">Guardar depósito</button>
-      </div>
     </div>
   </div>
 
@@ -621,6 +689,8 @@ document.addEventListener('input', (e) => {
 
 function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 function fmtMoney(n){ return new Intl.NumberFormat('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0) + ' €'; }
+// Importes de los listados: en modo oculto salen como asteriscos (el detalle y los PDF no se ocultan)
+function fmtMoneyP(n){ return mfMaskMoney(fmtMoney(n)); }
 function fmtDate(d){ if(!d) return '—'; const p=String(d).split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : d; }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 const PAY_LABELS = { efectivo:'Efectivo', tarjeta:'Tarjeta', transferencia:'Transferencia', bizum:'Bizum', pagare:'Pagaré', remesa:'Remesa', otro:'Otro' };
@@ -825,7 +895,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v32`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v33`;
 }
 
 // ===== LISTA =====
@@ -870,19 +940,19 @@ function renderList(){
     let stat2, stat3;
     if (d.status==='abierto'){
       stat2 = `<div class="dep-stat"><div class="dep-stat-num">${t.entregado}</div><div class="dep-stat-label">uds entregadas</div></div>`;
-      stat3 = `<div class="dep-stat"><div class="dep-stat-num">${fmtMoney(t.valorDeposito)}</div><div class="dep-stat-label">valor (interno)</div></div>`;
+      stat3 = `<div class="dep-stat"><div class="dep-stat-num">${fmtMoneyP(t.valorDeposito)}</div><div class="dep-stat-label">valor (interno)</div></div>`;
     } else {
       stat2 = `<div class="dep-stat"><div class="dep-stat-num">${t.vendido} / ${t.entregado}</div><div class="dep-stat-label">vendido / entregado</div></div>`;
-      stat3 = `<div class="dep-stat"><div class="dep-stat-num">${fmtMoney(t.importe)}</div><div class="dep-stat-label">${d.status==='facturado'?'facturado':'a facturar'}</div></div>`;
+      stat3 = `<div class="dep-stat"><div class="dep-stat-num">${fmtMoneyP(t.importe)}</div><div class="dep-stat-label">${d.status==='facturado'?'facturado':'a facturar'}</div></div>`;
     }
     // Línea de impuestos (solo cuando ya hay recuento)
     let taxLine = '';
     if (d.status!=='abierto'){
       const tx = depTaxTotals(d);
       if (tx.regime==='B'){
-        taxLine = `<div class="dep-meta dep-tax">Rég. B (sin impuestos) · Base ${fmtMoney(tx.base)} · <strong>Total ${fmtMoney(tx.total)}</strong></div>`;
+        taxLine = `<div class="dep-meta dep-tax">Rég. B (sin impuestos) · Base ${fmtMoneyP(tx.base)} · <strong>Total ${fmtMoneyP(tx.total)}</strong></div>`;
       } else {
-        taxLine = `<div class="dep-meta dep-tax">Base ${fmtMoney(tx.base)} · IVA ${fmtMoney(tx.iva)}${tx.tieneRE?` · RE ${fmtMoney(tx.re)}`:''} · <strong>Total ${fmtMoney(tx.total)}</strong></div>`;
+        taxLine = `<div class="dep-meta dep-tax">Base ${fmtMoneyP(tx.base)} · IVA ${fmtMoneyP(tx.iva)}${tx.tieneRE?` · RE ${fmtMoneyP(tx.re)}`:''} · <strong>Total ${fmtMoneyP(tx.total)}</strong></div>`;
       }
     }
     const payChip = d.payment_method ? ` · 💳 ${escapeHtml(payLabel(d.payment_method))}` : '';
@@ -930,8 +1000,8 @@ function renderFacturacion(){
     const sinFirma = !esB && invoiceBlockedBySig(d);
     const dia = d.recount_date || d.delivery_date;
     const taxStr = esB
-      ? `Rég. B (sin impuestos) · Total ${fmtMoney(tx.total)}`
-      : `Base ${fmtMoney(tx.base)} · IVA ${fmtMoney(tx.iva)}${tx.tieneRE?` · RE ${fmtMoney(tx.re)}`:''} · Total ${fmtMoney(tx.total)}`;
+      ? `Rég. B (sin impuestos) · Total ${fmtMoneyP(tx.total)}`
+      : `Base ${fmtMoneyP(tx.base)} · IVA ${fmtMoneyP(tx.iva)}${tx.tieneRE?` · RE ${fmtMoneyP(tx.re)}`:''} · Total ${fmtMoneyP(tx.total)}`;
     return `
       <div class="fact-row" data-id="${d.id}">
         <input type="checkbox" class="fact-cb" data-id="${d.id}" ${(esB||sinFirma)?'disabled':'checked'}>
@@ -1260,7 +1330,7 @@ function configureForStatus(status){
   $('btnLiquidar').style.display = (editing && isRecontado) ? 'inline-flex' : 'none';
   $('btnInvoice').style.display = (editing && isRecontado) ? 'inline-flex' : 'none';
   $('btnSendEmail').style.display = (editing && editing.holded_invoice_id) ? 'inline-flex' : 'none';
-  $('btnInvoice').textContent = (editing && editing.regime==='B') ? '✓ Marcar facturado' : '🧾 Facturar en Holded';
+  $('btnInvoice').textContent = (editing && editing.regime==='B') ? '✓ Marcar facturado' : '🧾 Facturar';
   // Tras liquidar/facturar, ofrecer crear el siguiente depósito de la misma tienda
   $('btnNextDeposit').style.display = (editing && (isRecontado||isFacturado)) ? 'inline-flex' : 'none';
   $('btnPdfEntrega').style.display = editing ? 'inline-flex' : 'none';
@@ -1278,7 +1348,7 @@ function configureForStatus(status){
   $('btnSignVisit').style.display = visit.length ? 'inline-flex' : 'none';
   $('btnSignVisit').textContent = visit.length>1 ? `✍️ Firma del cliente (${visit.length})` : '✍️ Firma del cliente';
   $('btnSignOne').style.display = (single && !visitIsJustThis) ? 'inline-flex' : 'none';
-  $('btnSignOne').textContent = single==='recuento' ? '✍️ Firmar recuento de este depósito' : '✍️ Firmar entrega de este depósito';
+  $('btnSignOne').textContent = single==='recuento' ? '✍️ Firmar recuento' : '✍️ Firmar entrega';
   renderDetailNotice();
 }
 
@@ -1300,9 +1370,10 @@ function renderLines(){
     const sold = remaining!=null ? (delivered-remaining) : null;
     const price = parseFloat(l.unit_price)||0;
     const importe = sold!=null ? sold*price : null;
+    // En móvil el nombre va debajo de la referencia (la columna Producto se oculta)
     let cells = `
-      <td class="code">${escapeHtml(l.product_code)}</td>
-      <td>${escapeHtml(l.product_name)}</td>`;
+      <td class="code">${escapeHtml(l.product_code)}<div class="pname-sm">${escapeHtml(l.product_name)}</div></td>
+      <td class="name-col">${escapeHtml(l.product_name)}</td>`;
     if (editEcon){
       cells += `<td class="num"><input type="number" min="0" step="1" inputmode="numeric" pattern="[0-9]*" value="${delivered}" data-i="${i}" data-f="delivered"></td>`;
     } else {
@@ -1322,7 +1393,7 @@ function renderLines(){
     if (showRecount){
       cells += `<td class="num sold">${importe!=null?fmtMoney(importe):'—'}</td>`;
     }
-    cells += `<td>${editEcon?`<button class="del-line" data-del="${i}">×</button>`:''}</td>`;
+    cells += `<td class="del-col">${editEcon?`<button class="del-line" data-del="${i}">×</button>`:''}</td>`;
     return `<tr>${cells}</tr>`;
   }).join('');
 
@@ -1372,7 +1443,7 @@ function renderSummary(){
     $('summaryBar').innerHTML = `
       <div class="summary-item"><div class="summary-label">Productos</div><div class="summary-val">${lines.length}</div></div>
       <div class="summary-item"><div class="summary-label">Uds entregadas</div><div class="summary-val">${entregado}</div></div>
-      <div class="summary-item"><div class="summary-label">Valor depósito (interno)</div><div class="summary-val">${fmtMoney(valor)}</div></div>`;
+      <div class="summary-item"><div class="summary-label">Valor depósito (interno)</div><div class="summary-val">${fmtMoneyP(valor)}</div></div>`;
   } else {
     let vendido=0;
     lines.forEach(l=>{ if (l.qty_remaining!=null){ vendido += (parseFloat(l.qty_delivered)||0)-(parseFloat(l.qty_remaining)||0); } });
