@@ -297,7 +297,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v35</div>
+      <div class="subtitle" id="headerStats">— · v36</div>
     </div>
     <div class="ml-auto" data-privacy-slot></div>
     <button class="btn-primary" id="btnNew">+ Nuevo</button>
@@ -895,7 +895,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v35`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v36`;
 }
 
 // ===== LISTA =====
@@ -1988,9 +1988,10 @@ function generatePDF(tipo){
 }
 
 // Texto del correo al compartir (Gmail, Mail, WhatsApp…). Sin enlace a la app.
+const FIRMA_EMAIL = '\n\nMuchas gracias.\nUn saludo.\nEl equipo de Santofímia Group.';
 const SHARE_TEXT = {
-  entrega: 'Estimado cliente, en este correo tiene adjunto el depósito correspondiente a la nueva cantidad de productos Magilu que dejamos en tienda.',
-  liquidacion: 'Estimado cliente, en este correo tiene adjunta la liquidación del depósito de productos Magilu.'
+  entrega: 'Estimado cliente,\n\nEn este correo adjuntamos la copia del depósito correspondiente a la nueva cantidad de productos Magilu que dejamos en tienda.' + FIRMA_EMAIL,
+  liquidacion: 'Estimado cliente,\n\nEn este correo adjuntamos la copia de la liquidación del depósito de productos Magilu.' + FIRMA_EMAIL
 };
 
 // Abre el menú de compartir con los PDF adjuntos y el texto del correo. Antes el PDF se abría
