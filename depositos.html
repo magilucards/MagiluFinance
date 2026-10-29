@@ -297,7 +297,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v33</div>
+      <div class="subtitle" id="headerStats">— · v35</div>
     </div>
     <div class="ml-auto" data-privacy-slot></div>
     <button class="btn-primary" id="btnNew">+ Nuevo</button>
@@ -895,7 +895,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v33`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v35`;
 }
 
 // ===== LISTA =====
@@ -1984,7 +1984,27 @@ function applySignedSnapshot(m){
 function generatePDF(tipo){
   // tipo: 'entrega' | 'liquidacion'
   const { doc, fname } = buildPdfDoc(tipo, pdfModelFromEditor());
-  doc.save(fname);
+  sharePdfs([{ doc, fname, tipo }]);
+}
+
+// Texto del correo al compartir (Gmail, Mail, WhatsApp…). Sin enlace a la app.
+const SHARE_TEXT = {
+  entrega: 'Estimado cliente, en este correo tiene adjunto el depósito correspondiente a la nueva cantidad de productos Magilu que dejamos en tienda.',
+  liquidacion: 'Estimado cliente, en este correo tiene adjunta la liquidación del depósito de productos Magilu.'
+};
+
+// Abre el menú de compartir con los PDF adjuntos y el texto del correo. Antes el PDF se abría
+// en el visor y, al compartir desde ahí, el iPhone añadía el enlace de la página.
+// Si el navegador no puede compartir archivos (ordenador), se descargan como siempre.
+// Sin await antes de share(): Safari exige que vaya pegado al toque del botón.
+async function sharePdfs(pdfs){
+  const files = pdfs.map(p=>new File([p.doc.output('blob')], p.fname, { type:'application/pdf' }));
+  const text = pdfs.every(p=>p.tipo==='entrega') ? SHARE_TEXT.entrega : SHARE_TEXT.liquidacion;
+  if (navigator.canShare && navigator.share && navigator.canShare({ files })){
+    try { await navigator.share({ files, text }); return; }
+    catch(e){ if (e && e.name==='AbortError') return; console.warn('share', e); }
+  }
+  pdfs.forEach(p=>p.doc.save(p.fname));
 }
 
 function buildPdfDoc(tipo, model){
@@ -2491,7 +2511,7 @@ async function onVisitSigned(data){
     const d = allDeposits.find(x=>x.id===id);
     if (!d) return null;
     const tipo = signState.items.some(i=>i.deposit_id===id && i.moment==='recuento') ? 'liquidacion' : 'entrega';
-    return buildPdfDoc(tipo, pdfModelFromDeposit(d, full||[]));
+    return { ...buildPdfDoc(tipo, pdfModelFromDeposit(d, full||[])), tipo };
   }).filter(Boolean);
   const hashes = (data && data.firmas) ? data.firmas.map(f=>`${f.moment}: ${String(f.hash).slice(0,16)}`) : [];
   $('signDoneInfo').innerHTML = `${signState.items.length} firma(s) registrada(s)` + (hashes.length ? '<br><span class="mono-small">Huella ' + hashes.map(escapeHtml).join(' · ') + '</span>' : '');
@@ -2500,15 +2520,9 @@ async function onVisitSigned(data){
   $('signDone').classList.add('active');
 }
 
-async function shareSignedPdfs(){
+function shareSignedPdfs(){
   if (!signState.pdfs.length) return;
-  // Sin await antes de share(): Safari exige que vaya pegado al toque
-  const files = signState.pdfs.map(p=>new File([p.doc.output('blob')], p.fname, { type:'application/pdf' }));
-  if (navigator.canShare && navigator.share && navigator.canShare({ files })){
-    try { await navigator.share({ files, title:'Depósito firmado' }); return; }
-    catch(e){ if (e && e.name==='AbortError') return; console.warn('share', e); }
-  }
-  signState.pdfs.forEach(p=>p.doc.save(p.fname));
+  sharePdfs(signState.pdfs);
 }
 
 async function closeSignOverlay(force=false){
