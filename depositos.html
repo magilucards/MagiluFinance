@@ -599,16 +599,16 @@ const LOGO_MAGILU = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAADwCAIAA
 const EMISOR = {
   nombre: 'MAGILU',
   tagline: 'Tarjetas de felicitación',
-  persona: 'Tomás Santofímia',
-  tel: '640 809 421',
-  email: 'info@magilucards.com',
-  web: 'magilucards.com'
+  persona: 'Equipo Magilu (demo)',
+  tel: '600 000 000',
+  email: 'hola@magilu.demo',
+  web: 'magilu.demo'
 };
 
 // === Pie de privacidad de los PDF firmados ===
 // El NIF NO va en el código (el repositorio es público): se lee de settings.company_cif.
-const PRIVACIDAD_RESPONSABLE = 'Tomás Santofímia Gómez';
-const PRIVACIDAD_EMAIL = 'santofimiagroup@gmail.com';
+const PRIVACIDAD_RESPONSABLE = 'Magilu Demo S.L.';
+const PRIVACIDAD_EMAIL = 'privacidad@magilu.demo';
 let emisorNif = null;   // settings.company_cif
 
 async function loadEmisorNif(){
@@ -1988,7 +1988,7 @@ function generatePDF(tipo){
 }
 
 // Texto del correo al compartir (Gmail, Mail, WhatsApp…). Sin enlace a la app.
-const FIRMA_EMAIL = '\n\nMuchas gracias.\nUn saludo.\nEl equipo de Santofímia Group.';
+const FIRMA_EMAIL = '\n\nMuchas gracias.\nUn saludo.\nEl equipo de Magilu (demo).';
 const SHARE_TEXT = {
   entrega: 'Estimado cliente,\n\nEn este correo adjuntamos la copia del depósito correspondiente a la nueva cantidad de productos Magilu que dejamos en tienda.' + FIRMA_EMAIL,
   liquidacion: 'Estimado cliente,\n\nEn este correo adjuntamos la copia de la liquidación del depósito de productos Magilu.' + FIRMA_EMAIL

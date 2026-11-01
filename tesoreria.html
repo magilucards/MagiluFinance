@@ -1160,12 +1160,12 @@ function renderKPIs() {
 function calcularProximoPagoIVA() {
   const hoy = new Date();
   const fechas = [
-    { fecha: new Date(2026, 6, 20), importe: 5432, label: '20-jul' },
-    { fecha: new Date(2026, 9, 20), importe: 7627, label: '20-oct' },
-    { fecha: new Date(2027, 0, 30), importe: 7165, label: '30-ene' },
-    { fecha: new Date(2027, 3, 20), importe: 7000, label: '20-abr' },
-    { fecha: new Date(2027, 6, 20), importe: 7000, label: '20-jul-27' },
-    { fecha: new Date(2027, 9, 20), importe: 7000, label: '20-oct-27' },
+    { fecha: new Date(2026, 6, 20), importe: 1850, label: '20-jul' },
+    { fecha: new Date(2026, 9, 20), importe: 2240, label: '20-oct' },
+    { fecha: new Date(2027, 0, 30), importe: 2100, label: '30-ene' },
+    { fecha: new Date(2027, 3, 20), importe: 1900, label: '20-abr' },
+    { fecha: new Date(2027, 6, 20), importe: 1950, label: '20-jul-27' },
+    { fecha: new Date(2027, 9, 20), importe: 2300, label: '20-oct-27' },
   ];
   for (const f of fechas) { if (f.fecha >= hoy) return { fecha: f.fecha, fechaCorta: f.label, importe: f.importe }; }
   return { fecha: null, fechaCorta: '—', importe: 0 };

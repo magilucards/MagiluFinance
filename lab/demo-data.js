@@ -1,6 +1,6 @@
 // Magilu LAB · datos de prueba y simulación de la base de datos
 // Se usa con lab/demo-backend.js. Todo es ficticio y vive en el navegador.
-// Holded NO se llama nunca: facturar, enviar y registrar pagos se simulan aquí.
+// Holded NO funciona en la demo: sus funciones devuelven un aviso. Todo lo demás es ficticio y funcional.
 (function () {
   'use strict';
 
@@ -106,178 +106,295 @@
   };
   var PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
-  // ---------- datos iniciales ----------
+  // ---------- datos iniciales (100% ficticios, ~12 meses de historia) ----------
   function seed(o) {
     var U = o.user.id, rnd = mulberry(20261101), T = today(), now = new Date().toISOString();
     function pick(a) { return a[Math.floor(rnd() * a.length)]; }
     function ri(a, b) { return a + Math.floor(rnd() * (b - a + 1)); }
+    function chance(p) { return rnd() < p; }
+    function month(s) { return new Date(s + 'T12:00:00').getMonth(); }   // 0-11
+    function isXmas(s) { var m = month(s), d = +s.slice(8, 10); return (m === 9 && d >= 10) || m === 10 || (m === 11 && d <= 20); }
     var db = { settings: [], products: [], clients: [], client_locations: [], deposits: [], deposit_lines: [], deposit_signatures: [],
       pending_collections: [], accounts: [], movements: [], daily_records: [], expenses: [] };
 
-    db.settings.push({ id: uid(), user_id: U, margin_brut_pct: 60, target_monthly_salary: 2000,
+    db.settings.push({ id: uid(), user_id: U, margin_brut_pct: 62, target_monthly_salary: 2400,
       company_legal_name: 'Magilu Demo S.L.', company_cif: 'B00000000', creditor_iban: 'ES0000000000000000000000',
-      creditor_bic: 'DEMOESXXXXX', creditor_sepa_id: 'ES00ZZZB00000000', next_deposit_number: 1001, created_at: now });
+      creditor_bic: 'DEMOESXXXXX', creditor_sepa_id: 'ES00ZZZB00000000', next_deposit_number: 1, created_at: now });
 
-    // Productos
+    // ---- Catálogo ----
     var P = [
-      ['MGE-STD', 'Tarjeta Magilu estándar', 2.95, 0.55, null],
-      ['MGE-STD-AMOR', 'Tarjeta estándar · Amor', 2.95, 0.55, 'MGE-STD'],
-      ['MGE-STD-CUMPLE', 'Tarjeta estándar · Cumpleaños', 2.95, 0.55, 'MGE-STD'],
-      ['MGE-NEW', 'Tarjeta Magilu novedad', 3.50, 0.70, null],
-      ['MGI-STD', 'Tarjeta infantil', 2.50, 0.45, null],
-      ['NAVI-STD', 'Tarjeta Navidad', 2.95, 0.50, null],
-      ['NAVI-PREM', 'Tarjeta Navidad premium', 4.50, 0.95, null],
-      ['MAXI-01', 'Tarjeta maxi', 6.95, 1.60, null],
-      ['MINI-01', 'Mini tarjeta regalo', 1.50, 0.25, null],
-      ['LLAV-01', 'Llavero mariposa', 4.95, 1.20, null],
-      ['ETIQ-01', 'Etiquetas regalo (pack)', 1.95, 0.35, null],
-      ['MPT-01', 'Marcapáginas', 1.80, 0.30, null],
-      ['CU-01', 'Cuaderno (descatalogado)', 3.90, 1.10, null]
+      ['MGE-STD', 'Tarjeta Magilu estándar', 2.95, 0.55, null, 9],
+      ['MGE-STD-AMOR', 'Tarjeta estándar · Amor', 2.95, 0.55, 'MGE-STD', 6],
+      ['MGE-STD-CUMPLE', 'Tarjeta estándar · Cumpleaños', 2.95, 0.55, 'MGE-STD', 10],
+      ['MGE-STD-BEBE', 'Tarjeta estándar · Bebé', 2.95, 0.55, 'MGE-STD', 4],
+      ['MGE-STD-BODA', 'Tarjeta estándar · Boda', 2.95, 0.58, 'MGE-STD', 3],
+      ['MGE-STD-GRACIAS', 'Tarjeta estándar · Gracias', 2.95, 0.55, 'MGE-STD', 3],
+      ['MGE-NEW', 'Tarjeta Magilu novedad', 3.50, 0.70, null, 7],
+      ['MGE-PREM', 'Tarjeta Magilu premium', 4.95, 1.05, null, 4],
+      ['MGI-STD', 'Tarjeta infantil', 2.50, 0.45, null, 7],
+      ['MGI-PREM', 'Tarjeta infantil con pegatinas', 3.25, 0.70, null, 3],
+      ['NAVI-STD', 'Tarjeta Navidad', 2.95, 0.50, null, 0],
+      ['NAVI-PREM', 'Tarjeta Navidad premium', 4.50, 0.95, null, 0],
+      ['NAVI-MINI', 'Mini tarjeta Navidad', 1.75, 0.30, null, 0],
+      ['MAXI-01', 'Tarjeta maxi', 6.95, 1.60, null, 2],
+      ['MINI-01', 'Mini tarjeta regalo', 1.50, 0.25, null, 4],
+      ['LLAV-01', 'Llavero mariposa', 4.95, 1.20, null, 3],
+      ['LLAV-02', 'Llavero corazón', 4.95, 1.15, null, 2],
+      ['IMAN-01', 'Imán Magilu', 3.50, 0.80, null, 2],
+      ['ETIQ-01', 'Etiquetas regalo (pack)', 1.95, 0.35, null, 4],
+      ['MPT-01', 'Marcapáginas', 1.80, 0.30, null, 3],
+      ['CU-01', 'Cuaderno (descatalogado)', 3.90, 1.10, null, 0]
     ];
+    var weight = {};
     P.forEach(function (p) {
+      weight[p[0]] = p[5];
       db.products.push({ id: uid(), user_id: U, code: p[0], name: p[1], current_price: p[2], current_cost: p[3], reference_cost: p[3],
-        parent_code: p[4], vat_rate: 21, notes: null, is_active: p[0] !== 'CU-01', created_at: now });
+        parent_code: p[4], vat_rate: 21, notes: p[0] === 'MGE-NEW' ? 'Colección otoño (demo)' : null, is_active: p[0] !== 'CU-01', created_at: now });
     });
-    var sellable = db.products.filter(function (p) { return p.is_active && !p.parent_code; }).concat(db.products.filter(function (p) { return p.parent_code; }));
-
-    // Contactos (ficticios)
-    var C = [
-      ['B00000001', 'Papelería La Mariposa S.L.', 'Papelería La Mariposa', 'Alicante', 'recargo_equivalencia', 'remesa_sepa', true],
-      ['00000002T', 'Ana Ejemplo Pérez', 'Estanco Nº 7', 'Benidorm', 'recargo_equivalencia', 'efectivo', false],
-      ['B00000003', 'Librería Rosa S.L.', 'Librería Rosa', 'Elche', 'general', 'transferencia', false],
-      ['00000004R', 'Luis Demo García', 'Floristería Pétalo', 'Alicante', 'recargo_equivalencia', 'bizum', false],
-      ['00000005W', 'Marta Prueba Ruiz', 'Bazar Las Palmeras', 'Torrevieja', 'recargo_equivalencia', 'efectivo', false],
-      ['00000006A', 'Kiosko Central C.B.', 'Kiosko Central', 'San Vicente', 'recargo_equivalencia', 'tarjeta', false],
-      ['B00000007', 'Regalos Luna S.L.', 'Regalos Luna', 'Alicante', 'general', 'remesa_sepa', true],
-      ['00000008G', 'Pedro Muestra López', 'Papelería El Lápiz', 'Villena', 'recargo_equivalencia', 'transferencia', false],
-      ['B00000009', 'Farmacia Demo S.L.', 'Farmacia Demo', 'Elda', 'general', 'tarjeta', false],
-      ['B00000010', 'Imprenta Ficticia S.L.', 'Imprenta Ficticia', 'Alicante', 'general', 'transferencia', false],
-      ['00000011M', 'Cliente Antiguo S.C.', 'Tienda cerrada', 'Alcoy', 'recargo_equivalencia', 'efectivo', false]
-    ];
-    C.forEach(function (c, i) {
-      var iban = c[6] ? 'ES91210004184502000513' + pad(i + 10) : null;
-      db.clients.push({ id: uid(), user_id: U, nif: c[0], legal_name: c[1], commercial_name: c[2], email: 'tienda' + (i + 1) + '@ejemplo.test',
-        phone: '600 000 0' + pad(i + 1), address: 'Calle Ejemplo ' + (i + 3), city: c[3], postal_code: '03' + pad(i + 1) + '0', province: 'Alicante', country: 'ES',
-        iban: iban, iban_last4: iban ? iban.slice(-4) : null, bic: iban ? 'CAIXESBBXXX' : null,
-        sepa_mandate_ref: iban ? 'MGL-DEMO-' + pad(i + 1) : null, sepa_mandate_date: iban ? addDays(T, -200) : null, sepa_seq_type: iban ? 'RCUR' : null,
-        vat_regime: c[4], payment_method: c[5], internal_notes: i === 4 ? 'MIXTO: a veces paga en B' : null,
-        is_client: i !== 9, is_supplier: i === 9, is_active: i !== 10, requires_signature: i === 6, created_at: now, updated_at: now });
-    });
-    var cli = db.clients;
-    function loc(ci, name, addr) {
-      var l = { id: uid(), user_id: U, client_id: cli[ci].id, name: name, address: addr, city: cli[ci].city, postal_code: cli[ci].postal_code, is_active: true, created_at: now, updated_at: now };
-      db.client_locations.push(l); return l;
+    var prodByCode = {}; db.products.forEach(function (p) { prodByCode[p.code] = p; });
+    var normal = db.products.filter(function (p) { return p.is_active && weight[p.code] > 0; });
+    var xmas = ['NAVI-STD', 'NAVI-PREM', 'NAVI-MINI'].map(function (c) { return prodByCode[c]; });
+    function wpick(list) {
+      var tot = list.reduce(function (s, p) { return s + (weight[p.code] || 1); }, 0), x = rnd() * tot;
+      for (var i = 0; i < list.length; i++) { x -= (weight[list[i].code] || 1); if (x <= 0) return list[i]; }
+      return list[list.length - 1];
     }
-    var lunaLocs = [loc(6, 'Centro', 'Av. Demo 12'), loc(6, 'Playa', 'Paseo Ejemplo 4')];
-    loc(0, 'Tienda principal', 'Calle Ejemplo 3');
 
-    // Cuentas
+    // ---- Contactos ficticios ----
+    // [nif, razón social, nombre comercial, ciudad, régimen IVA, forma de pago, nº tiendas, exige firma, días entre visitas]
+    var C = [
+      ['B00000001', 'Papelería La Mariposa S.L.', 'Papelería La Mariposa', 'Alicante', 'recargo_equivalencia', 'remesa_sepa', 1, false, 21],
+      ['00000002T', 'Ana Ejemplo Pérez', 'Estanco Nº 7', 'Benidorm', 'recargo_equivalencia', 'efectivo', 0, false, 28],
+      ['B00000003', 'Librería Rosa S.L.', 'Librería Rosa', 'Elche', 'general', 'transferencia', 0, false, 30],
+      ['00000004R', 'Luis Demo García', 'Floristería Pétalo', 'Alicante', 'recargo_equivalencia', 'bizum', 0, false, 35],
+      ['00000005W', 'Marta Prueba Ruiz', 'Bazar Las Palmeras', 'Torrevieja', 'recargo_equivalencia', 'efectivo', 0, false, 28],
+      ['00000006A', 'Kiosko Central C.B.', 'Kiosko Central', 'San Vicente del Raspeig', 'recargo_equivalencia', 'tarjeta', 0, false, 21],
+      ['B00000007', 'Regalos Luna S.L.', 'Regalos Luna', 'Alicante', 'general', 'remesa_sepa', 2, true, 21],
+      ['00000008G', 'Pedro Muestra López', 'Papelería El Lápiz', 'Villena', 'recargo_equivalencia', 'transferencia', 0, false, 35],
+      ['B00000009', 'Farmacia Demo S.L.', 'Farmacia Demo', 'Elda', 'general', 'tarjeta', 0, false, 42],
+      ['B00000012', 'Regalos Mediterráneo S.L.', 'Regalos Mediterráneo', 'Dénia', 'general', 'remesa_sepa', 3, true, 21],
+      ['00000013Y', 'Lucía Ficticia Martín', 'Papelería Arcoíris', 'Altea', 'recargo_equivalencia', 'bizum', 0, false, 28],
+      ['00000014F', 'Jorge Inventado Sanz', 'Estanco La Plaza', 'Orihuela', 'recargo_equivalencia', 'efectivo', 0, false, 30],
+      ['B00000015', 'Librería El Faro S.L.', 'Librería El Faro', 'Santa Pola', 'general', 'transferencia', 0, false, 35],
+      ['00000016P', 'Carmen Simulada Ortiz', 'Kiosko del Puerto', 'Alicante', 'recargo_equivalencia', 'efectivo', 0, false, 21],
+      ['00000017D', 'Raúl Ejemplar Vidal', 'Floristería Jazmín', 'Elche', 'recargo_equivalencia', 'tarjeta', 0, false, 42],
+      ['00000018X', 'Elena Supuesta Gil', 'Estanco Nº 3', 'Petrer', 'recargo_equivalencia', 'efectivo', 0, false, 28],
+      ['B00000019', 'Bazar Oriente Demo S.L.', 'Bazar Oriente', 'Novelda', 'recargo_equivalencia', 'efectivo', 0, false, 35],
+      ['B00000020', 'Cuentacuentos Librería S.L.', 'Librería Cuentacuentos', 'Alicante', 'general', 'remesa_sepa', 1, false, 28],
+      ['00000021B', 'Sergio Figurado Mora', 'Papelería Garabato', 'Jávea', 'recargo_equivalencia', 'bizum', 0, false, 30],
+      ['B00000022', 'Nube Rosa Regalos S.L.', 'Regalos Nube Rosa', 'Calpe', 'general', 'remesa_sepa', 1, true, 28],
+      ['00000023N', 'Rosa Imaginaria Cano', 'Estanco Avenida', 'Alcoy', 'recargo_equivalencia', 'efectivo', 0, false, 35],
+      ['00000024J', 'Tomás Ejemplo Ruiz', 'Papelería Tinta', 'Elche', 'recargo_equivalencia', 'pagare', 0, false, 42],
+      ['00000025Z', 'Pilar Ficticia León', 'Mercería Hilo Fino', 'San Vicente del Raspeig', 'recargo_equivalencia', 'efectivo', 0, false, 42],
+      ['B00000026', 'Droguería Brillo S.L.', 'Droguería Brillo', 'Benidorm', 'general', 'transferencia', 0, false, 35],
+      ['00000011M', 'Cliente Antiguo S.C.', 'Tienda cerrada', 'Alcoy', 'recargo_equivalencia', 'efectivo', 0, false, 35],
+      ['B00000010', 'Imprenta Ficticia S.L.', 'Imprenta Ficticia', 'Alicante', 'general', 'transferencia', 0, false, 0],
+      ['B00000027', 'Cartonajes Demo S.L.', 'Cartonajes Demo', 'Ibi', 'general', 'transferencia', 0, false, 0]
+    ];
+    var STREETS = ['Calle Mayor', 'Av. de la Constitución', 'Calle San Vicente', 'Plaza de España', 'Calle del Mar', 'Av. Alfonso X', 'Calle Gabriel Miró', 'Paseo Marítimo', 'Calle Castaños', 'Av. Maisonnave'];
+    var LOCNAMES = { 'Regalos Luna': ['Centro', 'Playa'], 'Regalos Mediterráneo': ['Puerto', 'Casco antiguo', 'Centro comercial'], 'Papelería La Mariposa': ['Tienda principal'], 'Librería Cuentacuentos': ['Tienda principal'], 'Regalos Nube Rosa': ['Paseo'] };
+    var clientsMeta = [];
+    C.forEach(function (c, i) {
+      var sepa = c[5] === 'remesa_sepa';
+      var iban = sepa || chance(0.25) ? 'ES9121000418450200' + ('000000' + (51300 + i * 7)).slice(-6) : null;
+      var supplier = c[8] === 0, inactive = c[2] === 'Tienda cerrada';
+      var cp = '03' + ('00' + (100 + i * 17) % 1000).slice(-3);
+      var row = { id: uid(), user_id: U, nif: c[0], legal_name: c[1], commercial_name: c[2],
+        email: c[2].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '') + '@ejemplo.test',
+        phone: '6' + ('00000000' + (10000000 + i * 1234567) % 100000000).slice(-8).replace(/(\d{2})(\d{3})(\d{3})/, '$1 $2 $3'),
+        address: pick(STREETS) + ', ' + ri(1, 90), city: c[3], postal_code: cp, province: 'Alicante', country: 'ES',
+        iban: iban, iban_last4: iban ? iban.slice(-4) : null, bic: iban ? 'CAIXESBBXXX' : null,
+        sepa_mandate_ref: iban ? 'MGL-DEMO-' + pad(i + 1) : null, sepa_mandate_date: iban ? addDays(T, -ri(200, 400)) : null, sepa_seq_type: iban ? 'RCUR' : null,
+        vat_regime: c[4], payment_method: c[5],
+        internal_notes: c[2] === 'Bazar Las Palmeras' ? 'MIXTO: parte en B (demo)' : (c[2] === 'Papelería Tinta' ? 'Paga con pagaré a 30 días' : null),
+        is_client: !supplier, is_supplier: supplier, is_active: !inactive, requires_signature: c[7], created_at: addDays(T, -400) + 'T09:00:00.000Z', updated_at: now };
+      db.clients.push(row);
+      var locs = (LOCNAMES[c[2]] || []).map(function (n) {
+        var l = { id: uid(), user_id: U, client_id: row.id, name: n, address: pick(STREETS) + ', ' + ri(1, 90), city: c[3], postal_code: cp, is_active: true, created_at: row.created_at, updated_at: row.created_at };
+        db.client_locations.push(l); return l;
+      });
+      if (c[2] === 'Regalos Mediterráneo') db.client_locations.push({ id: uid(), user_id: U, client_id: row.id, name: 'Antigua tienda (cerrada)', address: 'Calle Vieja, 2', city: c[3], postal_code: cp, is_active: false, created_at: row.created_at, updated_at: now });
+      // surtido habitual de la tienda
+      var mix = []; while (mix.length < ri(3, 6)) { var pp = wpick(normal); if (mix.indexOf(pp) < 0) mix.push(pp); }
+      clientsMeta.push({ row: row, every: c[8], locs: locs, mix: mix, inactive: inactive, supplier: supplier });
+    });
+
+    // ---- Cuentas ----
     var A = [
-      ['Cuenta principal', 'Banco Demo', '1234', 'operativa', 8420.35, null],
-      ['Cuenta secundaria', 'Banco Ejemplo', '5678', 'operativa', 1260.10, null],
-      ['Póliza de crédito', 'Banco Demo', '9012', 'poliza', -3500, 15000],
-      ['Reserva Hacienda', 'Banco Demo', '3456', 'hacienda', 2140, null],
-      ['Colchón', 'Banco Ejemplo', '7890', 'colchon', 3000, null],
-      ['Caja efectivo', '', '', 'efectivo', 385.50, null]
+      ['Cuenta principal', 'Banco Demo', '1234', 'operativa', 9184.62, null],
+      ['Cuenta cobros TPV', 'Banco Ejemplo', '5678', 'operativa', 1742.30, null],
+      ['Póliza de crédito', 'Banco Demo', '9012', 'poliza', -4250, 15000],
+      ['Póliza circulante', 'Banco Ejemplo', '4321', 'poliza', -1200, 6000],
+      ['Reserva Hacienda', 'Banco Demo', '3456', 'hacienda', 2310, null],
+      ['Colchón', 'Banco Ejemplo', '7890', 'colchon', 3500, null],
+      ['Caja efectivo', '', '', 'efectivo', 412.80, null]
     ];
     A.forEach(function (a, i) {
       db.accounts.push({ id: uid(), user_id: U, label: a[0], bank: a[1], last4: a[2], account_type: 'Cuenta corriente', kind: a[3],
-        balance: a[4], credit_limit: a[5], sort_order: i + 1, created_at: now, updated_at: now });
+        balance: a[4], credit_limit: a[5], sort_order: i + 1, created_at: addDays(T, -400) + 'T09:00:00.000Z', updated_at: now });
     });
     var acc = db.accounts;
 
-    // Depósitos (últimos ~4 meses)
-    var deps = [];
-    for (var i = 0; i < 38; i++) {
-      var ci = pick([0, 0, 1, 2, 3, 4, 5, 6, 6, 7, 8, 1, 3, 5]);
-      deps.push({ ci: ci, delivery: addDays(T, -ri(2, 125)) });
-    }
-    deps.sort(function (a, b) { return a.delivery < b.delivery ? -1 : 1; });
-    deps.forEach(function (x, k) {
-      var c = cli[x.ci];
-      var age = diffDays(T, x.delivery);
-      var d = { id: uid(), user_id: U, client_id: c.id, location_id: x.ci === 6 ? pick(lunaLocs).id : null,
-        delivery_date: x.delivery, recount_date: null, invoice_date: null, status: 'abierto', regime: null, client_has_re: null,
-        payment_method: null, deposit_number: 1001 + k, holded_invoice_id: null, holded_invoice_status: null,
-        notes: null, client_note: k % 7 === 0 ? 'Reponer sobre todo cumpleaños' : null, created_at: x.delivery + 'T09:00:00.000Z', updated_at: x.delivery + 'T09:00:00.000Z' };
-      if (age > 20) {
-        d.recount_date = addDays(x.delivery, Math.min(ri(14, 30), age - 1));
-        if (age >= 21 && age <= 30) d.recount_date = T;   // algunas liquidaciones hoy, para que el mes en curso tenga datos
-        d.regime = (x.ci === 4 && rnd() < 0.6) || (x.ci === 1 && rnd() < 0.3) ? 'B' : 'A';
-        var pm = c.payment_method === 'remesa_sepa' ? 'remesa' : c.payment_method;
-        d.payment_method = d.regime === 'B' ? 'efectivo' : pm;
-        if (d.regime === 'A' && !(diffDays(T, d.recount_date) < 6 && rnd() < 0.7)) {
-          d.status = 'facturado'; d.invoice_date = d.recount_date;
-          d.holded_invoice_id = 'demo-' + d.deposit_number; d.holded_invoice_status = 'emitida';
-        } else d.status = 'recontado';
+    // ---- Visitas: cada visita liquida el depósito anterior y deja uno nuevo ----
+    var visits = [];
+    clientsMeta.forEach(function (m, ci) {
+      if (m.supplier) return;
+      var start = addDays(T, -ri(330, 365)), end = m.inactive ? addDays(T, -ri(150, 170)) : T;
+      var d = start, prev = null, k = 0;
+      while (d <= end) {
+        visits.push({ m: m, date: d, prevIdx: prev });
+        prev = visits.length - 1; k++;
+        var step = m.every + ri(-5, 6);
+        if (isXmas(d)) step = Math.max(12, Math.round(step * 0.6));   // en campaña se visita más
+        d = addDays(d, step);
       }
-      db.deposits.push(d);
-      // líneas
-      var n = ri(3, 5), used = {};
-      for (var j = 0; j < n; j++) {
-        var p = pick(sellable); if (used[p.code]) continue; used[p.code] = 1;
-        var qd = pick([20, 24, 30, 40, 50, 60, 100, 120]);
-        if (p.code.indexOf('NAVI') === 0 && new Date(x.delivery).getMonth() < 9) qd = pick([20, 30]);
-        db.deposit_lines.push({ id: uid(), user_id: U, deposit_id: d.id, product_id: p.id, product_code: p.code, product_name: p.name,
-          qty_delivered: qd, qty_remaining: d.recount_date ? Math.floor(qd * (0.15 + rnd() * 0.55)) : null,
-          unit_price: p.current_price, unit_cost: p.current_cost, vat_rate: p.vat_rate, sort_order: j + 1, created_at: d.created_at, updated_at: d.created_at });
+      // varias tiendas liquidan hoy, para que el mes en curso tenga datos
+      if (!m.inactive && ci % 4 === 1 && visits[prev].date < T && diffDays(T, visits[prev].date) >= 10) {
+        visits.push({ m: m, date: T, prevIdx: prev });
       }
     });
+    // numeración por orden de entrega
+    var order = visits.map(function (v, i) { return i; }).sort(function (a, b) { return visits[a].date < visits[b].date ? -1 : visits[a].date > visits[b].date ? 1 : a - b; });
+    var depOf = {};
+    order.forEach(function (vi, n) {
+      var v = visits[vi], m = v.m, c = m.row;
+      var loc = m.locs.length ? m.locs[n % m.locs.length] : null;
+      var d = { id: uid(), user_id: U, client_id: c.id, location_id: loc ? loc.id : null,
+        delivery_date: v.date, recount_date: null, invoice_date: null, status: 'abierto', regime: null, client_has_re: null,
+        payment_method: null, deposit_number: 1 + n, holded_invoice_id: null, holded_invoice_status: null,
+        notes: chance(0.08) ? pick(['Escaparate pequeño: poner pocas', 'Preguntan por más infantiles', 'La encargada prefiere los martes']) : null,
+        client_note: chance(0.12) ? pick(['Reponer sobre todo cumpleaños', 'Dejar más de Navidad la próxima vez', 'Cambiar las de boda por bebé']) : null,
+        created_at: v.date + 'T09:' + pad(n % 60) + ':00.000Z', updated_at: v.date + 'T09:' + pad(n % 60) + ':00.000Z' };
+      depOf[vi] = d;
+      db.deposits.push(d);
+      var items = m.mix.slice();
+      if (isXmas(v.date)) items = items.concat(xmas.slice(0, ri(2, 3)));
+      if (chance(0.25)) { var extra = wpick(normal); if (items.indexOf(extra) < 0) items.push(extra); }
+      items.forEach(function (p, j) {
+        var base = pick([20, 24, 30, 36, 40, 50, 60]);
+        if (p.code.indexOf('MGE-STD') === 0 || p.code === 'NAVI-STD') base = pick([40, 50, 60, 80, 100, 120]);
+        db.deposit_lines.push({ id: uid(), user_id: U, deposit_id: d.id, product_id: p.id, product_code: p.code, product_name: p.name,
+          qty_delivered: base, qty_remaining: null, unit_price: p.current_price, unit_cost: p.current_cost, vat_rate: p.vat_rate,
+          sort_order: j + 1, created_at: d.created_at, updated_at: d.created_at });
+      });
+    });
+    // liquidar (recontar) el depósito anterior en cada visita
+    var invN = 0;
+    visits.forEach(function (v, vi) {
+      if (v.prevIdx == null) return;
+      var d = depOf[v.prevIdx], c = v.m.row;
+      d.recount_date = v.date;
+      var xm = isXmas(d.delivery_date);
+      db.deposit_lines.forEach(function (l) {
+        if (l.deposit_id !== d.id) return;
+        var sellRate = (l.product_code.indexOf('NAVI') === 0 ? 0.55 + rnd() * 0.4 : 0.30 + rnd() * 0.45) * (xm ? 1.15 : 1);
+        l.qty_remaining = Math.max(0, Math.round(l.qty_delivered * (1 - Math.min(0.97, sellRate))));
+      });
+      var mixed = /MIXTO/.test(c.internal_notes || '');
+      d.regime = (mixed && chance(0.5)) || (c.payment_method === 'efectivo' && chance(0.12)) ? 'B' : 'A';
+      var pm = c.payment_method === 'remesa_sepa' ? 'remesa' : c.payment_method;
+      d.payment_method = d.regime === 'B' ? 'efectivo' : pm;
+      if (d.regime === 'A' && diffDays(T, d.recount_date) > 4) {
+        invN++;
+        d.status = 'facturado'; d.invoice_date = d.recount_date;
+        d.holded_invoice_id = 'demo-F' + d.recount_date.slice(2, 4) + ('0000' + invN).slice(-4); d.holded_invoice_status = 'emitida';
+      } else d.status = 'recontado';
+      d.updated_at = v.date + 'T10:00:00.000Z';
+    });
 
-    // Cobros pendientes / cobrados
+    // ---- Cobros ----
     db.deposits.forEach(function (d) {
       if (d.status === 'abierto') return;
       var t = depositTotals(db, d);
       if (t.total <= 0) return;
       var inv = d.invoice_date || d.recount_date, age = diffDays(T, inv);
-      var immediate = ['efectivo', 'tarjeta', 'bizum'].indexOf(d.payment_method) >= 0;
-      var st = immediate ? 'cobrado' : (age > 35 ? 'cobrado' : 'pendiente');
-      if (d.deposit_number % 13 === 0 && !immediate) st = 'incidencia';
-      var c = byId(cli, d.client_id);
+      var pm = d.payment_method, immediate = ['efectivo', 'tarjeta', 'bizum'].indexOf(pm) >= 0;
+      var st, coll = null, exported = null, ref = null;
+      if (immediate) { st = 'cobrado'; coll = inv; }
+      else if (pm === 'remesa') {
+        if (age > 8) { exported = addDays(inv, 5) + 'T08:00:00.000Z'; ref = 'REMESA-DEMO-' + addDays(inv, 5).replace(/-/g, ''); }
+        if (age > 12) { st = 'cobrado'; coll = addDays(inv, 12); } else st = 'pendiente';
+      } else if (pm === 'pagare') { if (age > 32) { st = 'cobrado'; coll = addDays(inv, 30); } else st = 'pendiente'; }
+      else { if (age > 25 && chance(0.88)) { st = 'cobrado'; coll = addDays(inv, ri(8, 25)); } else st = 'pendiente'; }
+      if (!immediate && age > 20 && chance(0.04)) { st = 'incidencia'; coll = null; }
+      var c = byId(db.clients, d.client_id);
       db.pending_collections.push({ id: uid(), user_id: U, deposit_id: d.id, daily_record_id: null, invoice_date: inv,
-        expected_date: immediate ? inv : addDays(inv, 30), amount: r2(t.total), regime: d.regime || 'A', payment_method: d.payment_method,
-        client_name: c.commercial_name || c.legal_name, status: st, notes: st === 'incidencia' ? 'Devolución de recibo (demo)' : null,
-        collected_date: st === 'cobrado' ? (immediate ? inv : addDays(inv, 30)) : null,
-        collected_account_id: st === 'cobrado' ? (d.payment_method === 'efectivo' ? acc[5].id : acc[0].id) : null, collected_movement_id: null,
-        remesa_exported_at: null, remesa_file_ref: null, created_at: inv + 'T18:00:00.000Z' });
+        expected_date: immediate ? inv : addDays(inv, pm === 'remesa' ? 12 : 30), amount: r2(t.total), regime: d.regime || 'A', payment_method: pm,
+        client_name: c.commercial_name || c.legal_name, status: st,
+        notes: st === 'incidencia' ? pick(['Recibo devuelto por el banco (demo)', 'Cliente pide revisar unidades (demo)']) : null,
+        collected_date: coll, collected_account_id: coll ? (pm === 'efectivo' ? acc[6].id : (pm === 'tarjeta' ? acc[1].id : acc[0].id)) : null,
+        collected_movement_id: null, remesa_exported_at: exported, remesa_file_ref: ref, created_at: inv + 'T18:00:00.000Z' });
     });
 
-    // Registros diarios desde lo facturado
+    // ---- Registros diarios (desde lo facturado) ----
     var dias = {};
     db.deposits.forEach(function (d) { if (d.status === 'facturado') dias[d.invoice_date] = 1; });
     Object.keys(dias).forEach(function (dia) { recalcDaily(db, dia, o.user); });
-    db.daily_records.forEach(function (r) { if (diffDays(T, r.record_date) > 7) { r.collected_a = r.invoiced_a; r.collected_b = r.invoiced_b; } });
-
-    // Firmas para el cliente que las exige
+    db.daily_records.forEach(function (r) {
+      // lo cobrado ese día: efectivo/tarjeta/bizum del día (A y B)
+      var a = 0, b = 0;
+      db.pending_collections.forEach(function (p) { if (p.collected_date === r.record_date && p.status === 'cobrado') { if (p.regime === 'B') b += num(p.amount); else a += num(p.amount); } });
+      r.collected_a = r2(a); r.collected_b = r2(b);
+    });
+    // días con ventas solo en B (sin factura)
     db.deposits.forEach(function (d) {
-      if (d.client_id !== cli[6].id) return;
-      var ms = d.status === 'abierto' ? ['entrega'] : ['entrega', 'recuento'];
-      ms.forEach(function (m) {
-        var snap = snapshot(db, d, m);
-        db.deposit_signatures.push({ id: uid(), user_id: U, deposit_id: d.id, moment: m, signer_name: 'Encargada demo', signature_png: PNG,
-          content_snapshot: snap, content_hash: fakeHash(JSON.stringify(snap)), device_info: 'demo',
-          signed_at: (m === 'entrega' ? d.delivery_date : d.recount_date) + 'T10:30:00.000Z', voided_at: null, void_reason: null, created_at: now });
+      if (d.regime !== 'B' || !d.recount_date) return;
+      var r = db.daily_records.filter(function (x) { return x.record_date === d.recount_date; })[0];
+      var t = depositTotals(db, d);
+      if (!r) { r = { id: uid(), user_id: U, record_date: d.recount_date, invoiced_a: 0, invoiced_b: 0, collected_a: 0, collected_b: 0, notes: null, cash_account_id: null, cash_movement_id: null, created_at: now }; db.daily_records.push(r); }
+      r.invoiced_b = r2(num(r.invoiced_b) + t.total); r.collected_b = r2(num(r.collected_b) + t.total);
+    });
+
+    // ---- Firmas (clientes que las exigen) ----
+    db.deposits.forEach(function (d) {
+      var c = byId(db.clients, d.client_id);
+      if (!c.requires_signature) return;
+      var ms = d.recount_date ? ['entrega', 'recuento'] : ['entrega'];
+      ms.forEach(function (mo) {
+        var snap = snapshot(db, d, mo);
+        db.deposit_signatures.push({ id: uid(), user_id: U, deposit_id: d.id, moment: mo, signer_name: pick(['Encargada (demo)', 'Laura Demo', 'Marcos Ejemplo', 'Dependienta (demo)']),
+          signature_png: PNG, content_snapshot: snap, content_hash: fakeHash(JSON.stringify(snap)), device_info: 'demo',
+          signed_at: (mo === 'entrega' ? d.delivery_date : d.recount_date) + 'T10:' + pad(ri(0, 59)) + ':00.000Z', voided_at: null, void_reason: null, created_at: now });
       });
     });
+    // una firma anulada y vuelta a firmar (para ver el historial)
+    var sg = db.deposit_signatures.filter(function (s) { return s.moment === 'recuento'; })[3];
+    if (sg) {
+      db.deposit_signatures.push(Object.assign({}, sg, { id: uid(), voided_at: sg.signed_at, void_reason: 'Unidades mal contadas (demo)', signer_name: 'Laura Demo' }));
+    }
 
-    // Movimientos
-    var MV = [
-      ['ingreso', null, 0, 1250, 'Cobro remesa (demo)'], ['gasto', 0, null, 320.40, 'Imprenta (demo)'], ['traspaso', 0, 3, 600, 'Provisión IVA'],
-      ['gasto', 0, null, 89.90, 'Gasoil'], ['amortizacion', 0, 2, 500, 'Amortización póliza'], ['ingreso', null, 1, 410, 'Transferencia cliente'],
-      ['iva', 3, null, 1480, 'Pago trimestral IVA'], ['traspaso', 1, 4, 300, 'Al colchón'], ['gasto', 5, null, 25, 'Parking'],
-      ['ingreso', null, 5, 185, 'Efectivo ruta'], ['gasto', 0, null, 59.99, 'Material'], ['ingreso', null, 0, 960, 'Cobro remesa (demo)']
-    ];
-    MV.forEach(function (m, k) {
-      var dt = addDays(T, -ri(1, 60));
-      db.movements.push({ id: uid(), user_id: U, mov_date: dt, mov_type: m[0], origin_account_id: m[1] == null ? null : acc[m[1]].id,
-        dest_account_id: m[2] == null ? null : acc[m[2]].id, amount: m[3], concept: m[4], created_at: dt + 'T12:' + pad(k) + ':00.000Z' });
-    });
+    // ---- Gastos de ruta (todo el año) ----
+    for (var w = 0; w < 52; w++) {
+      var wk = addDays(T, -w * 7);
+      db.expenses.push({ id: uid(), user_id: U, expense_date: addDays(wk, -ri(0, 2)), concept: 'Gasoil', amount: r2(48 + rnd() * 32), notes: null, created_at: wk + 'T19:00:00.000Z' });
+      if (chance(0.6)) db.expenses.push({ id: uid(), user_id: U, expense_date: addDays(wk, -ri(0, 4)), concept: 'Peajes', amount: r2(4 + rnd() * 14), notes: null, created_at: wk + 'T19:05:00.000Z' });
+      if (chance(0.7)) db.expenses.push({ id: uid(), user_id: U, expense_date: addDays(wk, -ri(0, 4)), concept: 'Parking', amount: r2(2 + rnd() * 9), notes: null, created_at: wk + 'T19:10:00.000Z' });
+      if (chance(0.5)) db.expenses.push({ id: uid(), user_id: U, expense_date: addDays(wk, -ri(0, 4)), concept: 'Comida', amount: r2(9 + rnd() * 13), notes: null, created_at: wk + 'T19:15:00.000Z' });
+      if (w % 4 === 0) db.expenses.push({ id: uid(), user_id: U, expense_date: addDays(wk, -ri(0, 6)), concept: 'Material', amount: r2(15 + rnd() * 55), notes: 'Sobres y expositores (demo)', created_at: wk + 'T19:20:00.000Z' });
+      if (chance(0.15)) db.expenses.push({ id: uid(), user_id: U, expense_date: addDays(wk, -ri(0, 6)), concept: 'Otros', amount: r2(5 + rnd() * 30), notes: null, created_at: wk + 'T19:25:00.000Z' });
+    }
+    db.expenses = db.expenses.filter(function (e) { return e.expense_date <= T; });
 
-    // Gastos de ruta
-    var G = [['Gasoil', 45, 85], ['Peajes', 4, 18], ['Parking', 2, 12], ['Comida', 9, 22], ['Material', 10, 60], ['Otros', 5, 30]];
-    for (var g = 0; g < 26; g++) {
-      var gg = pick(G), dt2 = addDays(T, -ri(0, 75));
-      db.expenses.push({ id: uid(), user_id: U, expense_date: dt2, concept: gg[0], amount: r2(gg[1] + rnd() * (gg[2] - gg[1])), notes: null, created_at: dt2 + 'T19:00:00.000Z' });
+    // ---- Movimientos (todo el año) ----
+    function mov(dt, type, o_, d_, amount, concept) {
+      db.movements.push({ id: uid(), user_id: U, mov_date: dt, mov_type: type, origin_account_id: o_ == null ? null : acc[o_].id,
+        dest_account_id: d_ == null ? null : acc[d_].id, amount: r2(amount), concept: concept, created_at: dt + 'T12:' + pad(db.movements.length % 60) + ':00.000Z' });
+    }
+    for (var mth = 0; mth < 12; mth++) {
+      var base = new Date(T + 'T12:00:00'); base.setDate(1); base.setMonth(base.getMonth() - mth); var m0 = ymd(base);
+      var md = function (day) { var y = addDays(m0, day - 1); return y > T ? null : y; };
+      var x;
+      if ((x = md(5))) mov(x, 'gasto', 0, null, 980 + rnd() * 420, 'Imprenta Ficticia · pedido tarjetas');
+      if ((x = md(8))) mov(x, 'traspaso', 0, 4, 450 + rnd() * 250, 'Provisión IVA del mes');
+      if ((x = md(10))) mov(x, 'amortizacion', 0, 2, 400, 'Amortización póliza');
+      if ((x = md(12))) mov(x, 'ingreso', null, 0, 1400 + rnd() * 900, 'Abono remesa SEPA (demo)');
+      if ((x = md(15))) mov(x, 'gasto', 0, null, 65 + rnd() * 30, 'Seguro furgoneta');
+      if ((x = md(18))) mov(x, 'ingreso', null, 1, 600 + rnd() * 500, 'Liquidación TPV');
+      if ((x = md(22))) mov(x, 'traspaso', 6, 0, 250 + rnd() * 300, 'Ingreso efectivo en banco');
+      if ((x = md(25))) mov(x, 'gasto', 0, null, 210 + rnd() * 90, 'Cartonajes Demo · expositores');
+      if ((x = md(27))) mov(x, 'ingreso', null, 0, 500 + rnd() * 700, 'Transferencias clientes');
+      if (mth % 3 === 0 && (x = md(20))) mov(x, 'iva', 4, null, 1700 + rnd() * 700, 'Pago trimestral IVA (demo)');
+      if (mth % 6 === 2 && (x = md(3))) mov(x, 'traspaso', 0, 5, 500, 'Al colchón');
     }
     return db;
   }
@@ -468,34 +585,11 @@
       return null;
     },
 
-    // Holded simulado: no sale nada del navegador
-    holded_emit_invoice: function (a, db) {
-      var d = byId(db.deposits || [], a.p_deposit_id);
-      if (!d) throw E('Depósito no encontrado');
-      if ((d.regime || 'A') === 'B') throw E('Solo se facturan en Holded los depósitos en régimen A');
-      if (d.holded_invoice_id) throw E('Este depósito ya tiene factura en Holded (' + d.holded_invoice_id + ').');
-      var c = byId(db.clients || [], d.client_id);
-      if (!c) throw E('Cliente del depósito no encontrado');
-      if (!c.nif) throw E('El cliente no tiene NIF: complétalo en Contactos antes de facturar.');
-      if (c.requires_signature && !(db.deposit_signatures || []).some(function (s) { return s.deposit_id === d.id && s.moment === 'recuento' && !s.voided_at; }))
-        throw E('Este cliente exige el recuento firmado antes de facturar.');
-      if (!(depositTotals(db, d).base > 0)) throw E('El depósito no tiene unidades vendidas que facturar');
-      var n = (db.deposits || []).filter(function (x) { return x.holded_invoice_id; }).length + 1;
-      var num_ = 'DEMO-' + new Date().getFullYear() + '-' + ('000' + n).slice(-4);
-      var draft = a.p_draft !== false;
-      if (!draft) {
-        d.holded_invoice_id = 'demo-' + num_; d.holded_invoice_status = 'emitida';
-        if (d.status === 'recontado') d.status = 'facturado';
-        d.invoice_date = d.invoice_date || d.recount_date || today(); d.updated_at = new Date().toISOString();
-      }
-      return { ok: true, draft: draft, invoice_id: 'demo-' + num_, invoiceNum: num_ + ' (simulada)', contactId: 'demo-contact' };
-    },
-    holded_send_invoice: function () { return { ok: true, demo: true }; },
-    holded_pay_invoice: function (a, db) {
-      var d = byId(db.deposits || [], a.p_deposit_id);
-      return { ok: true, skipped: !(d && d.holded_invoice_id), demo: true };
-    }
+    // Holded: lo único que NO funciona en la demo (no hay conexión ni simulación)
+    holded_emit_invoice: function () { throw E('Holded no está disponible en el modo demo. Para simular la factura usa «✓ Marcar facturado».'); },
+    holded_send_invoice: function () { throw E('Holded no está disponible en el modo demo: no se envían facturas.'); },
+    holded_pay_invoice: function () { throw E('Holded no está disponible en el modo demo'); }
   };
 
-  window.MAGILU_DEMO_HOOKS = { version: 2, seed: seed, tables: tables, views: { v_deposit_totals: viewTotals }, rpc: rpc };
+  window.MAGILU_DEMO_HOOKS = { version: 3, seed: seed, tables: tables, views: { v_deposit_totals: viewTotals }, rpc: rpc };
 })();
