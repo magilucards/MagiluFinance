@@ -161,7 +161,7 @@
   Q.then = function (res, rej) {
     var self = this;
     var p = wait().then(function () {
-      try { return self._exec(); } catch (e) { return { data: null, error: err(e.message || String(e), e.code), count: null, status: 400 }; }
+      try { return self._exec(); } catch (e) { var pe = (e && e.message && !(e instanceof Error)) ? e : err(e.message || String(e), e.code); return { data: null, error: pe, count: null, status: pe.status || 400 }; }
     }).then(function (r) { if (self._throw && r.error) throw r.error; return r; });
     return p.then(res, rej);
   };
@@ -276,7 +276,7 @@
             save();
             if (r && r.__error) return { data: null, error: r.__error };
             return { data: r === undefined ? null : r, error: null };
-          } catch (e) { return { data: null, error: err(e.message || String(e), e.code) }; }
+          } catch (e) { return { data: null, error: (e && e.message && !(e instanceof Error)) ? e : err(e.message || String(e), e.code) }; }
         });
       },
       functions: { invoke: function (n) { return wait({ data: null, error: err('Funciones remotas desactivadas en el modo demo (' + n + ')') }); } },
@@ -288,7 +288,7 @@
         getUser: function () { var s = session(); return wait({ data: { user: s ? s.user : null }, error: s ? null : err('Sin sesión') }); },
         onAuthStateChange: function (cb) {
           listeners.push(cb);
-          setTimeout(function () { try { cb('INITIAL_SESSION', session()); } catch (e) { /* noop */ } }, 0);
+          var s0 = session(); if (s0) setTimeout(function () { try { cb('INITIAL_SESSION', s0); } catch (e) { /* noop */ } }, 0);
           return { data: { subscription: { unsubscribe: function () { listeners = listeners.filter(function (x) { return x !== cb; }); } } } };
         },
         signInWithPassword: function () {

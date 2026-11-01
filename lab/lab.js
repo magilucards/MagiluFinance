@@ -32,7 +32,8 @@
     + 'background:repeating-linear-gradient(-45deg,#3a1029 0 14px,#4d1538 14px 28px);'
     + 'color:#fff;font:700 10px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.08em;'
     + 'text-transform:uppercase;white-space:nowrap;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.25);cursor:pointer}'
-    + '#mf-lab-band b{color:#ff7ac0}';
+    + '#mf-lab-band b{color:#ff7ac0}'
+    + '@media (max-width:560px){#mf-lab-band .mf-lab-long{display:none}}';
 
   var st = document.createElement('style');
   st.id = 'mf-lab-style';
@@ -52,8 +53,10 @@
     b.setAttribute('role', 'note');
     b.title = 'Toca para reiniciar los datos de prueba';
     var t = document.createElement('b'); t.textContent = 'LAB';
+    var long = document.createElement('span'); long.className = 'mf-lab-long'; long.textContent = ' · sin Supabase ni Holded';
     b.appendChild(t);
-    b.appendChild(document.createTextNode(TEXT.slice(3)));
+    b.appendChild(document.createTextNode(' · modo demo · datos de prueba'));
+    b.appendChild(long);
     // Tocar la franja → reiniciar datos de demo (solo en este navegador)
     b.addEventListener('click', function () {
       if (!window.MAGILU_DEMO) return;
@@ -65,6 +68,12 @@
     document.body.insertBefore(b, document.body.firstChild);
     themeColor();
   }
+
+  // Los avisos de la app hablan de Holded "real": en el LAB se dejan claros como simulación
+  var PREFIX = '🧪 MODO DEMO · nada sale del dispositivo (ni Supabase ni Holded)\n\n';
+  var _confirm = window.confirm.bind(window), _alert = window.alert.bind(window);
+  window.confirm = function (m) { return _confirm(PREFIX + (m == null ? '' : m)); };
+  window.alert = function (m) { return _alert(PREFIX + (m == null ? '' : m)); };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
   else mount();
