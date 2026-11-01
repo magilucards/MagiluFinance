@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="./lab/lab.js"></script>
-<title>Dashboard · MagiluFinance LAB</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<title>Dashboard · Magilu</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
 <link rel="manifest" href="./lab/manifest.json">
 <meta name="theme-color" content="#050912">
 <link rel="apple-touch-icon" href="./lab/apple-touch-icon.png">
@@ -79,7 +79,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .donut-center .l { font-size:9.5px; color:var(--text-dim); line-height:1.2; margin-top:2px; }
 .dlegend { flex:1; min-width:0; list-style:none; font-size:12px; }
 .dlegend li { display:flex; align-items:center; gap:6px; padding:3px 4px; border-radius:4px; cursor:pointer; }
-.dlegend li.sel { background:rgba(255,255,255,0.06); }
+.dlegend li.sel { background:rgba(58,16,41,0.06); }
 .dlegend .sw { width:10px; height:10px; border-radius:2px; flex:0 0 auto; }
 .dlegend .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-dim); }
 .dlegend .val { font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -253,12 +253,9 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 
 <div id="toast" class="toast"></div>
 
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
-  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer">
-</script>
+<!-- LAB: sin Supabase. Backend de demostración en el navegador -->
+<script src="./lab/demo-data.js"></script>
+<script src="./lab/demo-backend.js"></script>
 <script>
 'use strict';
 

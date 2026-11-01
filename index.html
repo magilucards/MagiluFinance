@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="./lab/lab.js"></script>
-<title>Inicio · MagiluFinance LAB</title>
+<title>Inicio · Magilu</title>
 <link rel="manifest" href="./lab/manifest.json">
 <meta name="theme-color" content="#050912">
 <link rel="apple-touch-icon" href="./lab/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./lab/icon-192.png">
 <script src="./privacy.js"></script>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -260,7 +260,7 @@ html, body {
 <body>
 
 <div id="loadingScreen" class="loading-screen">
-  <img src="lab/icon-192.png" alt="" class="loading-logo" onerror="this.style.display='none'">
+  <img src="lab/logo.png" alt="" class="loading-logo" onerror="this.style.display='none'">
   <span>cargando…</span>
 </div>
 
@@ -268,9 +268,9 @@ html, body {
 
 <header class="app-header">
   <div class="header-inner">
-    <img src="lab/icon-192.png" alt="" class="header-logo" onerror="this.style.display='none'">
+    <img src="lab/logo.png" alt="" class="header-logo" onerror="this.style.display='none'">
     <div class="header-title">
-      <h1>Magilu <em>Finance</em></h1>
+      <h1>Magilu</h1>
       <div class="subtitle">Centro de control</div>
     </div>
     <div class="header-meta" data-privacy-slot>
@@ -281,7 +281,7 @@ html, body {
 </header>
 
 <section class="welcome">
-  <h2>Hola, <em id="welcomeName">Tomás</em></h2>
+  <h2>Hola<em id="welcomeName" hidden></em></h2>
   <p>¿Qué quieres hacer hoy? Elige un módulo para empezar.</p>
 </section>
 
@@ -351,12 +351,9 @@ html, body {
 
 </div><!-- /#app -->
 
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
-  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer">
-</script>
+<!-- LAB: sin Supabase. Backend de demostración en el navegador -->
+<script src="./lab/demo-data.js"></script>
+<script src="./lab/demo-backend.js"></script>
 
 <script>
 'use strict';

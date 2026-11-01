@@ -1,19 +1,39 @@
 {
-  "id": "magilufinance-lab",
-  "name": "MagiluFinance LAB",
-  "short_name": "MF LAB",
-  "description": "Laboratorio de interfaz de Magilu Finance (NO es la app oficial)",
+  "id": "magilu-lab",
+  "name": "Magilu",
+  "short_name": "Magilu",
+  "description": "Magilu · laboratorio en modo demo (datos de prueba, no conectado a la app real)",
   "start_url": "../",
   "scope": "../",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#050912",
-  "theme_color": "#ffc400",
+  "background_color": "#fff6fa",
+  "theme_color": "#e0127f",
   "lang": "es-ES",
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

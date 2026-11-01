@@ -6,8 +6,8 @@
 <script src="./lab/lab.js"></script>
 <link rel="manifest" href="./lab/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="./lab/icon-192.png">
-<title>Depósitos · MagiluFinance LAB</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<title>Depósitos · Magilu</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -40,7 +40,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .btn-danger { background:transparent; border:1px solid var(--red); color:var(--red-bright); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:500; padding:9px 16px; cursor:pointer; border-radius:6px; }
 .btn-danger:hover { background:rgba(224,117,96,0.1); }
 .btn-pdf { background:transparent; border:1px solid var(--accent-bright); color:var(--accent-bright); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:600; padding:9px 16px; cursor:pointer; border-radius:6px; }
-.btn-pdf:hover { background:rgba(63,98,153,0.15); }
+.btn-pdf:hover { background:rgba(150, 52, 110, 0.15); }
 
 .main-content { max-width:1400px; margin:0 auto; padding:24px 32px; }
 
@@ -57,9 +57,9 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .dep-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:18px 20px; margin-bottom:12px; display:grid; grid-template-columns:auto 1fr auto auto auto; gap:20px; align-items:center; cursor:pointer; transition:all 0.15s; }
 .dep-card:hover { border-color:var(--primary-dim); transform:translateY(-1px); }
 .status-pill { font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; padding:4px 10px; border-radius:20px; font-weight:600; white-space:nowrap; }
-.status-abierto { background:rgba(110,226,197,0.12); color:var(--primary); }
+.status-abierto { background:rgba(224, 18, 127, 0.12); color:var(--primary); }
 .status-recontado { background:rgba(212,160,74,0.12); color:var(--amber-bright); }
-.status-facturado { background:rgba(63,98,153,0.18); color:var(--accent-bright); }
+.status-facturado { background:rgba(150, 52, 110, 0.18); color:var(--accent-bright); }
 .dep-client { font-weight:600; font-size:15px; }
 .dep-meta { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); margin-top:2px; }
 .dep-stat { text-align:right; }
@@ -136,7 +136,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .cii-re-toggle:hover { border-color:var(--primary-dim); }
 
 /* Modal de liquidación */
-.modal-overlay { position:fixed; inset:0; background:rgba(5,9,18,0.85); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+.modal-overlay { position:fixed; inset:0; background:rgba(58, 16, 41, 0.45); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
 .modal-overlay.active { display:flex; }
 .liq-modal { background:var(--bg-elev); border:1px solid var(--border-strong); border-radius:12px; width:100%; max-width:460px; box-shadow:0 30px 80px rgba(0,0,0,0.5); }
 .liq-header { display:flex; justify-content:space-between; align-items:center; padding:20px 24px; border-bottom:1px solid var(--border); }
@@ -168,7 +168,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .field input[readonly], .field textarea[readonly], .field select:disabled { opacity:0.7; }
 .dep-store { color:var(--amber-bright); font-weight:500; }
 .sig-chip { font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 8px; border-radius:20px; white-space:nowrap; margin-left:6px; vertical-align:middle; }
-.sig-ok { background:rgba(110,226,197,0.12); color:var(--primary); }
+.sig-ok { background:rgba(224, 18, 127, 0.12); color:var(--primary); }
 .sig-pend { background:rgba(138,155,178,0.12); color:var(--text-dim); }
 .sig-pend.required { background:rgba(224,117,96,0.15); color:var(--red-bright); font-weight:600; }
 .detail-notice { display:none; padding:10px 14px; margin-bottom:14px; border-radius:8px; font-size:12px; border:1px solid var(--amber); background:rgba(212,160,74,0.08); color:var(--amber-bright); }
@@ -581,12 +581,9 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 
 <div id="toast" class="toast"></div>
 
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
-  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer">
-</script>
+<!-- LAB: sin Supabase. Backend de demostración en el navegador -->
+<script src="./lab/demo-data.js"></script>
+<script src="./lab/demo-backend.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" referrerpolicy="no-referrer"></script>
 

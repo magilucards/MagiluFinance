@@ -8,14 +8,14 @@
 <!-- =================================
      SEGURIDAD: Content Security Policy
 ================================= -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
 
 <meta http-equiv="X-Content-Type-Options" content="nosniff">
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="robots" content="noindex, nofollow">
 
-<title>MagiluFinance LAB</title>
+<title>Magilu</title>
 
 <link rel="icon" type="image/png" sizes="32x32" href="./lab/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="./lab/apple-touch-icon.png">
@@ -25,7 +25,7 @@
 <meta name="theme-color" content="#081023">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MagiluFinance LAB">
+<meta name="apple-mobile-web-app-title" content="Magilu">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,7 +55,7 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: var(--bg); color: var(--text); font-family: 'Inter Tight', sans-serif; font-size: 15px; line-height: 1.55; min-height: 100vh; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; }
-  body { background-image: radial-gradient(ellipse at top right, rgba(110, 226, 197, 0.05), transparent 60%), radial-gradient(ellipse at bottom left, rgba(63, 98, 153, 0.06), transparent 60%); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+  body { background-image: radial-gradient(ellipse at top right, rgba(224, 18, 127, 0.05), transparent 60%), radial-gradient(ellipse at bottom left, rgba(150, 52, 110, 0.06), transparent 60%); padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
   .auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .auth-card { background: var(--bg-elev); border: 1px solid var(--border); padding: 48px 40px; max-width: 420px; width: 100%; border-radius: 12px; box-shadow: 0 30px 60px rgba(0,0,0,0.4); }
   .auth-logo { width: 64px; height: 64px; margin: 0 auto 24px; display: block; border-radius: 14px; }
@@ -79,7 +79,7 @@
   .auth-message { padding: 10px 14px; font-size: 13px; margin-top: 12px; display: none; border-radius: 4px; border-left: 3px solid; }
   .auth-message.visible { display: block; }
   .auth-message.error { background: rgba(224, 117, 96, 0.08); color: var(--red-bright); border-color: var(--red); }
-  .auth-message.success { background: rgba(110, 226, 197, 0.08); color: var(--green-bright); border-color: var(--green); }
+  .auth-message.success { background: rgba(224, 18, 127, 0.08); color: var(--green-bright); border-color: var(--green); }
   .app { display: none; }
   .app.visible { display: block; }
   .container { max-width: 1180px; margin: 0 auto; padding: 40px 28px 120px; }
@@ -143,7 +143,7 @@
   .btn-primary { background: var(--primary-dim); border-color: var(--primary-dim); color: var(--bg); }
   .btn-primary:hover { background: var(--primary); color: var(--bg); border-color: var(--primary); }
   .alert { padding: 12px 16px; border-left: 3px solid var(--amber); background: rgba(212, 160, 74, 0.08); margin-bottom: 10px; font-size: 13px; display: flex; align-items: flex-start; gap: 10px; border-radius: 4px; }
-  .alert.success { border-left-color: var(--green); background: rgba(110, 226, 197, 0.08); }
+  .alert.success { border-left-color: var(--green); background: rgba(224, 18, 127, 0.08); }
   .alert.danger { border-left-color: var(--red); background: rgba(224, 117, 96, 0.08); }
   .movement-log { max-height: 400px; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; }
   .movement-row { display: grid; grid-template-columns: 90px 90px 1fr 120px 28px; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; align-items: center; gap: 12px; }
@@ -151,17 +151,17 @@
   .movement-row:hover { background: var(--bg-elev); }
   .movement-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); }
   .movement-type { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 3px; text-align: center; }
-  .movement-type.ingreso { background: rgba(110, 226, 197, 0.15); color: var(--primary-bright); }
+  .movement-type.ingreso { background: rgba(224, 18, 127, 0.15); color: var(--primary-bright); }
   .movement-type.gasto { background: rgba(224, 117, 96, 0.15); color: var(--red-bright); }
-  .movement-type.traspaso { background: rgba(63, 98, 153, 0.20); color: var(--accent-bright); }
+  .movement-type.traspaso { background: rgba(150, 52, 110, 0.20); color: var(--accent-bright); }
   .movement-type.iva { background: rgba(212, 160, 74, 0.15); color: var(--amber-bright); }
-  .movement-type.amortizacion { background: rgba(110, 226, 197, 0.15); color: var(--primary-bright); }
+  .movement-type.amortizacion { background: rgba(224, 18, 127, 0.15); color: var(--primary-bright); }
   .movement-account { font-size: 11px; color: var(--text-dim); }
   .movement-amount { font-family: 'JetBrains Mono', monospace; font-weight: 500; text-align: right; }
   .movement-amount.positive { color: var(--primary-bright); }
   .movement-amount.negative { color: var(--red-bright); }
   .movement-delete { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 16px; }
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); z-index: 100; align-items: flex-start; justify-content: center; padding: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(58, 16, 41, 0.45); z-index: 100; align-items: flex-start; justify-content: center; padding: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .modal-overlay.open { display: flex; }
   .modal { background: var(--bg-elev); border: 1px solid var(--border-strong); padding: 24px 24px 100px 24px; max-width: 600px; width: 100%; border-radius: 12px; margin: 24px auto; position: relative; max-height: none; }
   .modal.modal-wide { max-width: 720px; }
@@ -255,10 +255,10 @@
   .day-cell.tier-amber { background: rgba(212, 160, 74, 0.08); border-color: rgba(212, 160, 74, 0.3); }
   .day-cell.tier-amber .day-amount { color: var(--amber-bright); }
   .day-cell.tier-amber .day-bar-fill { background: var(--amber); }
-  .day-cell.tier-green { background: rgba(110, 226, 197, 0.08); border-color: rgba(110, 226, 197, 0.3); }
+  .day-cell.tier-green { background: rgba(224, 18, 127, 0.08); border-color: rgba(224, 18, 127, 0.3); }
   .day-cell.tier-green .day-amount { color: var(--primary-bright); }
   .day-cell.tier-green .day-bar-fill { background: var(--primary); }
-  .day-cell.tier-aqua { background: rgba(110, 226, 197, 0.18); border-color: var(--primary); }
+  .day-cell.tier-aqua { background: rgba(224, 18, 127, 0.18); border-color: var(--primary); }
   .day-cell.tier-aqua .day-amount { color: var(--primary-bright); }
   .day-cell.tier-aqua .day-bar-fill { background: var(--primary-bright); }
 
@@ -276,7 +276,7 @@
   .add-line-btn { background: transparent; border: 1px dashed var(--border-strong); color: var(--text-dim); padding: 8px; width: 100%; cursor: pointer; border-radius: 4px; font-size: 12px; margin-top: 4px; }
   .add-line-btn:hover { border-color: var(--primary); color: var(--primary-bright); }
 
-  .day-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; padding: 14px; background: rgba(110, 226, 197, 0.05); border: 1px solid rgba(110, 226, 197, 0.2); border-radius: 6px; }
+  .day-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; padding: 14px; background: rgba(224, 18, 127, 0.05); border: 1px solid rgba(224, 18, 127, 0.2); border-radius: 6px; }
   .day-summary-item { text-align: center; }
   .day-summary-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 4px; }
   .day-summary-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; color: var(--primary-bright); }
@@ -296,7 +296,7 @@
   .pending-type { font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 6px; border-radius: 3px; background: var(--bg); color: var(--text-dim); text-align: center; }
   .pending-actions { display: flex; gap: 4px; justify-content: flex-end; }
   .pending-actions button { background: none; border: 1px solid var(--border-strong); cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 12px; color: var(--text-dim); }
-  .pending-actions .btn-cobrar:hover { border-color: var(--primary); color: var(--primary-bright); background: rgba(110, 226, 197, 0.08); }
+  .pending-actions .btn-cobrar:hover { border-color: var(--primary); color: var(--primary-bright); background: rgba(224, 18, 127, 0.08); }
   .pending-actions .btn-incidencia:hover { border-color: var(--red); color: var(--red-bright); background: rgba(224, 117, 96, 0.08); }
   .filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
   .filter-chip { padding: 5px 12px; background: var(--bg-card); border: 1px solid var(--border-strong); color: var(--text-dim); font-size: 12px; cursor: pointer; border-radius: 20px; font-family: 'Inter Tight', sans-serif; }
@@ -365,14 +365,14 @@
 <body>
 
 <div class="loading-screen" id="loadingScreen">
-  <img src="lab/icon-192.png" alt="" class="loading-logo">
+  <img src="lab/logo.png" alt="" class="loading-logo">
   <span>Conectando…</span>
 </div>
 
 <div class="auth-screen" id="authScreen" style="display: none;">
   <div class="auth-card">
-    <img src="lab/icon-192.png" alt="Magilu Finance" class="auth-logo">
-    <h1>Magilu <em>Finance</em></h1>
+    <img src="lab/logo.png" alt="Magilu" class="auth-logo">
+    <h1>Magilu</h1>
     <p class="subtitle" id="authSubtitle">Inicia sesión para acceder a tus datos</p>
     <form class="auth-form" id="authForm" onsubmit="event.preventDefault(); handleAuth();">
       <div class="auth-field">
@@ -400,9 +400,9 @@
       <a href="./index.html" class="home-link" title="Volver al inicio">← Inicio</a>
     </nav>
     <header>
-      <img src="lab/icon-192.png" alt="" class="header-logo">
+      <img src="lab/logo.png" alt="" class="header-logo">
       <div class="header-title">
-        <h1>Magilu <em>Finance</em></h1>
+        <h1>Magilu</h1>
         <div class="subtitle" data-version="ok">Tesorería · Liquidez en tiempo real · <span style="color:var(--primary)">v11 · 2026-05-21</span></div>
       </div>
       <div class="header-meta">
@@ -605,7 +605,7 @@
   #remesaModal .rem-warn { color:var(--amber-bright); font-size:10px; display:block; }
   #remesaModal .rem-issues { background:rgba(224,117,96,0.08); border:1px solid var(--red); border-radius:6px; padding:12px 14px; margin:14px 0; font-size:13px; color:var(--red-bright); }
   #remesaModal .rem-issues ul { margin:6px 0 0 18px; }
-  #remesaModal .rem-ok { background:rgba(110,226,197,0.08); border:1px solid var(--primary-dim); border-radius:6px; padding:10px 14px; margin:14px 0; font-size:13px; color:var(--primary-bright); }
+  #remesaModal .rem-ok { background:rgba(224, 18, 127, 0.08); border:1px solid var(--primary-dim); border-radius:6px; padding:10px 14px; margin:14px 0; font-size:13px; color:var(--primary-bright); }
 </style>
 
 <div class="modal-overlay" id="movementModal" onclick="if(event.target===this)closeModal('movementModal')">
@@ -731,12 +731,9 @@
 </div>
 
 <!-- Supabase JS SDK con Subresource Integrity -->
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
-  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer">
-</script>
+<!-- LAB: sin Supabase. Backend de demostración en el navegador -->
+<script src="./lab/demo-data.js"></script>
+<script src="./lab/demo-backend.js"></script>
 
 <script>
 'use strict';
@@ -2442,7 +2439,7 @@ function renderPending() {
     row.appendChild(exp);
     
     const status = document.createElement('span'); status.className = 'pending-type';
-    if (p.status === 'cobrado') { status.textContent = '✓ COBRADO'; status.style.color = 'var(--primary-bright)'; status.style.background = 'rgba(110,226,197,0.15)'; }
+    if (p.status === 'cobrado') { status.textContent = '✓ COBRADO'; status.style.color = 'var(--primary-bright)'; status.style.background = 'rgba(224, 18, 127, 0.15)'; }
     else if (p.status === 'incidencia') { status.textContent = '⚠ INCIDENCIA'; status.style.color = 'var(--red-bright)'; status.style.background = 'rgba(224,117,96,0.15)'; }
     else { status.textContent = 'PENDIENTE'; }
     row.appendChild(status);

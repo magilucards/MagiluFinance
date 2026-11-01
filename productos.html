@@ -6,8 +6,8 @@
 <script src="./lab/lab.js"></script>
 <link rel="manifest" href="./lab/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="./lab/icon-192.png">
-<title>Productos · MagiluFinance LAB</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<title>Productos · Magilu</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -75,11 +75,11 @@ tbody tr.inactive td { opacity:0.45; }
 .price { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text); }
 .cost { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--text-dim); }
 .margin { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600; padding:3px 10px; border-radius:4px; display:inline-block; }
-.margin-high { background:rgba(110,226,197,0.12); color:var(--primary); }
-.margin-mid { background:rgba(63,98,153,0.18); color:var(--accent-bright); }
+.margin-high { background:rgba(224, 18, 127, 0.12); color:var(--primary); }
+.margin-mid { background:rgba(150, 52, 110, 0.18); color:var(--accent-bright); }
 .margin-low { background:rgba(224,117,96,0.12); color:var(--red-bright); }
 .dot { display:inline-block; width:7px; height:7px; border-radius:50%; }
-.dot-active { background:var(--primary); box-shadow:0 0 8px rgba(110,226,197,0.4); }
+.dot-active { background:var(--primary); box-shadow:0 0 8px rgba(224, 18, 127, 0.4); }
 .dot-inactive { background:var(--text-faint); }
 .vat { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-faint); }
 
@@ -87,7 +87,7 @@ tbody tr.inactive td { opacity:0.45; }
 .pager-count { font-family:'JetBrains Mono',monospace; color:var(--text-faint); font-size:11px; }
 
 /* MODAL */
-.modal-overlay { position:fixed; inset:0; background:rgba(5,9,18,0.85); display:none; align-items:flex-start; justify-content:center; z-index:100; padding:40px 20px; overflow-y:auto; }
+.modal-overlay { position:fixed; inset:0; background:rgba(58, 16, 41, 0.45); display:none; align-items:flex-start; justify-content:center; z-index:100; padding:40px 20px; overflow-y:auto; }
 .modal-overlay.active { display:flex; }
 .modal { background:var(--bg-elev); border:1px solid var(--border-strong); border-radius:10px; width:100%; max-width:680px; padding:28px; box-shadow:0 30px 80px rgba(0,0,0,0.5); }
 .modal-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border); }
@@ -122,7 +122,7 @@ tbody tr.inactive td { opacity:0.45; }
 .variants-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
 .variants-section-title { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); font-weight:600; }
 .btn-add-variant { background:transparent; border:1px solid var(--primary-dim); color:var(--primary); font-family:'Inter Tight',sans-serif; font-size:11px; font-weight:600; padding:5px 10px; cursor:pointer; border-radius:5px; }
-.btn-add-variant:hover { background:rgba(110,226,197,0.1); }
+.btn-add-variant:hover { background:rgba(224, 18, 127, 0.1); }
 .variant-row { display:grid; grid-template-columns:auto 1fr auto auto auto; gap:12px; align-items:center; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:6px; margin-bottom:6px; cursor:pointer; transition:all 0.1s; }
 .variant-row:hover { border-color:var(--primary-dim); background:var(--bg-elev); }
 .variant-code { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--primary); }
@@ -341,12 +341,9 @@ tbody tr.inactive td { opacity:0.45; }
 
 <div id="toast" class="toast"></div>
 
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
-  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer">
-</script>
+<!-- LAB: sin Supabase. Backend de demostración en el navegador -->
+<script src="./lab/demo-data.js"></script>
+<script src="./lab/demo-backend.js"></script>
 
 <script>
 'use strict';

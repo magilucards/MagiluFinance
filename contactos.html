@@ -6,8 +6,8 @@
 <script src="./lab/lab.js"></script>
 <link rel="manifest" href="./lab/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="./lab/icon-192.png">
-<title>Contactos · MagiluFinance LAB</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<title>Contactos · Magilu</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -249,8 +249,8 @@ tbody tr:last-child td { border-bottom: none; }
 tbody tr.inactive td { opacity: 0.45; }
 tbody tr.flagged { background: rgba(212, 160, 74, 0.04); }
 tbody tr.flagged:hover { background: rgba(212, 160, 74, 0.10); }
-tbody tr.both-type { background: rgba(110, 226, 197, 0.04); }
-tbody tr.both-type:hover { background: rgba(110, 226, 197, 0.10); }
+tbody tr.both-type { background: rgba(224, 18, 127, 0.04); }
+tbody tr.both-type:hover { background: rgba(224, 18, 127, 0.10); }
 tbody tr.supplier td:nth-child(3) { color: var(--text-dim); }
 tbody tr.generic td { font-style: italic; color: var(--text-dim); }
 
@@ -283,7 +283,7 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
   display: inline-block; width: 7px; height: 7px;
   border-radius: 50%;
 }
-.dot-active { background: var(--primary); box-shadow: 0 0 8px rgba(110, 226, 197, 0.4); }
+.dot-active { background: var(--primary); box-shadow: 0 0 8px rgba(224, 18, 127, 0.4); }
 .dot-inactive { background: var(--text-faint); }
 
 .badge {
@@ -294,16 +294,16 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
   font-weight: 500;
   letter-spacing: 0.02em;
 }
-.badge-re { background: rgba(63, 98, 153, 0.18); color: var(--accent-bright); border: 1px solid rgba(63, 98, 153, 0.4); }
-.badge-gen { background: rgba(110, 226, 197, 0.10); color: var(--primary); border: 1px solid rgba(110, 226, 197, 0.3); }
+.badge-re { background: rgba(150, 52, 110, 0.18); color: var(--accent-bright); border: 1px solid rgba(150, 52, 110, 0.4); }
+.badge-gen { background: rgba(224, 18, 127, 0.10); color: var(--primary); border: 1px solid rgba(224, 18, 127, 0.3); }
 .badge-pend { background: rgba(212, 160, 74, 0.10); color: var(--amber-bright); border: 1px solid rgba(212, 160, 74, 0.3); }
-.badge-client { background: rgba(110, 226, 197, 0.08); color: var(--primary); }
-.badge-supplier { background: rgba(63, 98, 153, 0.15); color: var(--accent-bright); }
+.badge-client { background: rgba(224, 18, 127, 0.08); color: var(--primary); }
+.badge-supplier { background: rgba(150, 52, 110, 0.15); color: var(--accent-bright); }
 .badge-both { background: rgba(212, 160, 74, 0.12); color: var(--amber-bright); font-weight: 600; }
 
 .iban-yes {
   font-family: 'JetBrains Mono', monospace;
-  background: rgba(110, 226, 197, 0.08);
+  background: rgba(224, 18, 127, 0.08);
   color: var(--primary);
   padding: 3px 8px;
   border-radius: 4px;
@@ -367,7 +367,7 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
 /* MODAL */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(5, 9, 18, 0.85);
+  background: rgba(58, 16, 41, 0.45);
   display: none;
   align-items: flex-start;
   justify-content: center;
@@ -481,7 +481,7 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
 .loc-form .form-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
 .sub-empty { font-size: 12px; color: var(--text-faint); font-style: italic; }
 .sig-chip { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
-.sig-ok { background: rgba(110, 226, 197, 0.12); color: var(--primary); }
+.sig-ok { background: rgba(224, 18, 127, 0.12); color: var(--primary); }
 .sig-pend { background: rgba(138, 155, 178, 0.12); color: var(--text-dim); }
 .sig-pend.required { background: rgba(224, 117, 96, 0.15); color: var(--red-bright); font-weight: 600; }
 @media (max-width: 600px) { .loc-form { grid-template-columns: 1fr; } }
@@ -809,12 +809,9 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
 <div id="toast" class="toast"></div>
 
 <!-- Supabase JS SDK con Subresource Integrity -->
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
-  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer">
-</script>
+<!-- LAB: sin Supabase. Backend de demostración en el navegador -->
+<script src="./lab/demo-data.js"></script>
+<script src="./lab/demo-backend.js"></script>
 
 <script>
 'use strict';
