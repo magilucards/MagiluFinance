@@ -1,0 +1,12 @@
+# Solo para el LAB (rama ui-lab → magilufinance-lab.netlify.app). La oficial sigue en GitHub Pages.
+# Publica únicamente los archivos web: nada de db/, sql/ ni documentación.
+[build]
+  command = "rm -rf dist && mkdir dist && cp -r *.html *.js *.png *.ico manifest.json lab dist/ && rm -f dist/lab/README.md"
+  publish = "dist"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
