@@ -37,11 +37,16 @@ create index if not exists idx_audit_user on public.audit_log (user_id, changed_
 
 alter table public.audit_log enable row level security;
 
-drop policy if exists audit_read_own on public.audit_log;
-create policy audit_read_own on public.audit_log
-  for select
-  to authenticated
-  using ((select auth.uid()) = user_id);
+do $$
+begin
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'audit_log' and policyname = 'audit_read_own') then
+    create policy audit_read_own on public.audit_log
+      for select
+      to authenticated
+      using ((select auth.uid()) = user_id);
+  end if;
+end;
+$$;
 
 revoke all on public.audit_log from public, anon, authenticated;
 grant select on public.audit_log to authenticated;
@@ -91,8 +96,7 @@ begin
     'accounts', 'movements', 'daily_records', 'debts', 'fixed_expenses',
     'expenses', 'editable_data', 'settings'
   ] loop
-    execute format('drop trigger if exists tr_audit on public.%I', t);
-    execute format('create trigger tr_audit after insert or update or delete on public.%I
+    execute format('create or replace trigger tr_audit after insert or update or delete on public.%I
                     for each row execute function public.audit_capture()', t);
   end loop;
 end;
