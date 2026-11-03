@@ -180,7 +180,7 @@
     .modal-actions { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
     .modal-actions .btn { flex: 1; min-width: 0; }
   }
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--primary-dim); color: var(--bg); padding: 12px 20px; font-size: 13px; font-weight: 500; border-radius: 6px; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; z-index: 200; pointer-events: none; }
+  .toast { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); right: 24px; max-width: calc(100vw - 48px); line-height: 1.4; background: var(--primary-dim); color: var(--bg); padding: 12px 20px; font-size: 13px; font-weight: 500; border-radius: 6px; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; z-index: 200; pointer-events: none; }
   .toast.show { opacity: 1; transform: translateY(0); }
   .toast.error { background: var(--red); color: white; }
   .loading-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; gap: 20px; }
@@ -302,6 +302,22 @@
   .filter-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
   .filter-chip { padding: 5px 12px; background: var(--bg-card); border: 1px solid var(--border-strong); color: var(--text-dim); font-size: 12px; cursor: pointer; border-radius: 20px; font-family: 'Inter Tight', sans-serif; }
   .filter-chip.active { background: var(--primary-dim); border-color: var(--primary-dim); color: var(--bg); }
+
+  /* Selección de cobros para marcarlos cobrados de una vez */
+  .pending-cb { width: 20px; height: 20px; margin: 0 8px 0 0; vertical-align: middle; accent-color: var(--primary); cursor: pointer; flex: 0 0 auto; }
+  .pending-row .pending-date { display: flex; align-items: center; }
+  .pending-row.selectable { cursor: pointer; }
+  .pending-row.selected { background: rgba(110, 226, 197, 0.08); box-shadow: inset 3px 0 0 var(--primary); }
+  .select-all { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); margin: 0 0 10px; cursor: pointer; }
+  .select-all input { width: 20px; height: 20px; accent-color: var(--primary); }
+  .bulk-bar { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 30; margin-top: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--bg-elev); border: 1px solid var(--primary-dim); border-radius: 10px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.55); }
+  .bulk-info { flex: 1; min-width: 140px; font-size: 13px; }
+  .bulk-info strong { color: var(--primary-bright); }
+  .collect-list { list-style: none; max-height: 190px; overflow-y: auto; margin: -8px 0 16px; border: 1px solid var(--border); border-radius: 6px; font-size: 12.5px; }
+  .collect-list li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  .collect-list li:last-child { border-bottom: none; }
+  .collect-list .amt { font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+  .collect-progress { font-size: 13px; color: var(--amber-bright); margin: 0 0 12px; min-height: 0; }
   .filter-chip:hover:not(.active) { border-color: var(--primary); color: var(--text); }
 
   @media (max-width: 900px) {
@@ -358,7 +374,11 @@
     .calendar-grid { margin-bottom: 12px; }
     .day-cell, .day-cell.empty { min-height: 54px; }
     .pending-metrics { margin-bottom: 12px; }
-    .pending-row { padding: 9px 10px; }
+    .pending-row { padding: 9px 10px; row-gap: 6px; }
+    /* Segunda línea de cada cobro: fecha prevista · estado · botones, en una sola fila */
+    .pending-row > :nth-child(n+4) { grid-column: auto; }
+    .pending-row > :nth-child(5) { justify-self: start; }
+    .pending-row .pending-amount { align-self: start; }
     .filter-bar { margin-bottom: 10px; }
   }
 </style>
@@ -484,7 +504,19 @@
         <button class="filter-chip" data-filter="incidencia" onclick="filterPending('incidencia')">Incidencias</button>
       </div>
 
+      <label class="select-all" id="pendingSelectAll" style="display:none;">
+        <input type="checkbox" id="pendingSelectAllCb" onchange="toggleSelectAllPending(this.checked)">
+        <span id="pendingSelectAllLabel">Seleccionar todos los pendientes</span>
+      </label>
+
       <div class="pending-table" id="pendingTable"></div>
+
+      <!-- Aparece al seleccionar cobros: marcar varios como cobrados de una vez -->
+      <div class="bulk-bar" id="pendingBulkBar" style="display:none;">
+        <div class="bulk-info"><strong id="bulkCount">0</strong> <span id="bulkWord">seleccionados</span> · <span id="bulkTotal">0,00 €</span></div>
+        <button class="btn" onclick="clearPendingSelection()">Quitar</button>
+        <button class="btn btn-primary" onclick="openBulkCollect()">✓ Marcar cobrados</button>
+      </div>
     </div>
 
     <!-- ===== TAB: PAGOS (consulta método × estado) ===== -->
@@ -711,9 +743,9 @@
 <!-- MODAL: marcar cobro pendiente como cobrado -->
 <div class="modal-overlay" id="collectModal" onclick="if(event.target===this)closeModal('collectModal')">
   <div class="modal">
-    <h3>Marcar como cobrado</h3>
+    <h3 id="collectTitle">Marcar como cobrado</h3>
     <p id="collectInfo">—</p>
-    <input type="hidden" id="collectId" value="">
+    <ul class="collect-list" id="collectList" style="display:none;"></ul>
     <div class="modal-field-grid">
       <div class="modal-field">
         <label for="collectDate">Fecha de cobro</label>
@@ -724,12 +756,16 @@
         <select id="collectAccount"></select>
       </div>
     </div>
+    <p class="collect-progress" id="collectProgress"></p>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('collectModal')">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmCollect()">Confirmar cobro</button>
+      <button class="btn btn-primary" id="collectConfirmBtn" onclick="confirmCollect()">Confirmar cobro</button>
     </div>
   </div>
 </div>
+
+<!-- Avisos breves (showToast). Faltaba: hasta ahora los avisos de Tesorería no se veían -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <!-- Supabase JS SDK con Subresource Integrity -->
 <script
@@ -1331,12 +1367,13 @@ function toggleHistorial() {
 
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-function showToast(msg, isError) {
+function showToast(msg, isError, ms) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.toggle('error', !!isError);
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), ms || 2500);
 }
 
 document.addEventListener('keydown', (e) => {
@@ -1858,6 +1895,9 @@ let dailyRecords = [];
 let pendingCollections = [];
 let calCurrentDate = new Date();
 let pendingFilter = 'all';
+let pendingSelected = new Set();   // cobros pendientes marcados con la casilla
+let visiblePendingIds = [];        // pendientes que se ven con el filtro actual
+let collectIds = [];               // cobros que se van a marcar en el modal
 
 // IVA factor ponderado (sobre facturación A): 
 // 100€ brutos A → 13,54€ IVA - 3,99€ soportado + 2,01€ RE ≈ 11,56€ neto a Hacienda
@@ -2407,6 +2447,12 @@ function renderPending() {
     list = list.filter(p => p.status === 'pendiente' && p.expected_date && new Date(p.expected_date + 'T00:00:00') <= endOfWeek);
   }
   
+  // Selección: solo cuenta lo pendiente que se ve con el filtro actual
+  visiblePendingIds = list.filter(p => p.status === 'pendiente').map(p => p.id);
+  const visibleSet = new Set(visiblePendingIds);
+  pendingSelected.forEach(id => { if (!visibleSet.has(id)) pendingSelected.delete(id); });
+  updatePendingSelectionUI();
+
   if (list.length === 0) {
     const empty = document.createElement('div');
     empty.style.cssText = 'padding:24px;text-align:center;color:var(--text-faint);font-size:13px;';
@@ -2421,7 +2467,19 @@ function renderPending() {
     if (isOverdue) row.classList.add('overdue');
     
     const dateSpan = document.createElement('span'); dateSpan.className = 'pending-date';
-    dateSpan.textContent = new Date(p.invoice_date + 'T00:00:00').toLocaleDateString('es-ES', {day:'2-digit',month:'short'});
+    if (p.status === 'pendiente') {
+      // Casilla para marcar varios a la vez; tocar la fila también la marca
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'pending-cb';
+      cb.checked = pendingSelected.has(p.id);
+      cb.setAttribute('aria-label', 'Seleccionar el cobro de ' + (p.client_name || 'sin cliente'));
+      cb.onclick = (e) => e.stopPropagation();
+      cb.onchange = () => togglePendingSelected(p.id, cb.checked, row);
+      dateSpan.appendChild(cb);
+      row.classList.add('selectable');
+      row.classList.toggle('selected', cb.checked);
+      row.onclick = () => { cb.checked = !cb.checked; togglePendingSelected(p.id, cb.checked, row); };
+    }
+    dateSpan.appendChild(document.createTextNode(new Date(p.invoice_date + 'T00:00:00').toLocaleDateString('es-ES', {day:'2-digit',month:'short'})));
     row.appendChild(dateSpan);
     
     const clientDiv = document.createElement('div');
@@ -2467,80 +2525,142 @@ function renderPending() {
   });
 }
 
-function openCollectModal(p) {
-  document.getElementById('collectId').value = p.id;
-  document.getElementById('collectInfo').textContent = 
-    formatMoney(p.amount) + ' · ' + (p.client_name || 'sin cliente') + ' · ' + p.payment_method;
-  document.getElementById('collectDate').value = new Date().toISOString().split('T')[0];
-  
+// ============================================
+// Marcar como cobrado: uno o varios a la vez
+// ============================================
+function selectedPendingRows() {
+  return pendingCollections.filter(p => pendingSelected.has(p.id) && p.status === 'pendiente');
+}
+
+function updatePendingSelectionUI() {
+  const rows = selectedPendingRows();
+  const total = rows.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+  const bar = document.getElementById('pendingBulkBar');
+  bar.style.display = rows.length ? 'flex' : 'none';
+  document.getElementById('bulkCount').textContent = rows.length;
+  document.getElementById('bulkWord').textContent = rows.length === 1 ? 'seleccionado' : 'seleccionados';
+  document.getElementById('bulkTotal').textContent = formatMoney(total);
+  // «Seleccionar todos»: solo si en la vista hay pendientes
+  const all = document.getElementById('pendingSelectAll');
+  const n = visiblePendingIds.length;
+  all.style.display = n ? 'flex' : 'none';
+  document.getElementById('pendingSelectAllLabel').textContent =
+    'Seleccionar todos los pendientes de esta vista (' + n + ')';
+  const cb = document.getElementById('pendingSelectAllCb');
+  const nSel = visiblePendingIds.filter(id => pendingSelected.has(id)).length;
+  cb.checked = n > 0 && nSel === n;
+  cb.indeterminate = nSel > 0 && nSel < n;
+}
+
+function togglePendingSelected(id, on, row) {
+  if (on) pendingSelected.add(id); else pendingSelected.delete(id);
+  if (row) row.classList.toggle('selected', on);
+  updatePendingSelectionUI();
+}
+
+function toggleSelectAllPending(on) {
+  visiblePendingIds.forEach(id => { if (on) pendingSelected.add(id); else pendingSelected.delete(id); });
+  renderPending();
+}
+
+function clearPendingSelection() {
+  pendingSelected.clear();
+  renderPending();
+}
+
+function openBulkCollect() {
+  const rows = selectedPendingRows();
+  if (!rows.length) { showToast('No hay cobros seleccionados', true); return; }
+  openCollectModalFor(rows);
+}
+
+function openCollectModal(p) { openCollectModalFor([p]); }
+
+function openCollectModalFor(rows) {
+  collectIds = rows.map(p => p.id);
+  const total = rows.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+  const one = rows.length === 1;
+  document.getElementById('collectTitle').textContent = one ? 'Marcar como cobrado' : 'Marcar ' + rows.length + ' cobros como cobrados';
+  document.getElementById('collectInfo').textContent = one
+    ? formatMoney(rows[0].amount) + ' · ' + (rows[0].client_name || 'sin cliente') + ' · ' + rows[0].payment_method
+    : rows.length + ' cobros · total ' + formatMoney(total) + '. Cada uno queda como un ingreso en la cuenta elegida.';
+  const ul = document.getElementById('collectList');
+  ul.textContent = '';
+  ul.style.display = one ? 'none' : 'block';
+  if (!one) {
+    rows.forEach(p => {
+      const li = document.createElement('li');
+      const name = document.createElement('span'); name.textContent = (p.client_name || 'sin cliente') + ' · ' + p.payment_method;
+      const amt = document.createElement('span'); amt.className = 'amt'; amt.textContent = formatMoney(p.amount);
+      li.appendChild(name); li.appendChild(amt); ul.appendChild(li);
+    });
+  }
+  document.getElementById('collectConfirmBtn').textContent = one ? 'Confirmar cobro' : 'Confirmar ' + rows.length + ' cobros';
+  document.getElementById('collectProgress').textContent = '';
+  document.getElementById('collectDate').value = isoDateLocal(new Date());   // hoy en hora de España
+
+  // Cuenta: la última usada para cobrar, si sigue existiendo
+  let lastAcc = null;
+  try { lastAcc = localStorage.getItem('mf_collect_account'); } catch (e) {}
   const accSel = document.getElementById('collectAccount');
   accSel.textContent = '';
   accounts.forEach(a => {
     const o = document.createElement('option'); o.value = a.id;
     const kindLabel = ACCOUNT_KINDS.find(k => k.value === a.kind)?.label || '';
     o.textContent = a.label + ' (···' + (a.last4 || '----') + ')' + (kindLabel ? ' · ' + kindLabel : '');
+    if (a.id === lastAcc) o.selected = true;
     accSel.appendChild(o);
   });
-  
+
   document.getElementById('collectModal').classList.add('open');
 }
 
+// Todo en el servidor y todo o nada (collect_pending): movimiento por cobro,
+// cobro marcado y saldo sumado una vez. Después se avisa a Holded cobro a cobro.
 async function confirmCollect() {
-  const id = document.getElementById('collectId').value;
   const date = document.getElementById('collectDate').value;
   const accountId = document.getElementById('collectAccount').value;
-  
+  const ids = collectIds.slice();
   if (!date || !accountId) { showToast('Faltan datos', true); return; }
-  
-  const p = pendingCollections.find(x => x.id === id);
-  if (!p) return;
-  if (p.status !== 'pendiente') { showToast('Este cobro ya no está pendiente', true); closeModal('collectModal'); return; }
-  
-  // Crear movimiento
-  const { data: mov, error: movErr } = await supabaseClient.from('movements').insert({
-    user_id: currentUser.id,
-    mov_date: date,
-    mov_type: 'ingreso',
-    dest_account_id: accountId,
-    amount: p.amount,
-    concept: 'Cobro ' + p.payment_method + (p.client_name ? ' · ' + p.client_name : '') + ' (fact ' + p.invoice_date + ')',
-  }).select().single();
-  
-  if (movErr) { showToast(friendlyErrorMessage(movErr), true); return; }
-  
-  // Actualizar saldo cuenta
-  const acc = accounts.find(a => a.id === accountId);
-  if (acc) {
-    const newBal = parseFloat(acc.balance) + parseFloat(p.amount);
-    await supabaseClient.from('accounts').update({ balance: newBal }).eq('id', accountId);
-    acc.balance = newBal;
-  }
-  
-  // Marcar como cobrado
-  await supabaseClient.from('pending_collections').update({
-    status: 'cobrado',
-    collected_date: date,
-    collected_account_id: accountId,
-    collected_movement_id: mov.id,
-  }).eq('id', id);
+  if (!ids.length) return;
+  const progress = document.getElementById('collectProgress');
+  progress.textContent = 'Registrando…';
 
-  // Sincronizar el cobro con Holded si el depósito tiene factura emitida (no bloqueante)
-  let holdedMsg = '';
-  if (p.deposit_id) {
+  const { data: res, error } = await supabaseClient.rpc('collect_pending', { p_ids: ids, p_date: date, p_account_id: accountId });
+  if (error) { progress.textContent = ''; showToast(friendlyErrorMessage(error), true); return; }
+  try { localStorage.setItem('mf_collect_account', accountId); } catch (e) {}
+
+  const cobrados = (res && res.cobrados) || [];
+  const n = (res && res.n) || 0;
+  const omitidos = (res && res.omitidos) || 0;
+  let msg = (n === 1 ? 'Cobro registrado' : n + ' cobros registrados') + (n > 1 ? ' · ' + formatMoney(res.total) : '');
+  if (omitidos) msg += ' · ' + omitidos + (omitidos === 1 ? ' ya no estaba pendiente' : ' ya no estaban pendientes');
+
+  // Holded: registrar el pago de cada factura (si el depósito la tiene). No bloquea lo ya guardado.
+  const conDeposito = cobrados.filter(c => c.deposit_id);
+  let okHolded = 0;
+  const fallos = [];
+  for (let i = 0; i < conDeposito.length; i++) {
+    const c = conDeposito[i];
+    progress.textContent = 'Cobros guardados. Registrando el pago en Holded ' + (i + 1) + '/' + conDeposito.length + '…';
     try {
-      const { data: hp, error: hpErr } = await supabaseClient.rpc('holded_pay_invoice', { p_deposit_id: p.deposit_id, p_date: date });
-      if (hpErr) holdedMsg = ' · ⚠ Holded no actualizado: ' + friendlyErrorMessage(hpErr);
-      else if (hp && hp.ok && !hp.skipped) holdedMsg = ' · ✓ pago registrado en Holded';
-    } catch (e) { holdedMsg = ' · ⚠ Holded no actualizado'; }
+      const { data: hp, error: hpErr } = await supabaseClient.rpc('holded_pay_invoice', { p_deposit_id: c.deposit_id, p_date: date });
+      if (hpErr) fallos.push(c.client_name || 'sin cliente');
+      else if (hp && hp.ok && !hp.skipped) okHolded++;
+    } catch (e) { fallos.push(c.client_name || 'sin cliente'); }
   }
+  if (okHolded) msg += ' · ✓ ' + (okHolded === 1 ? 'pago registrado' : okHolded + ' pagos registrados') + ' en Holded';
+  if (fallos.length) msg += ' · ⚠ Holded no actualizado (' + fallos.slice(0, 3).join(', ') + (fallos.length > 3 ? '…' : '') + '): regístralo allí a mano';
 
-  movements.unshift(mov);
-  await loadPendingCollections();
+  ids.forEach(id => pendingSelected.delete(id));
+  collectIds = [];
+  progress.textContent = '';
   closeModal('collectModal');
+  await Promise.all([loadPendingCollections(), loadAccounts(), loadMovements()]);
   renderPending();
-  renderAccounts(); renderKPIs(); renderAlerts();
+  renderAccounts(); renderKPIs(); renderAlerts(); renderMovements();
   updateSyncTime();
-  showToast('Cobro registrado' + holdedMsg, holdedMsg.indexOf('⚠') !== -1);
+  showToast(msg, fallos.length > 0, fallos.length ? 9000 : 4500);
 }
 
 async function markIncidencia(id) {
