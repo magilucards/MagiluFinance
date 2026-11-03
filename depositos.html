@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-offline-writes="on" data-offline-mirror="on">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -298,7 +298,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v38</div>
+      <div class="subtitle" id="headerStats">— · v39</div>
     </div>
     <div class="ml-auto" data-privacy-slot></div>
     <button class="btn-primary" id="btnNew">+ Nuevo</button>
@@ -579,14 +579,11 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 
 <div id="toast" class="toast"></div>
 
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
-  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer">
-</script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" referrerpolicy="no-referrer"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js" referrerpolicy="no-referrer"></script>
+<script src="./vendor/supabase-js-2.100.1.js"></script>
+<!-- Modo sin cobertura: copia local, cola de cambios y sincronización -->
+<script src="./offline.js"></script>
+<script src="./vendor/jspdf-2.5.1.umd.min.js"></script>
+<script src="./vendor/jspdf-autotable-3.8.2.min.js"></script>
 
 <script>
 'use strict';
@@ -896,7 +893,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v38`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v39`;
 }
 
 // ===== LISTA =====
@@ -2494,7 +2491,7 @@ async function submitSignature(){
     await onVisitSigned(data);
   } catch(err){
     const msg = String((err && err.message) || err || 'Error');
-    const isNet = !navigator.onLine || /failed to fetch|networkerror|load failed|network request failed|fetch failed/i.test(msg);
+    const isNet = !navigator.onLine || /failed to fetch|networkerror|load failed|network request failed|fetch failed|sin conexi/i.test(msg);
     // Si se cortó la red después de guardar, al reintentar el servidor dice "ya tiene firma"
     if (isNet || (signState.attempts>1 && /ya tiene firma/i.test(msg))){
       try { if (await signItemsSavedOnServer()){ await onVisitSigned(null); return; } } catch(_){}
@@ -2705,6 +2702,11 @@ function bindEvents(){
     if (!$('clientSearchWrap').contains(e.target)) $('clientResults').classList.remove('active');
   });
 }
+
+// Al subirse los cambios hechos sin cobertura (offline.js), se refresca la lista
+window.addEventListener('mf:synced', ()=>{
+  if (!$('detailView').classList.contains('active') && $('factView').style.display === 'none') loadAll();
+});
 
 (async function init(){
   const ok=await checkAuth();

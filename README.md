@@ -8,7 +8,8 @@ Panel financiero personal — gestión de cuentas, pólizas, movimientos y liqui
 - Gestión de cuentas bancarias, pólizas y cuentas separadas (Hacienda, colchón).
 - Registro de movimientos (ingresos, gastos, traspasos, pagos Hacienda, amortizaciones).
 - Alertas inteligentes (liquidez baja, pagos trimestrales próximos, pólizas excedidas).
-- PWA instalable, funciona offline para consultar.
+- PWA instalable. **Modo sin cobertura** (`offline.js` + `sw.js`): la app abre sin internet (todas las páginas y librerías precargadas, librerías en `vendor/`), las lecturas salen de una copia en el iPhone (IndexedDB) y, en Depósitos, crear, editar, recontar y liquidar se guardan en una cola que se sube sola al volver la cobertura. Holded, firmas, emails y cobrar en Tesorería necesitan conexión.
+- Copias de seguridad: historial de cambios en Supabase (`audit_log`), copia de cada depósito en el iPhone (`localbackup.js`), botón de copia completa en Inicio y copia diaria cifrada en el repositorio privado `magilu-backups`.
 - Sincronización en la nube vía Supabase (acceso desde cualquier dispositivo).
 
 ## Stack técnico

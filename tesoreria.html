@@ -768,12 +768,9 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <!-- Supabase JS SDK con Subresource Integrity -->
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.100.1/dist/umd/supabase.min.js"
-  integrity="sha384-RJpiDscpUIa2tmNUABXIB4EgEoaAMRcl5+yJJxYC+kXKvCFctiqLTn9j1AwOc9n1"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer">
-</script>
+<script src="./vendor/supabase-js-2.100.1.js"></script>
+<!-- Modo sin cobertura: copia local, cola de cambios y sincronización -->
+<script src="./offline.js"></script>
 
 <script>
 'use strict';
@@ -847,6 +844,8 @@ function friendlyErrorMessage(err) {
     'For security purposes': 'Espera 1 minuto antes de volver a intentarlo',
   };
   for (const key in map) { if (msg.includes(key)) return map[key]; }
+  // Mensajes ya redactados para ti: sin conexión (offline.js) y avisos de nuestras funciones (raise exception)
+  if (/sin conexi/i.test(msg) || err.code === 'P0001') return msg;
   if (/password/i.test(msg)) return 'Contraseña inválida o demasiado débil';
   if (/email/i.test(msg)) return 'Email inválido o ya en uso';
   if (/network|fetch/i.test(msg)) return 'Error de conexión. Comprueba tu internet.';
