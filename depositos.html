@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,0,600;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="./privacy.js"></script>
+<script src="./localbackup.js"></script>
 <style>
 :root {
   --bg:#050912; --bg-elev:#0b1326; --bg-card:#11192e; --border:#1f2a44; --border-strong:#2c3a5c;
@@ -297,7 +298,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v36</div>
+      <div class="subtitle" id="headerStats">— · v37</div>
     </div>
     <div class="ml-auto" data-privacy-slot></div>
     <button class="btn-primary" id="btnNew">+ Nuevo</button>
@@ -895,7 +896,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v36`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v37`;
 }
 
 // ===== LISTA =====
@@ -1842,9 +1843,22 @@ async function alignCobroDate(d){
 // del cobro y recalcula los días afectados, el de antes y el de después si la fecha cambió.
 async function afterDepositWrite(depId, before){
   const after = depSnapshot(depId);
+  localCopy(depId, after, before);
   await alignCobroDate(after);
   const dias = [before, after].filter(d=>d && d.status==='facturado' && d.invoice_date).map(d=>d.invoice_date);
   await recalcCalendarDays(dias);
+}
+
+// Copia en el iPhone de cada depósito guardado (localbackup.js). No bloquea: si falla, la app sigue.
+function localCopy(depId, after, before){
+  if (!window.MFLocal) return;
+  const dep = after || before;
+  if (!dep) return;
+  // Líneas: las del editor si es este depósito y ya están guardadas; si no, se piden al servidor
+  const fromEditor = (editing && editing.id===depId && lines.length && lines.every(l=>l.id)) ? lines.map(l=>({ ...l })) : null;
+  const linesP = fromEditor ? Promise.resolve(fromEditor)
+    : sb.from('deposit_lines').select('*').eq('deposit_id', depId).order('sort_order').then(r=>r.data||[]);
+  linesP.then(ls=>MFLocal.saveDeposit(dep, ls, !after)).catch(e=>console.warn('copia local', e));
 }
 
 // Crea cobros PENDIENTES para los depósitos liquidados que aún no tengan uno.

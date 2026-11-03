@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
 <script src="./privacy.js"></script>
+<script src="./localbackup.js"></script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -219,6 +220,31 @@ html, body {
   align-self: flex-start;
 }
 
+.backup-bar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.backup-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.backup-btn.ready { background: var(--primary-dim); border-color: var(--primary-dim); color: var(--bg); }
+.backup-btn:disabled { opacity: 0.6; }
+.backup-info { font-size: 12px; color: var(--text-dim); }
+.backup-info.old { color: var(--amber-bright); }
+
 .footer-note {
   max-width: 1200px;
   margin: 0 auto;
@@ -253,6 +279,7 @@ html, body {
   .module-desc { font-size: 11.5px; line-height: 1.35; -webkit-line-clamp: 2; }
   .module-metric { font-size: 10.5px; line-height: 1.35; }
   .footer-note { padding: 0 16px 20px 16px; font-size: 10px; }
+  .backup-bar { padding: 0 16px 14px 16px; gap: 8px; }
 }
 </style>
 </head>
@@ -343,6 +370,12 @@ html, body {
   </a>
 
 </main>
+
+<!-- Copia de seguridad: todos los datos en un archivo, fuera de Supabase y de GitHub -->
+<div class="backup-bar">
+  <button type="button" class="backup-btn" id="backupBtn">⬇ Copia de seguridad</button>
+  <span class="backup-info" id="backupInfo"></span>
+</div>
 
 <div class="footer-note" data-version="ok">
   magilu finance · datos en tiempo real desde supabase · v17 · 2026-06-05
@@ -483,7 +516,101 @@ async function init() {
   loadMetrics();
 }
 
-init();
+// ===== COPIA DE SEGURIDAD COMPLETA =====
+// Paso 1: descarga todas las tablas (paginadas) + la copia local del iPhone.
+// Paso 2: «Guardar copia» abre el menú de compartir (Guardar en Archivos / iCloud).
+// Son dos toques porque el iPhone solo deja compartir justo después de una pulsación.
+const BACKUP_TABLES = ['deposits', 'deposit_lines', 'deposit_signatures', 'pending_collections',
+  'clients', 'client_locations', 'products', 'product_price_history',
+  'accounts', 'movements', 'daily_records', 'debts', 'fixed_expenses',
+  'expenses', 'editable_data', 'settings'];
+const BACKUP_KEY = 'mf_last_backup';
+let backupFile = null;
+
+async function fetchAllRows(table, pageSize = 500) {
+  const rows = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error, count } = await sb.from(table).select('*', { count: 'exact' }).range(from, from + pageSize - 1);
+    if (error) throw new Error(table + ': ' + error.message);
+    rows.push(...(data || []));
+    if (!data || !data.length) break;
+    if (count != null ? rows.length >= count : data.length < pageSize) break;
+  }
+  return rows;
+}
+
+function renderBackupInfo() {
+  let last = null;
+  try { last = localStorage.getItem(BACKUP_KEY); } catch (e) {}
+  const info = $('backupInfo');
+  if (!last) { info.textContent = 'aún no has guardado ninguna copia'; info.classList.add('old'); return; }
+  const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+  info.textContent = 'última copia: ' + (days <= 0 ? 'hoy' : days === 1 ? 'ayer' : 'hace ' + days + ' días');
+  info.classList.toggle('old', days >= 7);
+}
+
+async function prepareBackup() {
+  const btn = $('backupBtn');
+  btn.disabled = true;
+  btn.textContent = 'Preparando copia…';
+  try {
+    const tables = {};
+    for (const t of BACKUP_TABLES) tables[t] = await fetchAllRows(t);
+    let local = null;
+    try { local = window.MFLocal ? await MFLocal.exportAll() : null; } catch (e) { console.warn('copia local', e); }
+    const now = new Date();
+    const stamp = now.toISOString().slice(0, 16).replace('T', '_').replace(':', '');
+    const payload = { app: 'Magilu Finance', exported_at: now.toISOString(), user: currentUser.email, tables, local_iphone: local };
+    const json = JSON.stringify(payload);
+    backupFile = new File([json], 'magilu-copia-' + stamp + '.json', { type: 'application/json' });
+    const total = Object.values(tables).reduce((s, r) => s + r.length, 0);
+    btn.textContent = '📤 Guardar copia (' + (json.length / 1048576).toFixed(1) + ' MB)';
+    btn.classList.add('ready');
+    $('backupInfo').classList.remove('old');
+    $('backupInfo').textContent = total + ' registros listos · elige «Guardar en Archivos»';
+  } catch (e) {
+    console.error(e);
+    btn.textContent = '⬇ Copia de seguridad';
+    $('backupInfo').textContent = 'No se pudo preparar: ' + e.message;
+    $('backupInfo').classList.add('old');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function saveBackup() {
+  const file = backupFile;
+  let saved = false;
+  try {
+    if (navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file] });   // sin otro await antes: va pegado al toque
+      saved = true;
+    } else {
+      const url = URL.createObjectURL(file);
+      const a = document.createElement('a');
+      a.href = url; a.download = file.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      saved = true;
+    }
+  } catch (e) {
+    if (!e || e.name !== 'AbortError') { console.error(e); $('backupInfo').textContent = 'No se pudo guardar: ' + ((e && e.message) || e); }
+  }
+  if (saved) {
+    try { localStorage.setItem(BACKUP_KEY, new Date().toISOString()); } catch (e) {}
+    backupFile = null;
+    $('backupBtn').textContent = '⬇ Copia de seguridad';
+    $('backupBtn').classList.remove('ready');
+    renderBackupInfo();
+  }
+}
+
+$('backupBtn').addEventListener('click', () => {
+  if ($('backupBtn').disabled) return;
+  if (backupFile) saveBackup(); else prepareBackup();
+});
+
+init().then(renderBackupInfo);
 </script>
 
 </body>
