@@ -298,7 +298,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <a href="./index.html" class="back-link">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
-      <div class="subtitle" id="headerStats">— · v39</div>
+      <div class="subtitle" id="headerStats">— · v40</div>
     </div>
     <div class="ml-auto" data-privacy-slot></div>
     <button class="btn-primary" id="btnNew">+ Nuevo</button>
@@ -893,7 +893,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v39`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v40`;
 }
 
 // ===== LISTA =====

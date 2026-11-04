@@ -27,10 +27,12 @@
   var OFFLINE_LATCH_MS = 30 * 1000;         // tras un fallo de red, 30 s sin reintentar
   var SESSION_WAIT_MS = 4000;               // la sesión no puede bloquear la app más de 4 s
 
-  // Tablas que se copian en el iPhone (y columnas de orden estable para paginar)
+  // Tablas que se copian en el iPhone (y columnas de orden estable para paginar).
+  // debts / fixed_expenses / editable_data: el Plan financiero se puede consultar sin cobertura.
   var MIRROR = {
     deposits: 'id', deposit_lines: 'id', clients: 'id', products: 'id',
-    client_locations: 'id', deposit_signatures: 'id', pending_collections: 'id', settings: 'user_id'
+    client_locations: 'id', deposit_signatures: 'id', pending_collections: 'id', settings: 'user_id',
+    debts: 'id', fixed_expenses: 'id', editable_data: 'id'
   };
   var VIEWS = { v_deposit_totals: true };
   // Tablas que Depósitos puede escribir sin conexión
@@ -338,7 +340,8 @@
 
   // Tras una escritura correcta en el servidor, se refleja en la copia local
   function applyToMirror(t, chain, res) {
-    if (!MIRROR[t]) return;
+    // Sin copia completa de la tabla no se crea una a medias (se rellenará en la próxima descarga)
+    if (!MIRROR[t] || !M.tables[t]) return;
     try {
       var a = analyze(chain);
       if ((a.op === 'insert' || a.op === 'upsert') && res && res.data && a.returning && a.cols === '*') {
@@ -393,7 +396,8 @@
     function offlinePath() {
       return ready.then(function () {
         if (!write) {
-          if (local && mirrorHasData()) return execLocal(t, chain);
+          // Una tabla que aún no se ha copiado nunca no se da por vacía
+          if (local && mirrorHasData() && (VIEWS[t] || M.tables[t])) return execLocal(t, chain);
           return netResult(local ? 'Sin conexión y sin copia en este dispositivo: abre la app una vez con cobertura.' : null);
         }
         if (queueable && mirrorHasData()) {
