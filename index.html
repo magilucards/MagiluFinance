@@ -476,11 +476,11 @@ async function loadMetrics() {
     $('metric-recaudacion').innerHTML = '<span class="metric-loading">—</span>';
   }
 
-  // Plan financiero: leer margen de settings
+  // Plan financiero: sueldo objetivo (el margen real se calcula dentro del plan)
   try {
-    const { data: settings } = await sb.from('settings').select('margin_brut_pct, target_monthly_salary').maybeSingle();
+    const { data: settings } = await sb.from('settings').select('target_monthly_salary').maybeSingle();
     if (settings) {
-      $('metric-plan').textContent = `margen ${mfMask(settings.margin_brut_pct + '%')} · objetivo ${fmtMoney(settings.target_monthly_salary)}/mes`;
+      $('metric-plan').textContent = `sueldo objetivo ${fmtMoney(settings.target_monthly_salary)}/mes`;
     } else {
       $('metric-plan').innerHTML = '<span class="metric-loading">—</span>';
     }
