@@ -274,6 +274,7 @@ function money(v){ return mfMaskMoney(new Intl.NumberFormat('es-ES', { minimumFr
 function money0(v){ return mfMaskMoney(new Intl.NumberFormat('es-ES', { maximumFractionDigits:0 }).format(v || 0) + ' €'); }
 function pct(v, d=1){ return mfMask(String((Math.round((v || 0) * 10 ** d) / 10 ** d)).replace('.', ',') + ' %'); }
 function fmtMonth(d){ const s = new Intl.DateTimeFormat('es-ES', { month:'long', year:'numeric' }).format(d); return s.charAt(0).toUpperCase() + s.slice(1); }
+function fmtSpan(m){ if (m < 24) return m + (m === 1 ? ' mes' : ' meses'); const y = Math.floor(m / 12), r = m % 12; return y + ' años' + (r ? ' y ' + r + (r === 1 ? ' mes' : ' meses') : ''); }
 function fmtMonthShort(d){ return new Intl.DateTimeFormat('es-ES', { month:'short', year:'numeric' }).format(d).replace('.', ''); }
 function isoDate(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 function addMonths(d, m){ return new Date(d.getFullYear(), d.getMonth() + m, 1); }
@@ -367,7 +368,10 @@ function balanceAfter(b, p, r, k){
   const g = Math.pow(1 + r, k);
   return b * g - p * (g - 1) / r;
 }
-function monthsUntil(iso){ const [y, m] = iso.split('-').map(Number), d = new Date(); return (y - d.getFullYear()) * 12 + (m - 1 - d.getMonth()); }
+// Cuotas que caen desde la fecha del saldo hasta el mes de fin (incluido)
+function monthsBetween(from, iso){ const [y, m] = iso.split('-').map(Number); return (y - from.getFullYear()) * 12 + (m - 1 - from.getMonth()); }
+// El saldo apuntado es del día en que se actualizó: las fechas se cuentan desde ahí
+const balDate = d => { const x = d.updated_at ? new Date(d.updated_at) : null; return x && !isNaN(x) ? x : new Date(); };
 function dmy(iso){ return iso ? iso.slice(0, 10).split('-').reverse().join('/') : ''; }
 const hasRate = d => (d.tae != null && d.tae !== '') || (d.tin != null && d.tin !== '');
 const STALE_DAYS = 45;
@@ -465,16 +469,18 @@ function render(){
   $('dCuotas').textContent = money0(vivas.reduce((s, d) => s + n(d.monthly_payment), 0));
   const base = vivas.map(d => monthsToPay(n(d.current_balance), n(d.monthly_payment), monthlyRate(d)));
   const nunca = vivas.filter((d, i) => base[i] === Infinity);
-  const maxM = base.filter(x => x !== Infinity).reduce((a, b) => Math.max(a, b), 0);
+  let libre = null;
+  vivas.forEach((d, i) => { if (base[i] !== Infinity) { const f = addMonths(balDate(d), base[i]); if (!libre || f > libre) libre = f; } });
   $('dLibre').textContent = nunca.length ? 'con esas cuotas, ' + (nunca.length === 1 ? '1 no se acaba nunca' : nunca.length + ' no se acaban nunca')
-    : (maxM ? 'libre en ' + fmtMonth(addMonths(now, maxM)) + ' a este ritmo' : 'sin deudas');
+    : (libre ? 'libre en ' + fmtMonth(libre).toLowerCase() + ' a este ritmo' : 'sin deudas');
   const w = $('dWarn'); w.textContent = '';
   const today = isoDate(now);
   const vencidas = vivas.filter(d => d.end_date && d.end_date < today);
+  // Pago final: lo que quedaría al vencer pagando la cuota actual (se ignora menos de ~1,5 cuotas)
   const finales = vivas.filter(d => d.end_date && d.end_date >= today).map(d => {
-    const k = monthsUntil(d.end_date), b = n(d.current_balance);
-    return { d, resto: balanceAfter(b, n(d.monthly_payment), monthlyRate(d), k) };
-  }).filter(x => x.resto > Math.max(50, n(x.d.current_balance) * 0.02));
+    const k = monthsBetween(balDate(d), d.end_date);
+    return { d, resto: balanceAfter(n(d.current_balance), n(d.monthly_payment), monthlyRate(d), k) };
+  }).filter(x => x.resto > Math.max(100, 1.5 * n(x.d.monthly_payment)));
   const viejas = vivas.filter(d => d.updated_at && (now - new Date(d.updated_at)) / 864e5 > STALE_DAYS);
   const sinTae = vivas.filter(d => !hasRate(d));
   const issues = [];
@@ -492,6 +498,9 @@ function render(){
       + ' sin actualizar desde el ' + dmy(oldest) + ': pon lo que diga hoy el banco para que el plan sea exacto.');
   }
   if (nunca.length) issues.push(nunca.map(d => d.creditor).join(', ') + ': la cuota no cubre los intereses, así que el saldo no baja.');
+  // Cuotas que casi solo pagan intereses (el saldo apenas baja)
+  vivas.filter(d => { const i = n(d.current_balance) * monthlyRate(d), p = n(d.monthly_payment); return i > 0 && p > i && i >= 0.8 * p; })
+    .forEach(d => issues.push(d.creditor + ': de los ' + money0(d.monthly_payment) + ' de cuota, unos ' + money0(n(d.current_balance) * monthlyRate(d)) + ' son intereses; el saldo casi no baja.'));
   if (finales.length) issues.push('Pago final al vencer con la cuota actual: ' + finales.map(x => x.d.creditor + ' ~' + money0(x.resto) + ' (' + fmtMonthShort(new Date(x.d.end_date)) + ')').join(', ')
     + '. Revisa si es así (valor residual, renovación de póliza) o si la cuota cambiará.');
   if (sinTae.length) issues.push((sinTae.length === 1 ? '1 deuda no tiene' : sinTae.length + ' deudas no tienen') + ' TAE ni TIN: se calculan sin intereses.');
@@ -517,7 +526,7 @@ function render(){
     li.appendChild(el('span', 'm', [typeLabel(d.debt_type), scopeLabel(d.scope), rate].filter(Boolean).join(' · ')));
     li.appendChild(el('span', 'a2', money(d.monthly_payment) + '/mes'));
     const fin = d.end_date ? (vencida ? 'fin ' + dmy(d.end_date) + ' ya pasado' : 'fin ' + dmy(d.end_date)) : '';
-    const ritmo = !viva ? 'pagada' : months === Infinity ? '⚠ con esta cuota no baja' : 'a este ritmo acaba en ' + fmtMonthShort(addMonths(now, months));
+    const ritmo = !viva ? 'pagada' : months === Infinity ? '⚠ con esta cuota no baja' : 'a este ritmo acaba en ' + fmtMonthShort(addMonths(balDate(d), months));
     const saldoA = viva && d.updated_at && (now - new Date(d.updated_at)) / 864e5 > STALE_DAYS ? 'saldo del ' + dmy(d.updated_at) : '';
     li.appendChild(el('span', 'm2', [ritmo, fin, saldoA].filter(Boolean).join(' · ')));
     li.addEventListener('click', () => openDebt(d));
@@ -565,7 +574,7 @@ function renderSim(){
   const when = m => m === Infinity ? 'nunca (más de 50 años)' : (m === 0 ? 'ya' : fmtMonth(addMonths(now, m)));
   add('A este ritmo (cada deuda con su cuota)', when(base.months));
   add(extra ? 'Con ' + mfMaskMoney(extra.toLocaleString('es-ES') + ' €') + ' extra y pasando las cuotas liberadas' : 'Solo pasando las cuotas liberadas a la siguiente', when(sim.months), 'total');
-  if (base.months !== Infinity && sim.months !== Infinity && base.months > sim.months) add('Acabas antes', (base.months - sim.months) + ' meses');
+  if (base.months !== Infinity && sim.months !== Infinity && base.months > sim.months) add('Acabas antes', fmtSpan(base.months - sim.months));
   if (base.months !== Infinity && base.interest > sim.interest) add('Intereses que te ahorras (aprox.)', money0(base.interest - sim.interest));
   if (base.months === Infinity && sim.months !== Infinity) add('Intereses en total (aprox.)', money0(sim.interest));
   const ol = $('simOrder'); ol.textContent = '';
