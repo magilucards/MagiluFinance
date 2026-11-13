@@ -297,6 +297,12 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
 .badge-client { background: rgba(110, 226, 197, 0.08); color: var(--primary); }
 .badge-supplier { background: rgba(63, 98, 153, 0.15); color: var(--accent-bright); }
 .badge-both { background: rgba(212, 160, 74, 0.12); color: var(--amber-bright); font-weight: 600; }
+.dep-line { margin-top: 4px; }
+.badge-dep { background: rgba(110, 226, 197, 0.12); color: var(--primary); border: 1px solid rgba(110, 226, 197, 0.35); font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 7px; white-space: nowrap; }
+.no-dep { color: var(--text-faint); font-family: 'JetBrains Mono', monospace; font-size: 10px; white-space: nowrap; }
+.cp-box { flex: 0 0 auto; min-width: 0; width: 120px; }
+.cp-box .search-icon { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; }
+.cell-cp { font-family: 'JetBrains Mono', monospace; color: var(--text-dim); font-size: 12px; margin-right: 4px; }
 
 .iban-yes {
   font-family: 'JetBrains Mono', monospace;
@@ -563,6 +569,8 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
   .filters-inner { gap:6px; }
   .search-box { padding:6px 10px; }
   .search-box input { font-size:16px; }   /* 16px: el iPhone no hace zoom */
+  .filters-inner > .search-box:first-child { flex:1 1 0; min-width:0; }
+  .cp-box { width:96px; }
   .filter-group { flex-wrap:nowrap; overflow-x:auto; gap:5px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
   .filter-group::-webkit-scrollbar { display:none; }
   .filter-label { font-size:9px; min-width:52px; }
@@ -597,7 +605,11 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
   <div class="filters-inner">
     <div class="search-box">
       <span class="search-icon">⌕</span>
-      <input type="text" id="searchInput" placeholder="buscar por nif, razón social, comercial, ciudad...">
+      <input type="text" id="searchInput" placeholder="buscar: nif, nombre, dirección, ciudad, cp, email, teléfono..." autocomplete="off">
+    </div>
+    <div class="search-box cp-box" title="Código postal: 46021 = ese CP · 46 = toda la provincia">
+      <span class="search-icon">CP</span>
+      <input type="text" id="cpInput" class="mono" placeholder="46021" maxlength="5" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Filtrar por código postal">
     </div>
     <div class="filter-group">
       <span class="filter-label">Tipo</span>
@@ -618,6 +630,12 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
       <button class="filter-btn" data-filter="vat" data-value="recargo_equivalencia">RE</button>
       <button class="filter-btn" data-filter="vat" data-value="general">General</button>
       <button class="filter-btn" data-filter="vat" data-value="pendiente_revisar">Pendiente</button>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Depósito</span>
+      <button class="filter-btn active" data-filter="dep" data-value="all">Todos</button>
+      <button class="filter-btn" data-filter="dep" data-value="active">Activo</button>
+      <button class="filter-btn" data-filter="dep" data-value="none">Sin activo</button>
     </div>
     <div class="filter-group">
       <span class="filter-label">Provincia</span>
@@ -836,6 +854,8 @@ const state = {
   status: 'active',
   vat: 'all',
   province: '',
+  dep: 'all',       // all | active (con depósito abierto) | none
+  cp: '',           // código postal: coincide por el principio (46 = toda la provincia)
   showGenerics: false,
   activeFirst: true,
   sortBy: 'legal_name',
@@ -846,6 +866,7 @@ const state = {
 let currentEditId = null;
 let allLocations = [];     // tiendas de todos los clientes (client_locations)
 let editingLocId = null;   // tienda en edición (null = nueva)
+let activeDeps = new Map(); // client_id → nº de depósitos abiertos (mercancía en la tienda)
 
 // ====== HELPERS ======
 function $(id) { return document.getElementById(id); }
@@ -944,6 +965,19 @@ async function loadContacts() {
   }
   allLocations = locs || [];
 
+  // Depósitos abiertos por cliente (solo client_id: lo mínimo). Sin conexión sale de la copia del iPhone.
+  const { data: deps, error: depErr } = await fetchAllPages(() => sb
+    .from('deposits')
+    .select('id,client_id', { count: 'exact' })
+    .eq('status', 'abierto')
+    .order('id'));
+  if (depErr) {
+    showToast('Error cargando depósitos: ' + depErr.message, true);
+    console.error(depErr);
+  }
+  activeDeps = new Map();
+  (deps || []).forEach(d => activeDeps.set(d.client_id, (activeDeps.get(d.client_id) || 0) + 1));
+
   populateProvinceFilter();
   applyFilters();
   updateHeaderStats();
@@ -964,10 +998,25 @@ function updateHeaderStats() {
   const total = allContacts.length;
   const active = allContacts.filter(c => c.is_active).length;
   const iban = allContacts.filter(c => c.iban && c.iban.trim()).length;
-  $('headerStats').textContent = `${total} contactos · ${active} activos · ${iban} con iban · v12`;
+  $('headerStats').textContent = `${total} contactos · ${active} activos · ${iban} con iban · v13`;
 }
 
 // ====== FILTROS ======
+// Texto normalizado: minúsculas y sin tildes ("Alacant" = "alacant", "león" = "leon")
+function normTxt(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+function normCp(s) { return String(s || '').replace(/\D/g, ''); }
+
+function contactLocations(c) { return allLocations.filter(l => l.client_id === c.id); }
+function contactCps(c) {
+  return [c.postal_code, ...contactLocations(c).map(l => l.postal_code)].map(normCp).filter(Boolean);
+}
+// Todo lo que consta en la ficha (y en sus tiendas), en un solo texto para buscar
+function contactHaystack(c) {
+  const locs = contactLocations(c).map(l => [l.name, l.address, l.city, l.postal_code].join(' ')).join(' ');
+  return normTxt([c.nif, c.legal_name, c.commercial_name, c.address, c.city, c.postal_code, c.province, c.country,
+    c.email, c.phone, c.internal_notes, locs].filter(Boolean).join(' '));
+}
+
 function applyFilters() {
   let result = allContacts.slice();
 
@@ -977,15 +1026,20 @@ function applyFilters() {
   }
 
   // Búsqueda
+  // Varias palabras = todas deben aparecer; sin distinguir tildes ni mayúsculas
   if (state.search) {
-    const q = state.search.toLowerCase();
-    result = result.filter(c => {
-      return (c.nif || '').toLowerCase().includes(q)
-        || (c.legal_name || '').toLowerCase().includes(q)
-        || (c.commercial_name || '').toLowerCase().includes(q)
-        || (c.city || '').toLowerCase().includes(q);
-    });
+    const terms = normTxt(state.search).split(/\s+/).filter(Boolean);
+    result = result.filter(c => { const h = contactHaystack(c); return terms.every(t => h.includes(t)); });
   }
+
+  // Código postal (el del contacto o el de cualquiera de sus tiendas)
+  if (state.cp) {
+    result = result.filter(c => contactCps(c).some(cp => cp.startsWith(state.cp)));
+  }
+
+  // Depósito activo
+  if (state.dep === 'active') result = result.filter(c => activeDeps.has(c.id));
+  else if (state.dep === 'none') result = result.filter(c => !activeDeps.has(c.id));
 
   // Tipo
   if (state.type !== 'all') {
@@ -1064,6 +1118,14 @@ function renderTable() {
     const commercial = c.commercial_name && c.commercial_name !== c.legal_name
       ? `<div class="commercial">${escapeHtml(c.commercial_name)}</div>` : '';
 
+    // Depósito activo = al menos un depósito abierto (mercancía en la tienda)
+    const nDep = activeDeps.get(c.id) || 0;
+    let depBadge = '';
+    if (nDep > 0) depBadge = `<div class="dep-line"><span class="badge badge-dep" title="Tiene ${nDep} depósito${nDep > 1 ? 's' : ''} abierto${nDep > 1 ? 's' : ''}">● depósito activo${nDep > 1 ? ' ×' + nDep : ''}</span></div>`;
+    else if (c.is_client) depBadge = '<div class="dep-line"><span class="no-dep">sin depósito activo</span></div>';
+
+    const cityCell = (c.postal_code ? `<span class="cell-cp">${escapeHtml(c.postal_code)}</span>` : '') + escapeHtml(c.city || (c.postal_code ? '' : '—'));
+
     let typeBadge = '';
     if (type === 'client') typeBadge = '<span class="badge badge-client">Cliente</span>';
     else if (type === 'supplier') typeBadge = '<span class="badge badge-supplier">Proveedor</span>';
@@ -1091,9 +1153,9 @@ function renderTable() {
         <td class="nif">${nifDisplay}</td>
         <td>
           <div class="legal">${legalName}${flagBadge}</div>
-          ${commercial}
+          ${commercial}${depBadge}
         </td>
-        <td>${escapeHtml(c.city || '—')}</td>
+        <td>${cityCell}</td>
         <td>${escapeHtml(c.province || '—')}</td>
         <td>${typeBadge}</td>
         <td>${vatBadge}</td>
@@ -1445,6 +1507,15 @@ function bindEvents() {
       btn.classList.add('active');
       applyFilters();
     });
+  });
+
+  // código postal (solo cifras)
+  let cpTimer;
+  $('cpInput').addEventListener('input', (e) => {
+    const v = normCp(e.target.value).slice(0, 5);
+    if (v !== e.target.value) e.target.value = v;
+    clearTimeout(cpTimer);
+    cpTimer = setTimeout(() => { state.cp = v; applyFilters(); }, 150);
   });
 
   // provincia
