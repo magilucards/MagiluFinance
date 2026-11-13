@@ -318,7 +318,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
       <button class="btn-secondary" id="btnFacturar" title="Depósitos recontados pendientes de crear factura" style="margin-left:8px;">📑 Facturar a Holded</button>
       <div class="search-box">
         <span style="color:var(--text-faint)">⌕</span>
-        <input type="text" id="searchInput" placeholder="buscar cliente...">
+        <input type="text" id="searchInput" placeholder="buscar: cliente, NIF, CP, producto, nº..." autocomplete="off">
       </div>
     </div>
     <div id="depList"></div>
@@ -631,6 +631,7 @@ let products = [];
 let nextDepositNumber = 1;  // siguiente número correlativo
 let filterStatus = 'all';
 let searchTerm = '';
+let lineIndex = null;  // deposit_id → texto con referencias y nombres de producto (para el buscador)
 
 // Estado de edición
 let editing = null;   // objeto deposit o null
@@ -714,7 +715,7 @@ async function loadAll(){
   // Todo paginado. Los depósitos vienen de v_deposit_totals con los totales ya calculados en SQL:
   // las líneas solo se piden al abrir un depósito.
   const [cRes, pRes, dRes, lRes, sRes] = await Promise.all([
-    fetchAllPages(()=>sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,email,phone,vat_regime,is_client,requires_signature',{count:'exact'}).eq('is_client',true).order('legal_name').order('id')),
+    fetchAllPages(()=>sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,postal_code,province,email,phone,vat_regime,is_client,requires_signature',{count:'exact'}).eq('is_client',true).order('legal_name').order('id')),
     fetchAllPages(()=>sb.from('products').select('id,code,name,current_price,current_cost,vat_rate,is_active',{count:'exact'}).order('code').order('id')),
     fetchAllPages(()=>sb.from('v_deposit_totals').select('*',{count:'exact'}).order('delivery_date',{ascending:false}).order('id')),
     fetchAllPages(()=>sb.from('client_locations').select('id,client_id,name,address,city,postal_code,is_active',{count:'exact'}).order('name').order('id')),
@@ -740,6 +741,40 @@ async function loadAll(){
   populateClientSelect();
   updateHeaderStats();
   renderList();
+  loadLineIndex();   // en segundo plano: no retrasa la lista
+}
+
+// Referencias y nombres de producto de cada depósito, solo para el buscador.
+// Columnas mínimas y paginado; sin conexión sale de la copia del iPhone (offline.js).
+let lineIndexSeq = 0;
+async function loadLineIndex(){
+  const seq = ++lineIndexSeq;
+  const { data, error } = await fetchAllPages(()=>sb.from('deposit_lines').select('id,deposit_id,product_code,product_name',{count:'exact'}).order('id'), 1000);
+  if (seq !== lineIndexSeq || error || !data) return;   // si falla, el buscador sigue con el resto de campos
+  const idx = new Map();
+  data.forEach(l=>{ idx.set(l.deposit_id, (idx.get(l.deposit_id)||'') + ' ' + (l.product_code||'') + ' ' + (l.product_name||'')); });
+  lineIndex = idx;
+  if (searchTerm && !$('listView').classList.contains('hidden')) renderList();
+}
+
+// Texto normalizado: minúsculas y sin tildes ("Alacant" = "alacant", "león" = "leon")
+function normTxt(s){ return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+
+// Todo lo que consta en un depósito, en un solo texto para buscar
+function depHaystack(d){
+  const c = clients.find(x=>x.id===d.client_id);
+  const l = locById(d.location_id);
+  const parts = [
+    d.deposit_number!=null ? '#'+d.deposit_number+' '+d.deposit_number : '',
+    d.status, d.notes, d.client_note, payLabel(d.payment_method), d.holded_invoice_id,
+    (d.regime||'A')==='B' ? 'regimen b' : '',
+    fmtDate(d.delivery_date), fmtDate(d.recount_date), fmtDate(d.invoice_date),
+    c ? [c.nif, c.legal_name, c.commercial_name, c.address, c.city, c.postal_code, c.province, c.email, c.phone].join(' ') : '',
+    l ? [l.name, l.address, l.city, l.postal_code].join(' ') : '',
+    signatures.filter(s=>s.deposit_id===d.id && !s.voided_at).map(s=>s.signer_name).join(' '),
+    lineIndex ? (lineIndex.get(d.id)||'') : ''
+  ];
+  return normTxt(parts.filter(Boolean).join(' '));
 }
 
 function populateClientSelect(){
@@ -893,7 +928,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v40`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v41`;
 }
 
 // ===== LISTA =====
@@ -912,23 +947,22 @@ function renderList(){
   let result = allDeposits.slice();
   if (filterStatus!=='all') result = result.filter(d=>d.status===filterStatus);
   if (searchTerm){
-    const q=searchTerm.toLowerCase();
-    result = result.filter(d=>{
-      const c = clients.find(x=>x.id===d.client_id);
-      const name = c ? (c.legal_name+' '+(c.commercial_name||'')) : '';
-      return (name+' '+locName(d.location_id)).toLowerCase().includes(q);
-    });
+    // Varias palabras = todas deben aparecer (p. ej. "46021 MGE": depósitos en ese CP con ese producto)
+    const terms = normTxt(searchTerm).split(/\s+/).filter(Boolean);
+    result = result.filter(d=>{ const h = depHaystack(d); return terms.every(t=>h.includes(t)); });
   }
   const cont=$('depList');
   if (result.length===0){
-    cont.innerHTML=`<div class="empty-state"><div class="empty-state-title">No hay depósitos</div><div class="empty-state-sub">pulsa "+ Nuevo depósito" para crear el primero</div></div>`;
+    cont.innerHTML = searchTerm || filterStatus!=='all'
+      ? `<div class="empty-state"><div class="empty-state-title">Ningún depósito coincide</div><div class="empty-state-sub">prueba con otra palabra o quita el filtro de estado</div></div>`
+      : `<div class="empty-state"><div class="empty-state-title">No hay depósitos</div><div class="empty-state-sub">pulsa "+ Nuevo depósito" para crear el primero</div></div>`;
     return;
   }
   cont.innerHTML = result.map(d=>{
     const c = clients.find(x=>x.id===d.client_id);
     const clientName = c ? (c.commercial_name||c.legal_name) : '(cliente eliminado)';
     const nif = c ? (c.nif||'') : '';
-    const city = c ? (c.city||'') : '';
+    const city = c ? [c.postal_code, c.city].filter(Boolean).join(' ') : '';
     const t = depTotals(d);
     let dateLabel, dateVal;
     if (d.status==='abierto'){ dateLabel='entregado'; dateVal=d.delivery_date; }
