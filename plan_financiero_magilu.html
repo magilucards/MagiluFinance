@@ -148,7 +148,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
   <!-- 1. Este mes -->
   <section class="card full">
     <h2>Este mes <span class="when" id="mesLabel">—</span></h2>
-    <div class="sub">Ventas netas (sin impuestos) liquidadas este mes</div>
+    <div class="sub" id="hVentasSub">Ventas netas (sin impuestos) liquidadas este mes</div>
     <div class="hero" id="hVentas">—</div>
     <div class="goal" id="goal" role="img"><div class="fill" id="goalFill"></div></div>
     <div class="tiles">
@@ -268,7 +268,8 @@ let sales = null;          // { mes: {neto, coste, gastos, tarjetas}, margenReal
 let salesState = 'loading'; // loading | ok | error
 let loaded = { debts:false, fixed:false, settings:false };
 let writeBusy = false;
-let colabCost = null;      // coste de tu colaborador (JP) este mes: pago + tu IRPF de ese pago
+let colabCost = null;
+let comision = null;       // si colaboras con otro (JP con TOMÁS): tus ventas que cuentan y tu %      // coste de tu colaborador (JP) este mes: pago + tu IRPF de ese pago
 
 const DEBT_TYPES = [['prestamo','Préstamo'], ['leasing','Leasing'], ['poliza','Póliza de crédito'], ['tarjeta_revolving','Tarjeta revolving'],
   ['aplazamiento','Aplazamiento'], ['otro','Otro']];
@@ -334,6 +335,11 @@ function workdaysLeft(){
 }
 
 function margin(){
+  // Colaborador: lo que gana de cada venta es su %, no el margen de producto
+  if (comision && comision.pct != null) {
+    return { m: Math.min(Math.max(n(comision.pct) / 100, 0.01), 1), manual: false, colab: true,
+             fuente: 'tu % de ' + comision.dueno + (comision.pct_del_mes ? '' : ', el último fijado') };
+  }
   // Margen sobre ventas netas: el real de los últimos meses o el que pongas a mano
   const manual = planCfg.margin_mode === 'manual';
   const m = manual ? n(settings.margin_brut_pct) / 100 : (sales && sales.margenReal != null ? sales.margenReal : n(settings.margin_brut_pct) / 100);
@@ -425,7 +431,8 @@ function render(){
   $('mesLabel').textContent = fmtMonth(now);
 
   // 1. Este mes
-  const ventas = sales ? n(sales.mes.neto) : null;
+  const ventas = comision ? n(comision.base) : (sales ? n(sales.mes.neto) : null);
+  if (comision) $('hVentasSub').textContent = 'Lo que has vendido este mes (sin IVA): en los depósitos de ' + comision.dueno + ' y en los tuyos';
   $('hVentas').textContent = ventas != null ? money(ventas) : (salesState === 'loading' ? 'cargando…' : 'sin datos');
   const max = Math.max(t.v2, ventas || 0) || 1;
   const goal = $('goal');
@@ -469,7 +476,8 @@ function render(){
   addRow(eq, 'Reserva IRPF (' + pct(t.r * 100, 0) + ' del beneficio)', money(t.cNeg / (1 - t.r) - t.cNeg));
   addRow(eq, 'Margen sobre ventas (' + margin().fuente + ')', pct(t.m * 100));
   addRow(eq, 'Ventas netas necesarias', money(t.v1), 'total');
-  $('eqNote').textContent = 'Es lo que tienes que vender al mes, sin IVA, para que el negocio pague sus gastos y sus cuotas sin poner dinero tú. '
+  if (comision && comision.pct != null) $('eqNote').textContent = 'Es lo que tienes que vender al mes, sin IVA, para que tu ' + pct(n(comision.pct)) + ' cubra tus gastos y tus cuotas. Cuenta todo lo que vendes: en los depósitos de ' + comision.dueno + ' y en los tuyos.';
+  else $('eqNote').textContent = 'Es lo que tienes que vender al mes, sin IVA, para que el negocio pague sus gastos y sus cuotas sin poner dinero tú. '
     + (planCfg.margin_mode === 'manual' ? '' : 'El margen real sale de lo vendido menos su coste de fábrica.')
     + (colabCost && colabCost.pct != null ? ' ' + colabCost.nombre + ': lo que lleva vendido este mes por el % ' + (colabCost.fijado ? 'fijado' : 'del último mes guardado')
        + ', más tu IRPF (' + pct(colabCost.irpf, 1) + ') porque ese pago no te desgrava; sube según venda. Se ajusta en Colaboradores.' : '');
@@ -580,7 +588,8 @@ function render(){
   // 6. Ajustes
   const cfg = $('cfgRows'); cfg.textContent = '';
   addRow(cfg, 'Sueldo objetivo al mes', money(settings.target_monthly_salary));
-  addRow(cfg, 'Margen', planCfg.margin_mode === 'manual' ? pct(settings.margin_brut_pct) + ' (a mano)' : 'real' + (sales && sales.margenReal != null ? ' · ' + pct(sales.margenReal * 100) : ''));
+  if (comision && comision.pct != null) addRow(cfg, 'Margen', pct(n(comision.pct)) + ' · tu % (lo fija ' + comision.dueno + ')');
+  else addRow(cfg, 'Margen', planCfg.margin_mode === 'manual' ? pct(settings.margin_brut_pct) + ' (a mano)' : 'real' + (sales && sales.margenReal != null ? ' · ' + pct(sales.margenReal * 100) : ''));
   addRow(cfg, 'Reserva IRPF (modelo 130)', pct(irpf() * 100, 0));
 }
 
@@ -833,6 +842,8 @@ async function loadComision(){
   const { data, error } = await sb.rpc('colab_mi_comision', { p_mes: isoDate(new Date(hoy.getFullYear(), hoy.getMonth(), 1)) });
   if (error || !Array.isArray(data) || !data.length) return;
   const c = data[0];
+  comision = c;
+  render();
   $('comCard').style.display = '';
   $('comDueno').textContent = c.dueno;
   $('comMes').textContent = fmtMonth(hoy);
@@ -841,7 +852,7 @@ async function loadComision(){
   const add = (l, v, cls) => { const r = el('div', 'row' + (cls ? ' ' + cls : '')); r.appendChild(el('span', 'l', l)); r.appendChild(el('span', 'v', v)); box.appendChild(r); };
   add('Facturas que cuentan', String(c.ventas));
   add('Base vendida (sin IVA)', money(n(c.base)));
-  add('% que te paga ' + c.dueno, c.pct == null ? 'aún sin fijar este mes' : pct(n(c.pct)));
+  add('% que te paga ' + c.dueno, c.pct == null ? 'aún sin fijar' : pct(n(c.pct)) + (c.pct_del_mes ? '' : ' (el último fijado)'));
   add('Cobrarás', c.pago == null ? '—' : money(n(c.pago)), 'total');
   $('comNote').textContent = 'Mientras no seas autónomo: no facturas ni cobras IVA, no pagas cuota de autónomo y '
     + c.dueno + ' asume el IRPF de este pago (no puede desgravárselo). Aun así es un ingreso tuyo: tendrás que incluirlo en tu declaración de la renta (consúltalo con tu gestor). '

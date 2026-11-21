@@ -310,3 +310,9 @@ end $mig$;
 --    usa el coste del producto de Tomás con la misma referencia (JP no lo ve).
 --    Ver la versión de _colab_ventas con «coalesce(nullif(dl.unit_cost, 0), …)».
 -- ---------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------
+-- 8) (aplicado aparte) colab_mi_comision: si el mes no tiene % fijado, el último
+--    fijado (campo pct_del_mes). El plan del colaborador usa ese % como margen y
+--    como ventas todo lo que le cuenta para comisión.
+-- ---------------------------------------------------------------------
