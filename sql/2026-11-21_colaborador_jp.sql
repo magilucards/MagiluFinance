@@ -302,3 +302,17 @@ begin
     execute f;
   end loop;
 end $mig$;
+
+-- ---------------------------------------------------------------------
+-- 7) (aplicado aparte) Productos de Tomás copiados al espacio de JP SIN costes
+--    (41 productos: mismo código, nombre, precio, IVA y estado; coste 0).
+--    Para el margen del panel de Tomás, si una línea no tiene coste, _colab_ventas
+--    usa el coste del producto de Tomás con la misma referencia (JP no lo ve).
+--    Ver la versión de _colab_ventas con «coalesce(nullif(dl.unit_cost, 0), …)».
+-- ---------------------------------------------------------------------
+
+-- ---------------------------------------------------------------------
+-- 8) (aplicado aparte) colab_mi_comision: si el mes no tiene % fijado, el último
+--    fijado (campo pct_del_mes). El plan del colaborador usa ese % como margen y
+--    como ventas todo lo que le cuenta para comisión.
+-- ---------------------------------------------------------------------
