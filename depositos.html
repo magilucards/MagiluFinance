@@ -639,6 +639,9 @@ let products = [];
 let nextDepositNumber = 1;  // siguiente número correlativo
 let filterStatus = 'all';
 let searchTerm = '';
+// Columnas de las líneas que pide la app: todas menos el coste (lo pone el servidor y
+// el colaborador, JP en los depósitos de Tomás, no puede leerlo).
+const LINE_COLS = 'id,user_id,deposit_id,product_id,product_code,product_name,qty_delivered,qty_remaining,unit_price,vat_rate,sort_order,created_at,updated_at';
 let filterPeople = false;  // solo depósitos donde ha intervenido otra persona (JP)
 let lineIndex = null;  // deposit_id → texto con referencias y nombres de producto (para el buscador)
 
@@ -725,7 +728,7 @@ async function loadAll(){
   // las líneas solo se piden al abrir un depósito.
   const [cRes, pRes, dRes, lRes, sRes] = await Promise.all([
     fetchAllPages(()=>sb.from('clients').select('id,nif,legal_name,commercial_name,city,address,postal_code,province,email,phone,vat_regime,is_client,requires_signature',{count:'exact'}).eq('is_client',true).order('legal_name').order('id')),
-    fetchAllPages(()=>sb.from('products').select('id,code,name,current_price,current_cost,vat_rate,is_active',{count:'exact'}).order('code').order('id')),
+    fetchAllPages(()=>sb.from('products').select('id,code,name,current_price,vat_rate,is_active',{count:'exact'}).order('code').order('id')),
     fetchAllPages(()=>sb.from('v_deposit_totals').select('*',{count:'exact'}).order('delivery_date',{ascending:false}).order('id')),
     fetchAllPages(()=>sb.from('client_locations').select('id,client_id,name,address,city,postal_code,is_active',{count:'exact'}).order('name').order('id')),
     // Sin signature_png ni content_snapshot: solo se traen al abrir un depósito (para el PDF)
@@ -958,7 +961,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v43`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v44`;
 }
 
 // ===== LISTA =====
@@ -1278,7 +1281,7 @@ async function openDeposit(id){
   editing = d;
   // cargar líneas frescas y las firmas completas de este depósito (imagen + snapshot, para el PDF)
   const [lRes, sRes] = await Promise.all([
-    sb.from('deposit_lines').select('*').eq('deposit_id',id).order('sort_order'),
+    sb.from('deposit_lines').select(LINE_COLS).eq('deposit_id',id).order('sort_order'),
     sb.from('deposit_signatures').select('*').eq('deposit_id',id).order('signed_at',{ascending:true})
   ]);
   if (lRes.error){ showToast('Error cargando líneas: '+lRes.error.message,true); return; }
@@ -1580,8 +1583,7 @@ function addLine(productId){
     product_name: p.name,
     qty_delivered: 0,
     qty_remaining: null,
-    unit_price: parseFloat(p.current_price)||0,   // PRECIO CONGELADO
-    unit_cost: parseFloat(p.current_cost)||0,
+    unit_price: parseFloat(p.current_price)||0,   // PRECIO CONGELADO (el coste lo congela el servidor)
     vat_rate: p.vat_rate||21
   });
   $('productSearch').value='';
@@ -1634,7 +1636,7 @@ async function saveDeposit(silent=false){
 
   // Líneas: SIN borrar y reinsertar (los bloqueos por firma lo impedirían).
   // Se actualizan solo las que han cambiado, se insertan las nuevas y se borran las quitadas.
-  const { data: dbLines, error: dbErr } = await sb.from('deposit_lines').select('*').eq('deposit_id',depId);
+  const { data: dbLines, error: dbErr } = await sb.from('deposit_lines').select(LINE_COLS).eq('deposit_id',depId);
   if (dbErr){ showToast('Error leyendo líneas: '+dbErr.message,true); return false; }
   const num = v => (v===null || v===undefined || v==='') ? null : Number(v);
   const linePayload = (l, idx) => ({
@@ -1644,11 +1646,10 @@ async function saveDeposit(silent=false){
     qty_delivered: parseFloat(l.qty_delivered)||0,
     qty_remaining: l.qty_remaining!=null ? (parseFloat(l.qty_remaining)||0) : null,
     unit_price: parseFloat(l.unit_price)||0,
-    unit_cost: parseFloat(l.unit_cost)||0,
     vat_rate: l.vat_rate||21,
     sort_order: idx
   });
-  const NUM_FIELDS = ['qty_delivered','qty_remaining','unit_price','unit_cost','vat_rate','sort_order'];
+  const NUM_FIELDS = ['qty_delivered','qty_remaining','unit_price','vat_rate','sort_order'];
   const keepIds = new Set(lines.filter(l=>l.id).map(l=>l.id));
   const toDelete = (dbLines||[]).filter(r=>!keepIds.has(r.id)).map(r=>r.id);
   const toInsert = [];
@@ -1963,7 +1964,7 @@ function localCopy(depId, after, before){
   // Líneas: las del editor si es este depósito y ya están guardadas; si no, se piden al servidor
   const fromEditor = (editing && editing.id===depId && lines.length && lines.every(l=>l.id)) ? lines.map(l=>({ ...l })) : null;
   const linesP = fromEditor ? Promise.resolve(fromEditor)
-    : sb.from('deposit_lines').select('*').eq('deposit_id', depId).order('sort_order').then(r=>r.data||[]);
+    : sb.from('deposit_lines').select(LINE_COLS).eq('deposit_id', depId).order('sort_order').then(r=>r.data||[]);
   linesP.then(ls=>MFLocal.saveDeposit(dep, ls, !after)).catch(e=>console.warn('copia local', e));
 }
 
@@ -2622,7 +2623,7 @@ async function onVisitSigned(data){
   const [{ data: full, error }, { data: visitLines, error: lnErr }] = await Promise.all([
     sb.from('deposit_signatures').select('*').in('deposit_id', ids).is('voided_at', null),
     // Líneas solo de los depósitos de esta visita (la lista ya no las trae)
-    sb.from('deposit_lines').select('*').in('deposit_id', ids).order('sort_order')
+    sb.from('deposit_lines').select(LINE_COLS).in('deposit_id', ids).order('sort_order')
   ]);
   if (error) showToast('Firmado, pero no se pudieron cargar las firmas para el PDF: '+error.message, true);
   if (lnErr) showToast('Firmado, pero no se pudieron cargar las líneas para el PDF: '+lnErr.message, true);

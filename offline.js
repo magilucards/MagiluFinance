@@ -37,6 +37,12 @@
     debts: 'id', fixed_expenses: 'id', editable_data: 'id'
   };
   var VIEWS = { v_deposit_totals: true };
+  // En los depósitos de otro (rol Depósitos) el servidor no deja leer los costes: se piden las demás columnas
+  var NO_COST_COLS = {
+    products: 'id,user_id,code,name,description,current_price,vat_rate,is_active,notes,created_at,updated_at,parent_code',
+    deposit_lines: 'id,user_id,deposit_id,product_id,product_code,product_name,qty_delivered,qty_remaining,unit_price,vat_rate,sort_order,created_at,updated_at'
+  };
+  function mirrorCols(t) { return (SPACE && !SPACE.propio && SPACE.rol === 'depositos' && NO_COST_COLS[t]) || '*'; }
   // Tablas que Depósitos puede escribir sin conexión
   var WRITE_TABLES = { deposits: 1, deposit_lines: 1, pending_collections: 1, settings: 1 };
   // Funciones del servidor que se pueden dejar en cola (no cambian nada si se repiten)
@@ -574,7 +580,7 @@
   function fetchTable(t) {
     var rows = [], size = 500;
     function page(from) {
-      return Promise.resolve(REAL.from(t).select('*', { count: 'exact' }).order(MIRROR[t]).range(from, from + size - 1)).then(function (r) {
+      return Promise.resolve(REAL.from(t).select(mirrorCols(t), { count: 'exact' }).order(MIRROR[t]).range(from, from + size - 1)).then(function (r) {
         if (r.error) throw r.error;
         rows = rows.concat(r.data || []);
         if (!r.data || !r.data.length) return rows;
