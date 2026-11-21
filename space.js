@@ -56,6 +56,15 @@
   window.mfSpaceCan = function (what) {   // 'todo' | 'borrar'
     return !window.MF_SPACE || window.MF_SPACE.rol !== 'depositos';
   };
+  // Espacios a los que puedes entrar (el id de cada espacio es el de su dueño: TOMÁS, JP…)
+  window.mfSpaces = function () { return list.slice(); };
+  // Nombre de una persona por su id ('' si no es nadie de la lista)
+  window.mfPersonName = function (id) {
+    var s = id && list.find(function (x) { return x.id === id; });
+    return s ? s.nombre : '';
+  };
+  // ¿Tienes colaboradores? (alguien con acceso a tus Depósitos): hoy, tener acceso completo a otro espacio
+  window.mfHasColabs = function () { return list.some(function (x) { return x.rol === 'completo'; }); };
 
   var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
 
@@ -120,6 +129,8 @@
   var css = ''
     + '.mf-space-sel{background:#0e1626;border:1px solid #3a4a6e;color:#e8eef7;border-radius:6px;height:32px;'
     + 'padding:0 8px;font:600 12px/1 "JetBrains Mono",monospace;letter-spacing:.06em;cursor:pointer;margin-right:6px}'
+    + '.mf-space-sel{width:auto!important;display:inline-block;vertical-align:middle;flex:0 0 auto}'
+    + '[data-privacy-slot]{white-space:nowrap}'
     + '.mf-space-sel.foreign{border-color:#f0b429;background:#f0b429;color:#1a1200}'
     + '.mf-band{position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:center;gap:12px;'
     + 'flex-wrap:wrap;background:#f0b429;color:#1a1200;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;'

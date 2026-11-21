@@ -7,7 +7,7 @@
 //  · Resto (iconos, librerías, fuentes): primero la copia guardada.
 //  · Supabase: nunca se guarda aquí (los datos sin conexión los gestiona offline.js).
 
-const CACHE_NAME = 'magilu-finance-v42';  // ← subir este número en cada despliegue importante
+const CACHE_NAME = 'magilu-finance-v43';  // ← subir este número en cada despliegue importante
 const PRECACHE = [
   './',
   './index.html',
@@ -18,6 +18,7 @@ const PRECACHE = [
   './productos.html',
   './dashboard.html',
   './plan_financiero_magilu.html',
+  './colaboradores.html',
   './manifest.json',
   './privacy.js',
   './localbackup.js',

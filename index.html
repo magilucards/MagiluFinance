@@ -362,6 +362,13 @@ html, body {
     <span class="module-soon">Próximamente</span>
   </a>
 
+  <a href="./colaboradores.html" class="module-card" id="card-colab" style="display:none;">
+    <div class="module-icon">🤝</div>
+    <div class="module-name">Colaboradores</div>
+    <div class="module-desc">Lo que hace JP: depósitos, facturas y cuánto le pagas.</div>
+    <div class="module-metric">control del mes</div>
+  </a>
+
   <a href="./plan_financiero_magilu.html" class="module-card" id="card-plan">
     <div class="module-icon">📊</div>
     <div class="module-name">Plan financiero</div>
@@ -498,11 +505,17 @@ async function init() {
   // Mostrar email y nombre
   $('userEmail').textContent = currentUser.email || '—';
   const namePart = (currentUser.email || '').split('@')[0];
+  const own = (window.mfSpaces ? mfSpaces() : []).find(x => x.propio);
   if (namePart && namePart.toLowerCase().includes('santofimia')) {
     $('welcomeName').textContent = 'Tomás';
+  } else if (own && own.nombre) {
+    $('welcomeName').textContent = own.nombre;
   } else if (namePart) {
     $('welcomeName').textContent = namePart.charAt(0).toUpperCase() + namePart.slice(1);
   }
+
+  // Panel de colaboradores: solo en tu espacio y si tienes colaboradores
+  if (window.MF_SPACE && MF_SPACE.propio && window.mfHasColabs && mfHasColabs()) $('card-colab').style.display = '';
 
   $('logoutBtn').addEventListener('click', async () => {
     await sb.auth.signOut();

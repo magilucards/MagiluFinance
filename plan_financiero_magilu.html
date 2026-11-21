@@ -158,6 +158,15 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
     <div id="mesNote"></div>
   </section>
 
+  <!-- Comisión como colaborador (solo si colaboras en los depósitos de otro, p. ej. JP con TOMÁS) -->
+  <section class="card full" id="comCard" style="display:none;">
+    <h2>Tu comisión de <span id="comDueno">—</span> <span class="when" id="comMes">—</span></h2>
+    <div class="sub">Lo que cobrarás este mes según lo vendido hasta hoy</div>
+    <div class="hero" id="comPago">—</div>
+    <div class="rows" id="comRows"></div>
+    <div class="warn" id="comNote"></div>
+  </section>
+
   <!-- 2. Punto de equilibrio -->
   <section class="card half">
     <h2>Punto de equilibrio <span class="when">al mes</span></h2>
@@ -785,6 +794,31 @@ async function load(withSales){
   return { ok: !err.length, salesP };
 }
 
+// ================= COMISIÓN (colaborador) =================
+// Base: lo facturado este mes en los depósitos del dueño que recontaste o facturaste,
+// más lo de tu espacio (también se factura a nombre del dueño). El % lo fija el dueño.
+async function loadComision(){
+  const soyColab = window.MF_SPACE && MF_SPACE.propio && window.mfSpaces && mfSpaces().some(x => x.rol === 'depositos');
+  if (!soyColab) return;
+  const hoy = new Date();
+  const { data, error } = await sb.rpc('colab_mi_comision', { p_mes: isoDate(new Date(hoy.getFullYear(), hoy.getMonth(), 1)) });
+  if (error || !Array.isArray(data) || !data.length) return;
+  const c = data[0];
+  $('comCard').style.display = '';
+  $('comDueno').textContent = c.dueno;
+  $('comMes').textContent = fmtMonth(hoy);
+  $('comPago').textContent = c.pago == null ? 'sin % fijado' : money(n(c.pago));
+  const box = $('comRows'); box.textContent = '';
+  const add = (l, v, cls) => { const r = el('div', 'row' + (cls ? ' ' + cls : '')); r.appendChild(el('span', 'l', l)); r.appendChild(el('span', 'v', v)); box.appendChild(r); };
+  add('Facturas que cuentan', String(c.ventas));
+  add('Base vendida (sin IVA)', money(n(c.base)));
+  add('% que te paga ' + c.dueno, c.pct == null ? 'aún sin fijar este mes' : pct(n(c.pct)));
+  add('Cobrarás', c.pago == null ? '—' : money(n(c.pago)), 'total');
+  $('comNote').textContent = 'Mientras no seas autónomo: no facturas ni cobras IVA, no pagas cuota de autónomo y '
+    + c.dueno + ' asume el IRPF de este pago (no puede desgravárselo). Aun así es un ingreso tuyo: tendrás que incluirlo en tu declaración de la renta (consúltalo con tu gestor). '
+    + 'Cuando te des de alta: le harás factura, pagarás tu cuota y tu IRPF, y la comisión se calcula igual.';
+}
+
 // ================= INICIO =================
 (async function init(){
   const { data:{ session }, error } = await sb.auth.getSession();
@@ -817,6 +851,7 @@ async function load(withSales){
   });
 
   await load(true);
+  loadComision();
   $('loadingScreen').style.display = 'none';
   $('app').style.display = 'block';
 })();

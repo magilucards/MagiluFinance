@@ -21,6 +21,10 @@
 --    en Holded que el cambio se ha aplicado de verdad.
 -- =====================================================================
 
+-- Carga la extensión http en la sesión: sin esto Postgres no deja recrear las
+-- funciones de Holded que llevan  SET "http.timeout_msec"  (permission denied).
+select extensions.urlencode('x');
+
 -- ---------------------------------------------------------------------
 -- 1) Espacios y accesos
 -- ---------------------------------------------------------------------
