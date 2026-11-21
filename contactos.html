@@ -597,6 +597,7 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
       <h1>Cont<em>actos</em></h1>
       <div class="subtitle" id="headerStats" data-version="ok">— · —</div>
     </div>
+    <div data-privacy-slot style="margin-left:auto;display:flex;align-items:center;"></div>
     <button class="btn-primary" id="btnNewContact" title="Nuevo contacto">+ Nuevo</button>
   </div>
 </header>
@@ -826,6 +827,8 @@ tbody tr.generic td { font-style: italic; color: var(--text-dim); }
 <!-- Supabase JS SDK con Subresource Integrity -->
 <script src="./vendor/supabase-js-2.100.1.js"></script>
 <!-- Modo sin cobertura: copia local, cola de cambios y sincronización -->
+<!-- Espacios (TOMÁS / JP): selector, franja y cabecera x-mf-space -->
+<script src="./space.js"></script>
 <script src="./offline.js"></script>
 
 <script>
@@ -917,7 +920,7 @@ async function checkAuth() {
     redirectToLogin();
     return false;
   }
-  currentUser = session.user;
+  currentUser = mfSpaceUser(session.user);
   return true;
 }
 

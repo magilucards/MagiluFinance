@@ -169,6 +169,8 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 .sig-ok { background:rgba(110,226,197,0.12); color:var(--primary); }
 .sig-pend { background:rgba(138,155,178,0.12); color:var(--text-dim); }
 .sig-pend.required { background:rgba(224,117,96,0.15); color:var(--red-bright); font-weight:600; }
+.person-chip { background:rgba(240,180,41,0.16); color:#f0b429; border:1px solid rgba(240,180,41,0.45); font-weight:700; }
+.filter-btn.person.active { background:#f0b429; border-color:#f0b429; color:#1a1200; }
 .detail-notice { display:none; padding:10px 14px; margin-bottom:14px; border-radius:8px; font-size:12px; border:1px solid var(--amber); background:rgba(212,160,74,0.08); color:var(--amber-bright); }
 .detail-notice.active { display:block; }
 .detail-notice div + div { margin-top:4px; }
@@ -295,7 +297,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 
 <header class="app-header">
   <div class="header-inner">
-    <a href="./index.html" class="back-link">← Inicio</a>
+    <a href="./index.html" class="back-link" id="backHome">← Inicio</a>
     <div>
       <h1>Depós<em>itos</em></h1>
       <div class="subtitle" id="headerStats">— · v40</div>
@@ -314,6 +316,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
       <button class="filter-btn" data-status="abierto">Abiertos</button>
       <button class="filter-btn" data-status="recontado">Recontados</button>
       <button class="filter-btn" data-status="facturado">Facturados</button>
+      <button class="filter-btn person" id="filterPeople" style="display:none;" title="Solo los depósitos en los que ha intervenido otra persona">👤</button>
       <button class="btn-secondary" id="btnSyncCal" title="Crea los cobros pendientes que falten (el calendario A/B lo recalcula el servidor al facturar)" style="margin-left:8px;">↻ Sincronizar cobros</button>
       <button class="btn-secondary" id="btnFacturar" title="Depósitos recontados pendientes de crear factura" style="margin-left:8px;">📑 Facturar a Holded</button>
       <div class="search-box">
@@ -338,6 +341,7 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
         <button class="btn-primary" id="btnLiquidar" style="display:none;" title="Liquidar: forma de pago + régimen">Liquidar</button>
         <button class="btn-primary" id="btnInvoice" style="display:none;">🧾 Facturar en Holded</button>
         <button class="btn-secondary" id="btnSendEmail" style="display:none;">✉️ Enviar factura</button>
+        <button class="btn-secondary" id="btnPayMethod" style="display:none;" title="Cambiar la forma de pago (depósito, cobro y factura de Holded)">💳 Forma de pago</button>
         <button class="btn-primary" id="btnNextDeposit" style="display:none;" title="Nuevo depósito para la misma tienda">+ Siguiente</button>
         <button class="btn-primary" id="btnSave">Guardar</button>
       </div>
@@ -581,6 +585,8 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 
 <script src="./vendor/supabase-js-2.100.1.js"></script>
 <!-- Modo sin cobertura: copia local, cola de cambios y sincronización -->
+<!-- Espacios (TOMÁS / JP): selector, franja y cabecera x-mf-space -->
+<script src="./space.js"></script>
 <script src="./offline.js"></script>
 <script src="./vendor/jspdf-2.5.1.umd.min.js"></script>
 <script src="./vendor/jspdf-autotable-3.8.2.min.js"></script>
@@ -610,6 +616,8 @@ const PRIVACIDAD_EMAIL = 'santofimiagroup@gmail.com';
 let emisorNif = null;   // settings.company_cif
 
 async function loadEmisorNif(){
+  const r = await sb.rpc('dep_emisor_nif');
+  if (!r.error){ emisorNif = r.data ? String(r.data).trim() : null; return; }
   const { data, error } = await sb.from('settings').select('company_cif').eq('user_id', currentUser.id).maybeSingle();
   if (error){ console.error('loadEmisorNif', error); return; }
   emisorNif = (data && data.company_cif) ? String(data.company_cif).trim() : null;
@@ -631,6 +639,7 @@ let products = [];
 let nextDepositNumber = 1;  // siguiente número correlativo
 let filterStatus = 'all';
 let searchTerm = '';
+let filterPeople = false;  // solo depósitos donde ha intervenido otra persona (JP)
 let lineIndex = null;  // deposit_id → texto con referencias y nombres de producto (para el buscador)
 
 // Estado de edición
@@ -706,7 +715,7 @@ function showToast(msg, isError=false){
 async function checkAuth(){
   const { data:{session}, error } = await sb.auth.getSession();
   if (error || !session){ window.location.href='./tesoreria.html'; return false; }
-  currentUser = session.user;
+  currentUser = mfSpaceUser(session.user);
   return true;
 }
 
@@ -772,7 +781,8 @@ function depHaystack(d){
     c ? [c.nif, c.legal_name, c.commercial_name, c.address, c.city, c.postal_code, c.province, c.email, c.phone].join(' ') : '',
     l ? [l.name, l.address, l.city, l.postal_code].join(' ') : '',
     signatures.filter(s=>s.deposit_id===d.id && !s.voided_at).map(s=>s.signer_name).join(' '),
-    lineIndex ? (lineIndex.get(d.id)||'') : ''
+    lineIndex ? (lineIndex.get(d.id)||'') : '',
+    Object.keys(depPeople(d)).join(' ')
   ];
   return normTxt(parts.filter(Boolean).join(' '));
 }
@@ -831,6 +841,26 @@ function sigChipHtml(d){
   if (d.status==='facturado' && !req) return '';  // histórico: no ensuciar la lista
   return `<span class="sig-chip sig-pend ${req?'required':''}">Pendiente de firma</span>`;
 }
+// ===== QUIÉN HIZO QUÉ (JP) =====
+// El servidor guarda quién creó, recontó y facturó cada depósito. Se marca a quien
+// NO es el dueño del espacio que estás viendo (en lo de Tomás, JP; en lo de JP, Tomás).
+function depPeople(d){
+  const owner = window.MF_SPACE ? MF_SPACE.id : null;
+  const out = {};   // nombre → ['creó','recontó','facturó']
+  [['created_by','creó'],['recontado_por','recontó'],['facturado_por','facturó']].forEach(([k,verb])=>{
+    const id = d[k];
+    if (!id || id===owner) return;
+    const n = window.mfPersonName ? mfPersonName(id) : '';
+    if (!n) return;
+    (out[n] = out[n] || []).push(verb);
+  });
+  return out;
+}
+function peopleChipHtml(d){
+  const p = depPeople(d);
+  return Object.keys(p).map(n=>`<span class="sig-chip person-chip" title="${escapeHtml(n)}: ${escapeHtml(p[n].join(', '))}">👤 ${escapeHtml(n)}</span>`).join('');
+}
+
 // Nota para el cliente: como mucho dos líneas
 function normalizeClientNote(s){
   const t = String(s||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean).slice(0,2).join('\n');
@@ -928,7 +958,7 @@ function renderClientResults(term){
 function updateHeaderStats(){
   const abiertos = allDeposits.filter(d=>d.status==='abierto').length;
   const total = allDeposits.length;
-  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v41`;
+  $('headerStats').textContent = `${total} depósitos · ${abiertos} abiertos · v43`;
 }
 
 // ===== LISTA =====
@@ -945,6 +975,15 @@ function depTotals(d){
 
 function renderList(){
   let result = allDeposits.slice();
+  // Botón 👤: aparece si hay depósitos con intervención de otra persona
+  const conPersona = allDeposits.filter(d=>Object.keys(depPeople(d)).length);
+  const fp = $('filterPeople');
+  if (conPersona.length){
+    const nombres = [...new Set(conPersona.flatMap(d=>Object.keys(depPeople(d))))];
+    fp.style.display = ''; fp.textContent = '👤 ' + nombres.join(', ') + ' (' + conPersona.length + ')';
+  } else { fp.style.display = 'none'; filterPeople = false; }
+  fp.classList.toggle('active', filterPeople);
+  if (filterPeople) result = result.filter(d=>Object.keys(depPeople(d)).length);
   if (filterStatus!=='all') result = result.filter(d=>d.status===filterStatus);
   if (searchTerm){
     // Varias palabras = todas deben aparecer (p. ej. "46021 MGE": depósitos en ese CP con ese producto)
@@ -992,7 +1031,7 @@ function renderList(){
       <div class="dep-card" data-id="${d.id}">
         <span class="status-pill status-${d.status}">${d.status}</span>
         <div>
-          <div class="dep-client">${d.deposit_number!=null?`<span style="color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:12px;">#${d.deposit_number}</span> `:''}${escapeHtml(clientName)}${d.location_id?` <span class="dep-store">· ${escapeHtml(locName(d.location_id))}</span>`:''}${sigChipHtml(d)}</div>
+          <div class="dep-client">${d.deposit_number!=null?`<span style="color:var(--text-faint);font-family:'JetBrains Mono',monospace;font-size:12px;">#${d.deposit_number}</span> `:''}${escapeHtml(clientName)}${d.location_id?` <span class="dep-store">· ${escapeHtml(locName(d.location_id))}</span>`:''}${sigChipHtml(d)}${peopleChipHtml(d)}</div>
           <div class="dep-meta">${escapeHtml(nif)}${city?' · '+escapeHtml(city):''} · ${dateLabel} ${fmtDate(dateVal)}${payChip}</div>
           ${taxLine}
         </div>
@@ -1246,7 +1285,9 @@ async function openDeposit(id){
   if (sRes.error){ showToast('Error cargando firmas: '+sRes.error.message,true); return; }
   lines = (lRes.data||[]).map(l=>({...l}));
   editingSigs = sRes.data||[];
-  $('detailTitle').textContent = 'Depósito · ' + d.status.toUpperCase();
+  const pp = depPeople(d);
+  $('detailTitle').textContent = 'Depósito · ' + d.status.toUpperCase()
+    + Object.keys(pp).map(n=>' · 👤 ' + n + ' ' + pp[n].join(', ')).join('');
   setClient(d.client_id, d.location_id);
   const lk = lockState();
   $('clientSearch').readOnly = (d.status!=='abierto') || lk.any;
@@ -1356,7 +1397,8 @@ function configureForStatus(status){
   $('recountDateWrap').style.display = (isRecontado||isFacturado) ? 'flex' : 'none';
 
   // botones
-  $('btnDelete').style.display = editing ? 'inline-flex' : 'none';
+  $('btnDelete').style.display = (editing && mfSpaceCan('borrar')) ? 'inline-flex' : 'none';
+  $('btnPayMethod').style.display = (editing && (isRecontado||isFacturado)) ? 'inline-flex' : 'none';
   $('btnSave').style.display = (isAbierto||isRecontado) ? 'inline-flex' : 'none';
   $('btnRecount').style.display = (editing && isAbierto) ? 'inline-flex' : 'none';
   $('btnLiquidar').style.display = (editing && isRecontado) ? 'inline-flex' : 'none';
@@ -1639,7 +1681,7 @@ async function saveDeposit(silent=false){
 
   // Actualizar el contador global si se usó un número correlativo
   if (depNum != null){
-    await sb.from('settings').update({ next_deposit_number: depNum + 1 }).eq('user_id', currentUser.id);
+    if (mfSpaceCan('todo')) await sb.from('settings').update({ next_deposit_number: depNum + 1 }).eq('user_id', currentUser.id);
   }
 
   await loadAll();
@@ -1672,6 +1714,39 @@ async function transitionTo(newStatus){
   await loadAll();
   await afterDepositWrite(depId, before);
   await openDeposit(depId);
+}
+
+// ===== CAMBIAR LA FORMA DE PAGO (depósito ya liquidado o facturado) =====
+// El servidor cambia el depósito, su cobro de Tesorería y la factura de Holded,
+// y comprueba en Holded que el cambio se ha aplicado de verdad.
+async function changePaymentMethod(){
+  if (!editing) return;
+  const d = editing;
+  const actual = d.payment_method || '';
+  const opts = ['efectivo','tarjeta','transferencia','bizum','pagare','remesa'];
+  const cobrado = d.collection_status === 'cobrado';
+  const body =
+    `<div style="margin-bottom:10px;">Ahora: <strong>${escapeHtml(payLabel(actual) || 'sin forma de pago')}</strong></div>`+
+    `<div class="liq-options" id="pmOpts">${opts.map(m=>`<button type="button" class="liq-opt${m===actual?' active':''}" data-pay="${m}">${escapeHtml(PAY_LABELS[m])}</button>`).join('')}</div>`+
+    `<div style="margin-top:10px;font-size:12px;color:var(--text-dim);">Se cambia en el depósito y en su cobro de Tesorería.${d.holded_invoice_id?' En Holded la factura ya emitida no se puede modificar desde aquí: cámbiala allí a mano si quieres que lo diga.':''}</div>`+
+    (cobrado ? `<div style="margin-top:8px;font-size:12px;color:var(--amber-bright);">⚠ Este cobro ya está marcado como COBRADO: el movimiento que ya entró en la cuenta no cambia.</div>` : '');
+  let elegido = actual;
+  const p = askDialog({ title:'💳 Forma de pago', body, okLabel:'Cambiar' });
+  document.querySelectorAll('#pmOpts .liq-opt').forEach(b=>b.addEventListener('click',()=>{
+    elegido = b.dataset.pay;
+    document.querySelectorAll('#pmOpts .liq-opt').forEach(x=>x.classList.toggle('active', x===b));
+  }));
+  const res = await p;
+  if (!res.ok) return;
+  if (!elegido || elegido === actual){ showToast('Sin cambios'); return; }
+  const { data, error } = await sb.rpc('deposit_set_payment', { p_deposit_id: d.id, p_method: elegido });
+  if (error){ showToast('No se pudo cambiar: '+error.message, true); return; }
+  const r = data || {};
+  if (r.holded === 'actualizada') showToast(`Forma de pago: ${payLabel(elegido)} · también en Holded`);
+  else if (r.holded === 'sin_factura') showToast(`Forma de pago: ${payLabel(elegido)}`);
+  else await askDialog({ title:`✓ ${payLabel(elegido)} en la app y en Tesorería`, body: escapeHtml(r.holded_msg || 'Revisa la factura en Holded.'), okLabel:'Entendido' });
+  await loadAll();
+  await openDeposit(d.id);
 }
 
 // ===== LIQUIDACIÓN DEL RECUENTO (modal con forma de pago + régimen) =====
@@ -2610,6 +2685,8 @@ function bindEvents(){
   $('btnLiquidar').addEventListener('click', ()=>openLiqModal());
   $('btnInvoice').addEventListener('click', guarded(async ()=>{ if (editing) await facturarUnoHolded(editing.id); }));
   $('btnSendEmail').addEventListener('click', guarded(enviarFacturaEmail));
+  $('filterPeople').addEventListener('click', ()=>{ filterPeople = !filterPeople; renderList(); });
+  $('btnPayMethod').addEventListener('click', guarded(changePaymentMethod));
   $('btnNextDeposit').addEventListener('click', ()=>{ const cid = editing ? editing.client_id : null; openNewForClient(cid, editing ? editing.location_id : null); });
   $('btnSyncCal').addEventListener('click', guarded(syncAllCalendarDays));
   $('btnFacturar').addEventListener('click', openFacturacionView);
@@ -2743,6 +2820,7 @@ window.addEventListener('mf:synced', ()=>{
 });
 
 (async function init(){
+  if (!mfSpaceCan('todo')) $('backHome').style.display = 'none';
   const ok=await checkAuth();
   if (!ok) return;
   bindEvents();

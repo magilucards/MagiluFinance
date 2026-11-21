@@ -770,6 +770,8 @@
 <!-- Supabase JS SDK con Subresource Integrity -->
 <script src="./vendor/supabase-js-2.100.1.js"></script>
 <!-- Modo sin cobertura: copia local, cola de cambios y sincronización -->
+<!-- Espacios (TOMÁS / JP): selector, franja y cabecera x-mf-space -->
+<script src="./space.js"></script>
 <script src="./offline.js"></script>
 
 <script>
@@ -856,7 +858,7 @@ async function checkSession() {
   try {
     const { data: { session }, error } = await supabaseClient.auth.getSession();
     if (error) throw error;
-    if (session) { currentUser = session.user; await showApp(); }
+    if (session) { currentUser = mfSpaceUser(session.user); await showApp(); }
     else { showAuth(); }
   } catch (err) {
     console.error('Session check failed:', err);
@@ -866,7 +868,7 @@ async function checkSession() {
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_OUT' || !session) { currentUser = null; showAuth(); }
-  else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') { currentUser = session.user; }
+  else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') { currentUser = mfSpaceUser(session.user); }
 });
 
 function showAuth() {

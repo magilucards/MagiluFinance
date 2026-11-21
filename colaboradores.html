@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colaboradores · Magilu Finance</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://bgrsjftxwuduvlglfpky.supabase.co wss://bgrsjftxwuduvlglfpky.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#050912">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,ital,wght@9..144,0,400;9..144,0,500;9..144,1,400&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="./privacy.js"></script>
+<style>
+:root {
+  --bg:#050912; --bg-elev:#0b1326; --bg-card:#11192e; --border:#1f2a44; --border-strong:#2c3a5c;
+  --text:#e2ebf2; --text-dim:#8a9bb2; --text-faint:#4f5d76;
+  --primary:#6ee2c5; --primary-dim:#4ab9a0; --primary-bright:#8fefd5;
+  --amber:#d4a04a; --amber-bright:#e8b85a; --red:#e07560; --red-bright:#ee8a76;
+  /* Paleta de datos (validada para daltonismo y contraste sobre --bg-card) */
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s-other:#4f5d76;
+  --track:#1b2540;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:var(--bg); color:var(--text); font-family:'Inter Tight',sans-serif; font-size:14px; line-height:1.45; -webkit-font-smoothing:antialiased; }
+.loading-screen { position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center; z-index:1000; color:var(--text-dim); font-family:'JetBrains Mono',monospace; font-size:12px; }
+
+/* Cabecera (mismo patrón que el resto) */
+.app-header { background:var(--bg-elev); border-bottom:1px solid var(--border); padding:calc(10px + env(safe-area-inset-top)) 16px 10px; position:sticky; top:0; z-index:10; }
+.header-inner { display:flex; align-items:center; gap:10px; max-width:1100px; margin:0 auto; }
+.back-link { color:var(--text-dim); text-decoration:none; font-size:12px; padding:6px 10px; border:1px solid var(--border-strong); border-radius:6px; font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+h1 { font-family:'Fraunces',serif; font-size:22px; font-weight:500; flex:1; }
+h1 em { font-style:italic; color:var(--primary); font-weight:400; }
+
+.main { max-width:1100px; margin:0 auto; padding:10px 12px 40px; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+.main > .full { grid-column:1 / -1; }
+
+/* Filtro de mes: una fila, arriba de todo lo que afecta */
+.month-bar { display:flex; align-items:center; gap:8px; }
+.month-btn { background:var(--bg-card); border:1px solid var(--border-strong); color:var(--text); width:40px; height:36px; border-radius:6px; font-size:15px; cursor:pointer; }
+.month-btn:disabled { opacity:0.35; cursor:default; }
+.month-label { flex:1; text-align:center; font-family:'Fraunces',serif; font-size:19px; }
+.month-note { font-size:11px; color:var(--text-faint); text-align:center; margin-top:2px; }
+
+.card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:12px 14px; min-width:0; }
+.card h2 { font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); font-weight:600; margin-bottom:8px; display:flex; align-items:baseline; gap:6px; }
+.card h2 .when { color:var(--text-faint); font-weight:500; letter-spacing:0.04em; text-transform:none; font-size:11px; margin-left:auto; }
+.sub { font-size:11.5px; color:var(--text-dim); }
+.warn { margin-top:8px; padding:6px 9px; border-radius:6px; font-size:11.5px; color:var(--amber-bright); background:rgba(212,160,74,0.08); border:1px solid rgba(212,160,74,0.3); }
+
+/* Cifra principal y tiles */
+.hero-label { font-size:12px; color:var(--text-dim); }
+.hero { font-size:44px; font-weight:600; line-height:1.05; letter-spacing:-0.02em; margin:2px 0 4px; }
+.hero.neg { color:var(--red-bright); }
+.tiles { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin-top:10px; }
+.tile { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px 10px; min-width:0; }
+.tile-label { font-size:11px; color:var(--text-dim); }
+.tile-value { font-size:19px; font-weight:600; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tile-sub { font-size:10.5px; color:var(--text-faint); margin-top:1px; }
+
+.toast { position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom)); transform:translateX(-50%) translateY(10px); background:var(--bg-elev); border:1px solid var(--border-strong); border-left:3px solid var(--primary); padding:10px 16px; border-radius:6px; font-size:13px; opacity:0; transition:all .2s; z-index:400; pointer-events:none; max-width:90vw; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.error { border-left-color:var(--red); }
+.empty { color:var(--text-faint); font-size:12px; font-style:italic; padding:6px 0; }
+.btn-primary { background:var(--primary-dim); border:1px solid var(--primary-dim); color:var(--bg); font-family:'Inter Tight',sans-serif; font-size:13px; font-weight:600; padding:9px 14px; cursor:pointer; border-radius:6px; }
+.btn-primary:disabled { opacity:0.5; cursor:default; }
+.chips { display:flex; flex-wrap:wrap; gap:5px; margin:6px 0 2px; }
+.chip { background:var(--bg); border:1px solid var(--border-strong); color:var(--text-dim); font-size:12px; padding:4px 11px; border-radius:20px; cursor:pointer; font-family:'JetBrains Mono',monospace; }
+.chip.on { background:#f0b429; border-color:#f0b429; color:#1a1200; font-weight:700; }
+
+/* Controles del % y del IRPF */
+.ctl { display:grid; grid-template-columns:1fr auto; align-items:center; gap:4px 10px; margin-top:12px; }
+.ctl label { font-size:12px; color:var(--text-dim); }
+.ctl .pctbox { display:flex; align-items:center; gap:4px; }
+.ctl input[type=number] { width:74px; background:var(--bg); border:1px solid var(--border-strong); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:16px; padding:6px 8px; border-radius:6px; text-align:right; }
+.ctl input[type=number]:focus { outline:none; border-color:var(--primary); }
+.ctl input[type=range] { grid-column:1 / -1; width:100%; accent-color:#f0b429; }
+.ctl .hint { grid-column:1 / -1; font-size:11px; color:var(--text-faint); }
+
+/* Filas de cálculo */
+.rows { margin-top:10px; }
+.row { display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-top:1px solid var(--border); font-size:13px; }
+.row .l { color:var(--text-dim); }
+.row .v { font-variant-numeric:tabular-nums; white-space:nowrap; font-weight:500; }
+.row.neg .v { color:var(--red-bright); }
+.row.total { font-weight:700; }
+.row.total .l { color:var(--text); }
+.row.total .v { font-size:16px; }
+.row.hl .v { color:#f0b429; font-size:16px; font-weight:700; }
+.saved { font-size:11.5px; margin-top:8px; color:var(--text-dim); }
+.saved.ok { color:var(--primary); }
+.actions { display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+
+/* Lista de depósitos */
+.dlist { list-style:none; margin-top:6px; }
+.dlist li { display:grid; grid-template-columns:1fr auto; gap:2px 10px; padding:8px 0; border-top:1px solid var(--border); font-size:12.5px; }
+.dlist a { color:inherit; text-decoration:none; display:contents; }
+.dlist .t { font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dlist .t .n { font-family:'JetBrains Mono',monospace; color:var(--text-faint); font-weight:400; font-size:11px; margin-right:4px; }
+.dlist .a { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+.dlist .m { color:var(--text-dim); font-size:11.5px; grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; }
+.tag { font-family:'JetBrains Mono',monospace; font-size:10px; padding:1px 7px; border-radius:20px; background:rgba(138,155,178,0.12); color:var(--text-dim); white-space:nowrap; }
+.tag.esp { background:rgba(240,180,41,0.16); color:#f0b429; }
+.tag.ok { background:rgba(110,226,197,0.12); color:var(--primary); }
+.tag.pend { background:rgba(212,160,74,0.12); color:var(--amber-bright); }
+.tag.no { opacity:0.55; text-decoration:line-through; }
+
+/* Historial */
+.hist { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
+.hist th { text-align:right; color:var(--text-faint); font-weight:500; font-size:10.5px; text-transform:uppercase; letter-spacing:0.05em; padding:4px 4px; }
+.hist th:first-child, .hist td:first-child { text-align:left; }
+.hist td { text-align:right; padding:6px 4px; border-top:1px solid var(--border); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+@media (min-width:900px) {
+  .main { grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px; padding:16px; }
+  .main > .half { grid-column:span 2; }
+}
+@media (max-width:899px) { .main > .half { grid-column:1 / -1; } }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">cargando colaboradores…</div>
+
+<div id="app" style="display:none;">
+<header class="app-header">
+  <div class="header-inner">
+    <a href="./index.html" class="back-link">← Inicio</a>
+    <h1>Colabo<em>radores</em></h1>
+    <div data-privacy-slot></div>
+  </div>
+</header>
+
+<main class="main" id="main">
+
+  <section class="card full">
+    <div class="month-bar">
+      <button class="month-btn" id="mPrev" type="button" aria-label="Mes anterior">‹</button>
+      <div style="flex:1;">
+        <div class="month-label" id="mLabel">—</div>
+        <div class="month-note" id="mNote">facturas con fecha de este mes</div>
+      </div>
+      <button class="month-btn" id="mNext" type="button" aria-label="Mes siguiente">›</button>
+    </div>
+    <div class="chips" id="colabChips" style="justify-content:center;"></div>
+  </section>
+
+  <section class="card half">
+    <h2>Lo que ha vendido <span id="cName1">—</span> <span class="when" id="cWhen">—</span></h2>
+    <div class="hero-label">Base facturada (sin IVA)</div>
+    <div class="hero" id="hBase">—</div>
+    <div class="tiles">
+      <div class="tile"><div class="tile-label">Facturas</div><div class="tile-value" id="tN">—</div><div class="tile-sub" id="tNs">—</div></div>
+      <div class="tile"><div class="tile-label">Coste de producto</div><div class="tile-value" id="tCoste">—</div><div class="tile-sub">lo vendido a coste de fábrica</div></div>
+    </div>
+    <div class="sub" style="margin-top:10px;">Cuenta lo que <span id="cName2">—</span> recontó o facturó en tu espacio y lo de su propio espacio (también sale de tu Holded).</div>
+  </section>
+
+  <section class="card half">
+    <h2>Cuánto le pagas <span class="when" id="pWhen">—</span></h2>
+    <div class="ctl">
+      <label for="pctNum">% para <span id="cName3">—</span> sobre la base</label>
+      <div class="pctbox"><input type="number" id="pctNum" min="0" max="100" step="0.5" inputmode="decimal"><span>%</span></div>
+      <input type="range" id="pctRange" min="0" max="60" step="0.5" aria-label="% para el colaborador">
+      <div class="chips" id="pctChips" style="grid-column:1 / -1;"></div>
+    </div>
+    <div class="ctl">
+      <label for="irpfNum">Tu IRPF marginal</label>
+      <div class="pctbox"><input type="number" id="irpfNum" min="0" max="60" step="0.5" inputmode="decimal"><span>%</span></div>
+      <div class="hint">Sin factura ni nómina este pago no te desgrava: pagas IRPF sobre él a tu tipo marginal (el del último tramo, no la media).</div>
+    </div>
+    <div class="rows" id="calcRows"></div>
+    <div class="actions">
+      <button class="btn-primary" id="savePct" type="button">Guardar el % de este mes</button>
+      <span class="saved" id="savedInfo"></span>
+    </div>
+  </section>
+
+  <section class="card full">
+    <h2>Sus facturas del mes <span class="when" id="fCount">—</span></h2>
+    <ul class="dlist" id="fList"></ul>
+  </section>
+
+  <section class="card half">
+    <h2>Depósitos en curso <span class="when" id="eCount">—</span></h2>
+    <div class="sub">Abiertos o recontados en los que ha intervenido (aún sin facturar).</div>
+    <ul class="dlist" id="eList"></ul>
+  </section>
+
+  <section class="card half">
+    <h2>Meses anteriores</h2>
+    <table class="hist" id="hTable"></table>
+  </section>
+
+</main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="./vendor/supabase-js-2.100.1.js"></script>
+<!-- Espacios (TOMÁS / JP): selector, franja y cabecera x-mf-space -->
+<script src="./space.js"></script>
+<script src="./offline.js"></script>
+<script>
+'use strict';
+
+const SUPABASE_URL = 'https://bgrsjftxwuduvlglfpky.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_3Uhr0TMJEtq4_9CJc1D19Q_nfrkRq_2';
+
+if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+  document.getElementById('loadingScreen').textContent = 'No se pudo cargar Supabase SDK. Recarga la página.';
+  throw new Error('Supabase SDK no disponible');
+}
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false }
+});
+
+// ================= ESTADO =================
+let mes = new Date(); mes.setDate(1); mes.setHours(0,0,0,0);
+let panel = null;           // respuesta de colab_panel()
+let colabId = null;         // colaborador elegido
+let pct = 30, irpfPct = 30; // lo que se está probando
+let busy = false;
+const PCT_CHIPS = [20, 25, 30, 35, 40];
+const PAY = { efectivo:'Efectivo', tarjeta:'Tarjeta', transferencia:'Transferencia', bizum:'Bizum', pagare:'Pagaré', remesa:'Remesa', otro:'Otro' };
+
+function $(id){ return document.getElementById(id); }
+function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function n(v){ const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isNaN(x) ? 0 : x; }
+function money(v){ return mfMaskMoney(new Intl.NumberFormat('es-ES', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(v || 0) + ' €'); }
+function pctTxt(v){ return String(Math.round((v || 0) * 10) / 10).replace('.', ',') + ' %'; }
+function ym(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function monthName(d){ const s = new Intl.DateTimeFormat('es-ES', { month:'long', year:'numeric' }).format(d); return s.charAt(0).toUpperCase() + s.slice(1); }
+function dm(iso){ return iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) : ''; }
+function showToast(msg, isError=false){
+  const t = $('toast'); t.textContent = msg; t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(showToast._t); showToast._t = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+function colabName(){ const c = panel && (panel.colabs || []).find(x => x.id === colabId); return c ? c.nombre : '—'; }
+
+// ================= CÁLCULO =================
+// Ventas que cuentan en un mes: facturadas con fecha de factura de ese mes
+function ventasMes(d){
+  const k = ym(d);
+  return (panel ? panel.ventas : []).filter(v => v.cuenta && v.status === 'facturado' && (v.invoice_date || '').slice(0, 7) === k);
+}
+function pagoGuardado(d){ const k = ym(d) + '-01'; return (panel ? panel.pagos : []).find(p => p.mes === k) || null; }
+function calc(base, coste, p, irpf){
+  const pago = base * p / 100;               // lo que le das
+  const irpfTu = pago * irpf / 100;          // lo que pagas tú de IRPF por ese pago (no desgrava)
+  const costeTotal = pago + irpfTu;
+  const margen = base - coste;               // margen bruto de lo que vendió
+  return { pago, irpfTu, costeTotal, margen, teQueda: margen - costeTotal, efectivo: base > 0 ? costeTotal / base * 100 : 0 };
+}
+
+// ================= RENDER =================
+function render(){
+  const nombre = colabName();
+  ['cName1','cName2','cName3'].forEach(id => $(id).textContent = nombre);
+  $('mLabel').textContent = monthName(mes);
+  const hoy = new Date(); hoy.setDate(1); hoy.setHours(0,0,0,0);
+  $('mNext').disabled = mes >= hoy;
+  $('cWhen').textContent = $('pWhen').textContent = monthName(mes);
+
+  // Chips de colaborador (si hay más de uno)
+  const cc = $('colabChips'); cc.textContent = '';
+  if (panel && panel.colabs.length > 1) panel.colabs.forEach(c => {
+    const b = el('button', 'chip' + (c.id === colabId ? ' on' : ''), c.nombre); b.type = 'button';
+    b.addEventListener('click', () => { colabId = c.id; load(); });
+    cc.appendChild(b);
+  });
+
+  const vs = ventasMes(mes);
+  const base = vs.reduce((s, v) => s + n(v.base), 0);
+  const coste = vs.reduce((s, v) => s + n(v.coste), 0);
+  $('hBase').textContent = money(base);
+  $('tN').textContent = vs.length;
+  const enHolded = vs.filter(v => v.en_holded).length;
+  $('tNs').textContent = enHolded + ' en Holded · ' + (vs.length - enHolded) + ' sin factura (B)';
+  $('tCoste').textContent = money(coste);
+
+  // % y IRPF
+  // No se reescribe el campo en el que estás escribiendo (perderías la coma o el cursor)
+  if (document.activeElement !== $('pctNum')) $('pctNum').value = pct;
+  if (document.activeElement !== $('irpfNum')) $('irpfNum').value = irpfPct;
+  $('pctRange').value = Math.min(pct, 60);
+  [...$('pctChips').children].forEach(b => b.classList.toggle('on', n(b.dataset.v) === pct));
+  const r = calc(base, coste, pct, irpfPct);
+  const rows = $('calcRows'); rows.textContent = '';
+  const add = (l, v, cls) => { const x = el('div', 'row' + (cls ? ' ' + cls : '')); x.appendChild(el('span', 'l', l)); x.appendChild(el('span', 'v', v)); rows.appendChild(x); };
+  add('Le pagas a ' + nombre + ' (' + pctTxt(pct) + ')', money(r.pago), 'hl');
+  add('IRPF que pagas tú por ese pago (' + pctTxt(irpfPct) + ')', money(r.irpfTu), 'neg');
+  add('Coste real para ti', money(r.costeTotal) + ' · ' + pctTxt(r.efectivo) + ' de la base', 'total');
+  add('Margen de lo que vendió (base − coste de producto)', money(r.margen));
+  add('Te queda', money(r.teQueda), 'total' + (r.teQueda < 0 ? ' neg' : ''));
+
+  const g = pagoGuardado(mes);
+  const si = $('savedInfo');
+  if (g && n(g.pct) === pct && n(g.irpf_pct) === irpfPct) { si.textContent = '✓ Guardado: ' + nombre + ' ve ' + pctTxt(pct) + ' en su plan'; si.className = 'saved ok'; }
+  else if (g) { si.textContent = 'Guardado ' + pctTxt(n(g.pct)) + ' (IRPF ' + pctTxt(n(g.irpf_pct)) + '). Estás probando otro.'; si.className = 'saved'; }
+  else { si.textContent = 'Sin guardar: ' + nombre + ' aún no ve ningún % de este mes.'; si.className = 'saved'; }
+
+  // Facturas del mes
+  renderList($('fList'), vs, 'No hay facturas suyas con fecha de este mes.');
+  $('fCount').textContent = vs.length + (vs.length === 1 ? ' factura' : ' facturas');
+  // En curso (sin facturar), de cualquier mes
+  const enCurso = (panel ? panel.ventas : []).filter(v => v.status !== 'facturado');
+  renderList($('eList'), enCurso, 'Nada en curso.');
+  $('eCount').textContent = enCurso.length;
+
+  renderHist();
+}
+
+function renderList(ul, items, emptyTxt){
+  ul.textContent = '';
+  if (!items.length) { ul.appendChild(el('li', 'empty', emptyTxt)); return; }
+  const own = window.MF_SPACE ? MF_SPACE.id : null;
+  items.forEach(v => {
+    const li = el('li');
+    const t = el('div', 't');
+    if (v.deposit_number != null) t.appendChild(el('span', 'n', '#' + v.deposit_number));
+    t.appendChild(document.createTextNode(v.cliente || '(sin cliente)'));
+    // Los de tu espacio se abren en Depósitos
+    if (v.espacio && own && panel && v.espacio === ((mfSpaces().find(x => x.id === own) || {}).nombre)) {
+      const a = el('a'); a.href = './depositos.html?dep=' + encodeURIComponent(v.id); a.appendChild(t);
+      li.appendChild(a);
+    } else li.appendChild(t);
+    li.appendChild(el('div', 'a', money(n(v.base))));
+    const m = el('div', 'm');
+    m.appendChild(el('span', '', dm(v.status === 'facturado' ? v.invoice_date : (v.recount_date || v.delivery_date))));
+    m.appendChild(el('span', 'tag esp', v.espacio || '—'));
+    [['creado','creó'],['recontado','recontó'],['facturado','facturó']].forEach(([k, txt]) => { if (v[k]) m.appendChild(el('span', 'tag', txt)); });
+    if (v.status !== 'facturado') m.appendChild(el('span', 'tag pend', v.status));
+    if (v.status === 'facturado') m.appendChild(el('span', 'tag' + (v.en_holded ? ' ok' : ''), v.en_holded ? 'Holded' : 'sin Holded'));
+    if (v.payment_method) m.appendChild(el('span', 'tag', PAY[v.payment_method] || v.payment_method));
+    if (v.collection_status) m.appendChild(el('span', 'tag ' + (v.collection_status === 'cobrado' ? 'ok' : 'pend'), v.collection_status));
+    if (v.status === 'facturado' && !v.cuenta) m.appendChild(el('span', 'tag no', 'no cuenta'));
+    li.appendChild(m);
+    ul.appendChild(li);
+  });
+}
+
+function renderHist(){
+  const t = $('hTable'); t.textContent = '';
+  // Meses con ventas o con % guardado
+  const meses = new Set((panel ? panel.ventas : []).filter(v => v.cuenta && v.status === 'facturado' && v.invoice_date).map(v => v.invoice_date.slice(0, 7)));
+  (panel ? panel.pagos : []).forEach(p => meses.add(p.mes.slice(0, 7)));
+  const list = [...meses].sort().reverse();
+  if (!list.length) { const tr = el('tr'); const td = el('td', 'empty', 'Aún no hay meses.'); td.colSpan = 5; tr.appendChild(td); t.appendChild(tr); return; }
+  const h = el('tr'); ['Mes', 'Base', '%', 'Le pagas', 'Te cuesta'].forEach(x => h.appendChild(el('th', '', x))); t.appendChild(h);
+  list.forEach(k => {
+    const d = new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1);
+    const vs = ventasMes(d); const base = vs.reduce((s, v) => s + n(v.base), 0); const coste = vs.reduce((s, v) => s + n(v.coste), 0);
+    const g = pagoGuardado(d);
+    const tr = el('tr');
+    tr.appendChild(el('td', '', new Intl.DateTimeFormat('es-ES', { month:'short', year:'2-digit' }).format(d)));
+    tr.appendChild(el('td', '', money(base)));
+    if (g) { const r = calc(base, coste, n(g.pct), n(g.irpf_pct)); tr.appendChild(el('td', '', pctTxt(n(g.pct)))); tr.appendChild(el('td', '', money(r.pago))); tr.appendChild(el('td', '', money(r.costeTotal))); }
+    else { ['sin fijar', '—', '—'].forEach(x => tr.appendChild(el('td', '', x))); }
+    t.appendChild(tr);
+  });
+}
+
+// ================= DATOS =================
+// % e IRPF del mes: el guardado; si no, el último guardado; si no, 30 % y la reserva IRPF del plan
+function defaults(){
+  const g = pagoGuardado(mes);
+  const last = (panel.pagos || []).slice().reverse().find(p => p.mes <= ym(mes) + '-01') || (panel.pagos || []).slice(-1)[0];
+  pct = g ? n(g.pct) : (last ? n(last.pct) : 30);
+  irpfPct = g ? n(g.irpf_pct) : (last ? n(last.irpf_pct) : (panel.irpf_plan != null ? n(panel.irpf_plan) : 30));
+}
+
+async function load(){
+  $('main').classList.add('reloading');
+  const { data, error } = await sb.rpc('colab_panel', { p_colab: colabId });
+  $('main').classList.remove('reloading');
+  if (error){ showToast('No se pudo cargar: ' + error.message, true); return false; }
+  panel = data || { colabs:[], ventas:[], pagos:[] };
+  colabId = panel.colab;
+  if (!colabId){
+    $('main').textContent = '';
+    const c = el('section', 'card full'); c.appendChild(el('div', 'empty', 'No tienes colaboradores con acceso a tus depósitos.')); $('main').appendChild(c);
+    return true;
+  }
+  defaults();
+  render();
+  return true;
+}
+
+async function save(){
+  if (busy || !colabId) return;
+  busy = true; $('savePct').disabled = true;
+  try {
+    const { error } = await sb.rpc('colab_guardar_pct', { p_colab: colabId, p_mes: ym(mes) + '-01', p_pct: pct, p_irpf: irpfPct });
+    if (error){ showToast('No se pudo guardar: ' + error.message, true); return; }
+    showToast('Guardado: ' + pctTxt(pct) + ' para ' + colabName() + ' en ' + monthName(mes));
+    await load();
+  } finally { busy = false; $('savePct').disabled = false; }
+}
+
+// ================= INICIO =================
+(async function init(){
+  const { data:{ session }, error } = await sb.auth.getSession();
+  if (error || !session){ window.location.href = './tesoreria.html'; return; }
+  // Este panel es del dueño: fuera de tu espacio no tiene sentido
+  if (window.MF_SPACE && !MF_SPACE.propio){ window.location.href = './index.html'; return; }
+
+  PCT_CHIPS.forEach(v => { const b = el('button', 'chip', v + ' %'); b.type = 'button'; b.dataset.v = v; b.addEventListener('click', () => { pct = v; render(); }); $('pctChips').appendChild(b); });
+  const clamp = (v, max) => Math.min(Math.max(n(v), 0), max);
+  $('pctNum').addEventListener('input', e => { pct = clamp(e.target.value, 100); render(); });
+  $('pctRange').addEventListener('input', e => { pct = clamp(e.target.value, 100); render(); });
+  $('irpfNum').addEventListener('input', e => { irpfPct = clamp(e.target.value, 60); render(); });
+  $('savePct').addEventListener('click', save);
+  $('mPrev').addEventListener('click', () => { mes = new Date(mes.getFullYear(), mes.getMonth() - 1, 1); defaults(); render(); });
+  $('mNext').addEventListener('click', () => { mes = new Date(mes.getFullYear(), mes.getMonth() + 1, 1); defaults(); render(); });
+
+  await load();
+  $('loadingScreen').style.display = 'none';
+  $('app').style.display = 'block';
+})();
+</script>
+</body>
+</html>
