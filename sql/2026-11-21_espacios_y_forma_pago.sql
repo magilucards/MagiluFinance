@@ -384,25 +384,25 @@ grant execute on function public.deposit_set_payment(uuid, text) to authenticate
 -- 6) Nombre del espacio de Tomás (el de JP se crea al dar de alta su usuario)
 -- ---------------------------------------------------------------------
 insert into public.app_spaces (owner_id, nombre, orden)
-select u.id, 'TOMÁS', 1 from auth.users u where u.email = 'santofimiagroup@gmail.com'
+select u.id, 'TOMÁS', 1 from auth.users u where u.email = '<email-del-dueño>'
 on conflict (owner_id) do nothing;
 
 -- =====================================================================
 -- ALTA DE JP (cuando exista su usuario en Supabase Auth):
 --   insert into public.app_spaces (owner_id, nombre, orden)
---     select id, 'JP', 2 from auth.users where email = 'herazo@magilucards.com';
+--     select id, 'JP', 2 from auth.users where email = '<email-del-colaborador>';
 --   -- JP entra en los Depósitos de Tomás
 --   insert into public.app_members (user_id, owner_id, role)
 --     select j.id, t.id, 'depositos' from auth.users j, auth.users t
---      where j.email = 'herazo@magilucards.com' and t.email = 'santofimiagroup@gmail.com';
+--      where j.email = '<email-del-colaborador>' and t.email = '<email-del-dueño>';
 --   -- Tomás entra en todo el espacio de JP
 --   insert into public.app_members (user_id, owner_id, role)
 --     select t.id, j.id, 'completo' from auth.users j, auth.users t
---      where j.email = 'herazo@magilucards.com' and t.email = 'santofimiagroup@gmail.com';
+--      where j.email = '<email-del-colaborador>' and t.email = '<email-del-dueño>';
 --   -- Ajustes de JP: factura a nombre de Tomás (mismos datos de empresa)
 --   insert into public.settings (user_id, company_legal_name, company_cif)
 --     select j.id, s.company_legal_name, s.company_cif from auth.users j, public.settings s, auth.users t
---      where j.email = 'herazo@magilucards.com' and t.email = 'santofimiagroup@gmail.com' and s.user_id = t.id
+--      where j.email = '<email-del-colaborador>' and t.email = '<email-del-dueño>' and s.user_id = t.id
 --   on conflict (user_id) do nothing;
 -- QUITAR UN ACCESO: update public.app_members set activo = false where ...;  (efecto inmediato)
 -- =====================================================================
