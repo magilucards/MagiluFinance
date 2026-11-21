@@ -268,6 +268,7 @@ let sales = null;          // { mes: {neto, coste, gastos, tarjetas}, margenReal
 let salesState = 'loading'; // loading | ok | error
 let loaded = { debts:false, fixed:false, settings:false };
 let writeBusy = false;
+let colabCost = null;      // coste de tu colaborador (JP) este mes: pago + tu IRPF de ese pago
 
 const DEBT_TYPES = [['prestamo','Préstamo'], ['leasing','Leasing'], ['poliza','Póliza de crédito'], ['tarjeta_revolving','Tarjeta revolving'],
   ['aplazamiento','Aplazamiento'], ['otro','Otro']];
@@ -350,10 +351,12 @@ function totals(){
   const gVar = sales ? n(sales.mes.gastos) : 0;                 // gasoil y otros apuntados este mes
   const sueldo = n(settings.target_monthly_salary);
   const { m } = margin(); const r = irpf();
-  // Ventas netas V tales que: (V·margen − gastos) − IRPF sobre ese beneficio − cuotas − sueldo = 0
-  const v1 = (gNeg + gVar + cNeg / (1 - r)) / m;
-  const v2 = (gNeg + gVar + (cNeg + sueldo) / (1 - r)) / m;
-  return { gNeg, gPer, cNeg, cPer, gVar, sueldo, m, r, v1, v2 };
+  // Colaborador (JP): su pago + el IRPF que pagas tú por él (no desgrava), ya calculado con tu tipo marginal
+  const jp = colabCost && colabCost.total ? colabCost.total : 0;
+  // Ventas netas V tales que: (V·margen − gastos − JP) − IRPF sobre ese beneficio − cuotas − sueldo = 0
+  const v1 = (gNeg + gVar + jp + cNeg / (1 - r)) / m;
+  const v2 = (gNeg + gVar + jp + (cNeg + sueldo) / (1 - r)) / m;
+  return { gNeg, gPer, cNeg, cPer, gVar, jp, sueldo, m, r, v1, v2 };
 }
 
 // Meses para terminar una deuda pagando 'pago' al mes (r = interés mensual)
@@ -459,11 +462,17 @@ function render(){
   addRow(eq, 'Gastos fijos del negocio', money(t.gNeg));
   addRow(eq, 'Gastos apuntados este mes (gasoil…)', money(t.gVar));
   addRow(eq, 'Cuotas de deudas del negocio', money(t.cNeg));
+  if (colabCost) {
+    if (colabCost.pct == null) addRow(eq, colabCost.nombre + ': sin % fijado (no se cuenta)', '—');
+    else addRow(eq, colabCost.nombre + ' este mes: ' + money0(colabCost.pago) + ' (' + pct(colabCost.pct, 1) + ') + tu IRPF ' + money0(colabCost.irpfTu), money(t.jp));
+  }
   addRow(eq, 'Reserva IRPF (' + pct(t.r * 100, 0) + ' del beneficio)', money(t.cNeg / (1 - t.r) - t.cNeg));
   addRow(eq, 'Margen sobre ventas (' + margin().fuente + ')', pct(t.m * 100));
   addRow(eq, 'Ventas netas necesarias', money(t.v1), 'total');
   $('eqNote').textContent = 'Es lo que tienes que vender al mes, sin IVA, para que el negocio pague sus gastos y sus cuotas sin poner dinero tú. '
-    + (planCfg.margin_mode === 'manual' ? '' : 'El margen real sale de lo vendido menos su coste de fábrica.');
+    + (planCfg.margin_mode === 'manual' ? '' : 'El margen real sale de lo vendido menos su coste de fábrica.')
+    + (colabCost && colabCost.pct != null ? ' ' + colabCost.nombre + ': lo que lleva vendido este mes por el % ' + (colabCost.fijado ? 'fijado' : 'del último mes guardado')
+       + ', más tu IRPF (' + pct(colabCost.irpf, 1) + ') porque ese pago no te desgrava; sube según venda. Se ajusta en Colaboradores.' : '');
 
   // 3. Sueldo
   const sal = $('salRows'); sal.textContent = '';
@@ -794,6 +803,26 @@ async function load(withSales){
   return { ok: !err.length, salesP };
 }
 
+// ================= COSTE DE TU COLABORADOR (dueño) =================
+// Lo mismo que el panel de Colaboradores: base facturada este mes × % (el del mes o el último
+// guardado) + tu IRPF de ese pago. Solo en tu espacio y si tienes colaboradores.
+async function loadColabCost(){
+  if (!(window.MF_SPACE && MF_SPACE.propio && window.mfHasColabs && mfHasColabs())) return;
+  const { data, error } = await sb.rpc('colab_panel', { p_colab: null });
+  if (error || !data || !data.colab) return;
+  const hoy = new Date();
+  const k = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
+  const base = (data.ventas || []).filter(v => v.cuenta && v.status === 'facturado' && (v.invoice_date || '').slice(0, 7) === k)
+    .reduce((s, v) => s + n(v.base), 0);
+  const pagos = data.pagos || [];
+  const g = pagos.find(p => p.mes === k + '-01') || pagos.slice().reverse().find(p => p.mes <= k + '-01');
+  const nombre = ((data.colabs || []).find(c => c.id === data.colab) || {}).nombre || 'Colaborador';
+  if (!g) { colabCost = { nombre, base, pct: null, total: 0 }; render(); return; }
+  const p = n(g.pct), ir = n(g.irpf_pct), pago = base * p / 100, irpfTu = pago * ir / 100;
+  colabCost = { nombre, base, pct: p, irpf: ir, pago, irpfTu, total: pago + irpfTu, fijado: g.mes === k + '-01' };
+  render();
+}
+
 // ================= COMISIÓN (colaborador) =================
 // Base: lo facturado este mes en los depósitos del dueño que recontaste o facturaste,
 // más lo de tu espacio (también se factura a nombre del dueño). El % lo fija el dueño.
@@ -852,6 +881,7 @@ async function loadComision(){
 
   await load(true);
   loadComision();
+  loadColabCost();
   $('loadingScreen').style.display = 'none';
   $('app').style.display = 'block';
 })();
