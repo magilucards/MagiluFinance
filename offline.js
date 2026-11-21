@@ -18,7 +18,9 @@
 
   var REF = 'bgrsjftxwuduvlglfpky';
   var AUTH_KEY = 'sb-' + REF + '-auth-token';
-  var IDB_NAME = 'magilu-offline';
+  // Una copia por espacio (space.js): los datos de TOMÁS y de JP nunca se mezclan en el iPhone
+  var SPACE = window.MF_SPACE;
+  var IDB_NAME = 'magilu-offline' + (SPACE && !SPACE.propio ? '-' + SPACE.id : '');
   var IDB_VER = 1;
   var html = document.documentElement;
   var WRITES_ON = html.getAttribute('data-offline-writes') === 'on';     // solo Depósitos

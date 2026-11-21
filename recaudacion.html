@@ -293,6 +293,8 @@ a.tienda-row:active{ transform:scale(0.997); }
 
 <script src="./vendor/supabase-js-2.100.1.js"></script>
 <!-- Modo sin cobertura: copia local, cola de cambios y sincronización -->
+<!-- Espacios (TOMÁS / JP): selector, franja y cabecera x-mf-space -->
+<script src="./space.js"></script>
 <script src="./offline.js"></script>
 
 <script>
@@ -372,7 +374,7 @@ function showToast(msg, error=false){
 // ============ AUTH ============
 async function init(){
   const { data: { session } } = await sb.auth.getSession();
-  if (session){ currentUser = session.user; await showApp(); }
+  if (session){ currentUser = mfSpaceUser(session.user); await showApp(); }
   else showAuth();
 }
 function showAuth(){ $('loadingScreen').style.display='none'; $('authScreen').classList.add('active'); }
@@ -392,7 +394,7 @@ $('authLoginBtn').addEventListener('click', async ()=>{
   if (!email || !pwd){ $('authError').textContent='Email y contraseña.'; return; }
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
   if (error){ $('authError').textContent = error.message; return; }
-  currentUser = data.user; await showApp();
+  currentUser = mfSpaceUser(data.user); await showApp();
 });
 $('authPassword').addEventListener('keydown', e=>{ if (e.key==='Enter') $('authLoginBtn').click(); });
 

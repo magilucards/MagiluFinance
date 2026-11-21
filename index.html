@@ -385,6 +385,8 @@ html, body {
 
 <script src="./vendor/supabase-js-2.100.1.js"></script>
 <!-- Modo sin cobertura: copia local, cola de cambios y sincronización -->
+<!-- Espacios (TOMÁS / JP): selector, franja y cabecera x-mf-space -->
+<script src="./space.js"></script>
 <script src="./offline.js"></script>
 
 <script>
@@ -416,7 +418,7 @@ async function checkAuth() {
     window.location.href = './tesoreria.html';
     return false;
   }
-  currentUser = session.user;
+  currentUser = mfSpaceUser(session.user);
   return true;
 }
 

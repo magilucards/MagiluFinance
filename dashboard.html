@@ -254,6 +254,8 @@ h1 em { font-style:italic; color:var(--primary); font-weight:400; }
 
 <script src="./vendor/supabase-js-2.100.1.js"></script>
 <!-- Modo sin cobertura: copia local, cola de cambios y sincronización -->
+<!-- Espacios (TOMÁS / JP): selector, franja y cabecera x-mf-space -->
+<script src="./space.js"></script>
 <script src="./offline.js"></script>
 <script>
 'use strict';
@@ -595,7 +597,7 @@ async function deleteGasto(g){
 (async function init(){
   const { data:{ session }, error } = await sb.auth.getSession();
   if (error || !session){ window.location.href = './tesoreria.html'; return; }
-  currentUser = session.user;
+  currentUser = mfSpaceUser(session.user);
 
   $('expDate').value = todayISO();
   const chips = $('expChips');
